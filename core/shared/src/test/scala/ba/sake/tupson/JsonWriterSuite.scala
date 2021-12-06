@@ -8,8 +8,10 @@ class JsonWriterSuite extends munit.FunSuite {
     assertEquals(true.toJson, "true")
     assertEquals(false.toJson, "false")
 
-    assertEquals(1.234f.toJson, "1.234")
-    assertEquals(1.23456789d.toJson, "1.23456789")
+    // https://github.com/scala-js/scala-js/blob/v1.7.1/test-suite/shared/src/test/scala/org/scalajs/testsuite/javalib/lang/FloatTest.scala#L81-L85
+    assertEquals(1.233F.toJson.substring(0, 5), "1.233")
+
+    assertEquals(1.234_567_89D.toJson, "1.23456789")
 
     assertEquals(1.toJson, "1")
 
