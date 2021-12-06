@@ -1,12 +1,6 @@
-lazy val core = crossProject(JVMPlatform, JSPlatform)
-  .in(file("core"))
-  .settings(
+inThisBuild(
+  List(
     organization := "ba.sake",
-    name := "tupson",
-    scalaVersion := "3.1.0",
-    libraryDependencies += "org.scalameta" %%% "munit" % "0.7.29" % Test
-  )
-  .settings(
     homepage := Some(url("https://github.com/sake92/tupson")),
     licenses := List(
       "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")
@@ -25,4 +19,13 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
         url("https://sake.ba")
       )
     )
+  )
+)
+
+lazy val core = crossProject(JVMPlatform, JSPlatform)
+  .in(file("core"))
+  .settings(
+    name := "tupson",
+    scalaVersion := "3.1.0",
+    libraryDependencies += "org.scalameta" %%% "munit" % "0.7.29" % Test
   )
