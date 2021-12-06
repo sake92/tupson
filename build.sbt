@@ -3,11 +3,11 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
   .settings(
     organization := "ba.sake",
     name := "tupson",
-    version := "0.0.1-SNAPSHOT",
     scalaVersion := "3.1.0",
     libraryDependencies += "org.scalameta" %%% "munit" % "0.7.29" % Test
   )
   .settings(
+    homepage := Some(url("https://github.com/sake92/tupson")),
     licenses := List(
       "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")
     ),
