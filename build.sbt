@@ -22,10 +22,14 @@ inThisBuild(
   )
 )
 
-lazy val core = crossProject(JVMPlatform, JSPlatform)
+lazy val tupson = crossProject(JVMPlatform, JSPlatform)
   .in(file("core"))
   .settings(
     name := "tupson",
     scalaVersion := "3.1.0",
-    libraryDependencies += "org.scalameta" %%% "munit" % "0.7.29" % Test
+    libraryDependencies ++= Seq(
+      "org.typelevel" %%% "jawn-ast" % "1.3.0",
+      "org.typelevel" %%% "shapeless3-deriving" % "3.0.4",
+      "org.scalameta" %%% "munit" % "0.7.29" % Test
+    )
   )

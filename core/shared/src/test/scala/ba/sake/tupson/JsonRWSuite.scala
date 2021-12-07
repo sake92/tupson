@@ -1,6 +1,6 @@
 package ba.sake.tupson
 
-import JsonWriter.toJson
+import JsonRW.toJson
 
 class JsonWriterSuite extends munit.FunSuite {
 
@@ -9,23 +9,26 @@ class JsonWriterSuite extends munit.FunSuite {
     assertEquals(false.toJson, "false")
 
     // https://github.com/scala-js/scala-js/blob/v1.7.1/test-suite/shared/src/test/scala/org/scalajs/testsuite/javalib/lang/FloatTest.scala#L81-L85
-    assertEquals(1.233F.toJson.substring(0, 5), "1.233")
+    assertEquals(1.233f.toJson.substring(0, 5), "1.233")
 
-    assertEquals(1.234_567_89D.toJson, "1.23456789")
+    assertEquals(1.234_567_89d.toJson, "1.23456789")
 
     assertEquals(1.toJson, "1")
 
     assertEquals("".toJson, "\"\"")
     assertEquals("abc".toJson, "\"abc\"")
+
+    assertEquals('a'.toJson, "\"a\"")
   }
 
   test("write Long") {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER
+    // TODO see if JS likes this..
     assertEquals(9007199254740991L.toJson, "9007199254740991")
-    assertEquals(9007199254740992L.toJson, "\"9007199254740992\"")
+    assertEquals(9007199254740992L.toJson, "9007199254740992")
 
     assertEquals(-9007199254740991L.toJson, "-9007199254740991")
-    assertEquals(-9007199254740992L.toJson, "\"-9007199254740992\"")
+    assertEquals(-9007199254740992L.toJson, "-9007199254740992")
   }
 
   test("write Seq") {
@@ -43,12 +46,12 @@ class JsonWriterSuite extends munit.FunSuite {
   test("write case class") {
     assertEquals(
       CaseClass1("str", 123).toJson,
-      """{"str": "str", "int": 123}"""
+      """{"integer":123,"str":"str"}"""
     )
 
     assertEquals(
       CaseClass2("c2", CaseClass1("str", 123)).toJson,
-      """{"bla": "c2", "c1": {"str": "str", "int": 123}}"""
+      """{"bla":"c2","c1":{"integer":123,"str":"str"}}"""
     )
   }
 
@@ -58,7 +61,7 @@ class JsonWriterSuite extends munit.FunSuite {
     val s1: Sealed1 = Sealed1Case("str", 123)
     assertEquals(
       s1.toJson,
-      """{"@type":"ba.sake.tupson.seal.Sealed1Case", "str": "str", "integer": 123}"""
+      """{"@type":"ba.sake.tupson.seal.Sealed1Case","integer":123,"str":"str"}"""
     )
   }
 
@@ -69,17 +72,27 @@ class JsonWriterSuite extends munit.FunSuite {
     val s2: Enum1 = Enum1.Enum1Case("str", None)
     assertEquals(
       s1.toJson,
-      """{"@type":"ba.sake.tupson.enums.Enum1$.Enum1Case", "str": "str", "integer": 123}"""
+      """{"@type":"ba.sake.tupson.enums.Enum1$Enum1Case","integer":123,"str":"str"}"""
     )
     assertEquals(
       s2.toJson,
-      """{"@type":"ba.sake.tupson.enums.Enum1$.Enum1Case", "str": "str", "integer": null}"""
+      """{"@type":"ba.sake.tupson.enums.Enum1$Enum1Case","integer":null,"str":"str"}"""
+    )
+  }
+
+  /* recursive data type */
+  test("write recursive data type") {
+    import rec.*
+    val n1 = Node(List(Node(List.empty)))
+    assertEquals(
+      n1.toJson,
+      """{"children":[{"children":[]}]}"""
     )
   }
 
 }
 
-case class CaseClass1(str: String, @JsonProperty("int") integer: Int)
+case class CaseClass1(str: String, integer: Int)
 case class CaseClass2(bla: String, c1: CaseClass1)
 
 package seal {
@@ -92,4 +105,8 @@ package enums {
   enum Enum1:
     case Enum1Case(str: String, integer: Option[Int])
     case Enum2Case(str: String)
+}
+
+package rec {
+  case class Node(children: List[Node])
 }
