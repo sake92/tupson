@@ -8,6 +8,8 @@ trait JsonRW[T]:
 
 object JsonRW:
 
+  def apply[T](using rw: JsonRW[T]) = rw
+
   extension [T](value: T)(using rw: JsonRW[T])
     def toJson: String = CanonicalRenderer.render(rw.write(value))
 
@@ -42,9 +44,9 @@ object JsonRW:
 
   /* derived instances */
   inline def derived[T](using gen: K0.Generic[T]): JsonRW[T] =
-    gen.derive(eqGen, eqGenC)
+    gen.derive(rwGen, rwGenC)
 
-  given eqGen[T](using
+  given rwGen[T](using
       inst: K0.ProductInstances[JsonRW, T],
       labelling: Labelling[T]
   ): JsonRW[T] with
@@ -58,7 +60,7 @@ object JsonRW:
       }
       JObject(members)
 
-  given eqGenC[T](using
+  given rwGenC[T](using
       inst: => K0.CoproductInstances[JsonRW, T]
   ): JsonRW[T] with
     def write(x: T): JValue =

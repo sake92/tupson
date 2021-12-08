@@ -26,7 +26,7 @@ lazy val tupson = crossProject(JVMPlatform, JSPlatform)
   .in(file("core"))
   .settings(
     name := "tupson",
-    scalaVersion := "3.1.0",
+    scalaVersion := "3.0.2",
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "jawn-ast" % "1.3.0",
       "org.typelevel" %%% "shapeless3-deriving" % "3.0.4",
