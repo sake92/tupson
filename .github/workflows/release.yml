@@ -23,7 +23,7 @@ jobs:
           java-version: 8
       - name: Publish to Maven Central
       - run: chmod +x ./mill
-        run: |
+      - run: |
             echo $SONATYPE_PGP_PRIVATE_KEY | base64 --decode > gpg_key
             gpg --import --no-tty --batch --yes gpg_key
             rm gpg_key
