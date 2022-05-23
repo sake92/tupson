@@ -1,5 +1,5 @@
 import mill._, scalalib._, scalajslib._, publish._
-import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.1.2`
+import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.1.4`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 object tupson extends Module {
