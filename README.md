@@ -55,8 +55,7 @@ enum Color derives JsonRW:
   case Hex(num: String)
   case Yellow
 
-val c: Color = Color.Hex("FFF")
-println(c.toJson)
+println(Color.Hex("FFF").toJson)
 // {"@type":"ba.sake.Color$Hex","num":"FFF"}
 ```
 

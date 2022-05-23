@@ -42,6 +42,14 @@ class JsonWriterSuite extends munit.FunSuite {
     assertEquals(Option.empty[Int].toJson, "null")
   }
 
+  test("write Map") {
+    assertEquals(Map("a" -> "abc").toJson, """{"a":"abc"}""")
+    assertEquals(
+      Map("string" -> "abc").toJson,
+      """{"string":"abc"}"""
+    )
+  }
+
   /* case class */
   test("write case class") {
     assertEquals(
@@ -106,7 +114,9 @@ package enums {
   enum Enum1 derives JsonRW:
     case Enum1Case(str: String, integer: Option[Int])
     case Enum2Case()
-  
+  //TODO wait for 3.1.3
+  // case Enum3Case
+
   enum Abc derives JsonRW:
     case Abc1, Abc2
 }

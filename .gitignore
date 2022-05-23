@@ -9,3 +9,5 @@ project/metals.sbt
 .metals/
 .bsp/
 .vscode/
+
+out/

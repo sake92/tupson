@@ -41,6 +41,11 @@ object JsonRW:
 
   given [T](using trw: JsonRW[T]): JsonRW[Seq[T]] = elems =>
     JArray(elems.map(trw.write).toArray)
+  
+  given [T](using trw: JsonRW[T]): JsonRW[Map[String, T]] = elems => {
+    val members = elems.map((k, v) => k -> trw.write(v))
+    JObject(members.to(scala.collection.mutable.Map))
+  }
 
   /* derived instances */
   inline def derived[T](using gen: K0.Generic[T]): JsonRW[T] =
