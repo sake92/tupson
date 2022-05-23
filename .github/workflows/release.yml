@@ -21,7 +21,6 @@ jobs:
       - uses: actions/setup-java@v1
         with:
           java-version: 8
-      - run: chmod +x ./mill
       - name: Publish to Maven Central
         run: |
             echo $SONATYPE_PGP_PRIVATE_KEY | base64 --decode > gpg_key
