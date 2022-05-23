@@ -1,4 +1,6 @@
 import mill._, scalalib._, scalajslib._, publish._
+import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.1.2`
+import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 object tupson extends Module {
 
@@ -35,7 +37,7 @@ trait TupsonCommonModule extends SbtModule with PublishModule {
     )
   }
 
-  def publishVersion = "0.0.1-SNAPSHOT"
+  override def publishVersion: T[String] = VcsVersion.vcsState().format()
 
   def pomSettings = PomSettings(
     organization = "ba.sake",
