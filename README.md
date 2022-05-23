@@ -14,14 +14,12 @@ Run [ammonite](https://ammonite.io/) (for [Scala 3](https://github.com/com-lihao
 $ amm
 
 @ import $ivy.`ba.sake::tupson:0.1.4`
-@ import ba.sake.tupson.JsonRW
-@ import ba.sake.tupson.JsonRW.toJson
+@ import ba.sake.tupson.JsonRW, JsonRW.toJson
 ```
 
 ### Writing simple types
 ```scala
-import ba.sake.tupson.JsonRW
-import ba.sake.tupson.JsonRW.toJson
+import ba.sake.tupson.JsonRW, JsonRW.toJson
 
 println(true.toJson)    // true
 println(1.123.toJson)   // 1.123
