@@ -6,17 +6,15 @@ on:
   pull_request:
 jobs:
   test:
-    name: ${{ matrix.command }} ${{ matrix.java }}
+    name: test ${{ matrix.java }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         java: [adopt@1.8, adopt@1.11]
-        command:
-          - "test"
     steps:
       - uses: actions/checkout@v2
       - uses: olafurpg/setup-scala@v13
         with:
           java-version: ${{ matrix.java }}
-      - run: sbt ${{ matrix.command }}
+      - run: mill -i 
