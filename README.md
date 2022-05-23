@@ -45,7 +45,7 @@ println(
 // {"adress":{"street":"Sebilj"},"age":33,"name":"Meho"}
 ```
 
-Note that you don't need "derives JsonRW" on Address, although it is recommended!
+Note that you don't need `derives JsonRW` on Address, although it is recommended!
 
 
 ### Writing enums and sealed traits
