@@ -9,8 +9,8 @@ jobs:
     if: github.repository == 'sake92/tupson' && contains(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     env:
-      SONATYPE_PGP_PRIVATE_KEY: ${{ secrets.PGP_PASSPHRASE }}
-      SONATYPE_PGP_PRIVATE_KEY_PASSWORD: ${{ secrets.PGP_SECRET }}
+      SONATYPE_PGP_PRIVATE_KEY: ${{ secrets.PGP_SECRET }}
+      SONATYPE_PGP_PRIVATE_KEY_PASSWORD: ${{ secrets.PGP_PASSPHRASE }}
       SONATYPE_USER: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
       LANG: "en_US.UTF-8"
