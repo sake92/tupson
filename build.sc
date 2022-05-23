@@ -14,6 +14,8 @@ object tupson extends Module {
 
 trait TupsonCommonModule extends SbtModule with PublishModule {
 
+  def artifactName = "tupson"
+  
   def scalaVersion = "3.1.2"
 
   def ivyDeps = Agg(
