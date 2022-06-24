@@ -114,8 +114,7 @@ package enums {
   enum Enum1 derives JsonRW:
     case Enum1Case(str: String, integer: Option[Int])
     case Enum2Case()
-  //TODO wait for 3.1.3
-  // case Enum3Case
+    case Enum3Case
 
   enum Abc derives JsonRW:
     case Abc1, Abc2

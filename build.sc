@@ -16,7 +16,7 @@ trait TupsonCommonModule extends SbtModule with PublishModule {
 
   def artifactName = "tupson"
   
-  def scalaVersion = "3.1.2"
+  def scalaVersion = "3.1.3"
 
   def ivyDeps = Agg(
     ivy"org.typelevel::jawn-ast::1.3.2",

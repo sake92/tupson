@@ -30,7 +30,7 @@ object JsonRW:
 
   given [T](using trw: JsonRW[T]): JsonRW[Option[T]] = opt =>
     opt match
-      case None => JNull
+      case None    => JNull
       case Some(v) => trw.write(v)
 
   given [T](using trw: JsonRW[T]): JsonRW[Array[T]] = elems =>
@@ -41,7 +41,7 @@ object JsonRW:
 
   given [T](using trw: JsonRW[T]): JsonRW[Seq[T]] = elems =>
     JArray(elems.map(trw.write).toArray)
-  
+
   given [T](using trw: JsonRW[T]): JsonRW[Map[String, T]] = elems => {
     val members = elems.map((k, v) => k -> trw.write(v))
     JObject(members.to(scala.collection.mutable.Map))
@@ -69,10 +69,13 @@ object JsonRW:
       inst: => K0.CoproductInstances[JsonRW, T]
   ): JsonRW[T] with
     def write(x: T): JValue =
-      inst.fold(x){ [t] => (st: JsonRW[t], t: t) =>
-        val obj = st.write(t).asInstanceOf[JObject]
-        obj.set("@type", JString(x.getClass.getName))
-        obj
-    }
+      inst.fold(x) {
+        [t] =>
+          (st: JsonRW[t], t: t) => {
+            val obj = st.write(t).asInstanceOf[JObject]
+            obj.set("@type", JString(x.getClass.getName))
+            obj
+        }
+      }
 
 end JsonRW
