@@ -37,11 +37,11 @@ println(Option.empty[Int].toJson)   // null
 import ba.sake.tupson.*
 
 case class Address(street: String)
-case class Person(name: String, age: Int, adress: Address) derives JsonRW
+case class Person(name: String, age: Int, address: Address) derives JsonRW
 
 val person = Person("Meho", 33, Address("Sebilj"))
 println(person.toJson)
-// {"adress":{"street":"Sebilj"},"age":33,"name":"Meho"}
+// {"address":{"street":"Sebilj"},"age":33,"name":"Meho"}
 ```
 
 Note that you don't need `derives JsonRW` on Address, although it is recommended!
