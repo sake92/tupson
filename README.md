@@ -8,12 +8,12 @@ Notes: It just supports writing currently.
 
 ## Write
 
-Run [ammonite](https://ammonite.io/) (for [Scala 3](https://github.com/com-lihaoyi/Ammonite/releases/download/2.4.1/3.0-2.4.1)) to try it:
+Run [ammonite](https://ammonite.io/) (for [Scala 3](https://github.com/com-lihaoyi/Ammonite/releases/download/2.5.4/3.1-2.5.4)) to try it:
 
 ```bash
 $ amm
 
-@ import $ivy.`ba.sake::tupson:0.1.3`
+@ import $ivy.`ba.sake::tupson:0.1.4`
 @ import ba.sake.tupson.*
 ```
 
