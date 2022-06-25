@@ -49,18 +49,20 @@ object JsonRW extends AutoDerivation[JsonRW]:
     val members = scala.collection.mutable.Map[String, JValue]()
     ctx.params
       .map { param =>
-
-        val namedOpt = param.annotations
+        // resolve name
+        val newNameOpt = param.annotations
           .find(_.getClass == classOf[named])
           .map(_.asInstanceOf[named])
-        val label = namedOpt.map(_.name).getOrElse(param.label)
-        if members.keySet.contains(label) then
+          .map(_.name)
+        val label = newNameOpt.getOrElse(param.label)
+        if members.contains(label) then
           throw TupsonException(s"Duplicate JSON name: ${label}")
 
+        // get value
         val p = param.deref(value)
-        val jvalue = param.typeclass.write(p)
+        val jValue = param.typeclass.write(p)
 
-        members(label) = jvalue
+        members(label) = jValue
       }
     JObject(members)
 
