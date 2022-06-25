@@ -13,7 +13,7 @@ Run [ammonite](https://ammonite.io/) (for [Scala 3](https://github.com/com-lihao
 ```bash
 $ amm
 
-@ import $ivy.`ba.sake::tupson:0.1.4`
+@ import $ivy.`ba.sake::tupson:0.1.5`
 @ import ba.sake.tupson.*
 ```
 
