@@ -1,17 +1,14 @@
 package ba.sake.tupson
 
 import org.typelevel.jawn.ast.*
-import shapeless3.deriving.*
+import magnolia1.{*, given}
 
 trait JsonRW[T]:
   def write(value: T): JValue
 
-object JsonRW:
+object JsonRW extends AutoDerivation[JsonRW]:
 
   def apply[T](using rw: JsonRW[T]) = rw
-
-  extension [T](value: T)(using rw: JsonRW[T])
-    def toJson: String = CanonicalRenderer.render(rw.write(value))
 
   /* basic instances */
   given JsonRW[String] = str => JString(str)
@@ -48,34 +45,31 @@ object JsonRW:
   }
 
   /* derived instances */
-  inline def derived[T](using gen: K0.Generic[T]): JsonRW[T] =
-    gen.derive(rwGen, rwGenC)
+  override def join[T](ctx: CaseClass[Typeclass, T]): JsonRW[T] = value =>
+    val members = scala.collection.mutable.Map[String, JValue]()
+    ctx.params
+      .map { param =>
 
-  given rwGen[T](using
-      inst: K0.ProductInstances[JsonRW, T],
-      labelling: Labelling[T]
-  ): JsonRW[T] with
-    def write(x: T): JValue =
-      val members = scala.collection.mutable.Map[String, JValue]()
-      labelling.elemLabels.zipWithIndex.map { (label, i) =>
-        val jvalue = inst.project(x)(i) {
-          [t] => (st: JsonRW[t], pt: t) => st.write(pt)
-        }
+        val namedOpt = param.annotations
+          .find(_.getClass == classOf[named])
+          .map(_.asInstanceOf[named])
+        val label = namedOpt.map(_.name).getOrElse(param.label)
+        if members.keySet.contains(label) then
+          throw TupsonException(s"Duplicate JSON name: ${label}")
+
+        val p = param.deref(value)
+        val jvalue = param.typeclass.write(p)
+
         members(label) = jvalue
       }
-      JObject(members)
+    JObject(members)
 
-  given rwGenC[T](using
-      inst: => K0.CoproductInstances[JsonRW, T]
-  ): JsonRW[T] with
-    def write(x: T): JValue =
-      inst.fold(x) {
-        [t] =>
-          (st: JsonRW[t], t: t) => {
-            val obj = st.write(t).asInstanceOf[JObject]
-            obj.set("@type", JString(x.getClass.getName))
-            obj
-        }
-      }
+  override def split[T](ctx: SealedTrait[JsonRW, T]): JsonRW[T] = value =>
+    ctx.choose(value) { sub =>
+      val subObject = sub.cast(value)
+      val obj = sub.typeclass.write(subObject).asInstanceOf[JObject]
+      obj.set("@type", JString(sub.typeInfo.full))
+      obj
+    }
 
 end JsonRW

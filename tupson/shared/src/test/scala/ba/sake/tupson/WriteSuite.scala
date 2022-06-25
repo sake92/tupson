@@ -2,7 +2,7 @@ package ba.sake.tupson
 
 import JsonRW.toJson
 
-class JsonWriterSuite extends munit.FunSuite {
+class WriteSuite extends munit.FunSuite {
 
   test("write primitives") {
     assertEquals(true.toJson, "true")
@@ -80,11 +80,11 @@ class JsonWriterSuite extends munit.FunSuite {
     val s2: Enum1 = Enum1.Enum1Case("str", None)
     assertEquals(
       s1.toJson,
-      """{"@type":"ba.sake.tupson.enums.Enum1$Enum1Case","integer":123,"str":"str"}"""
+      """{"@type":"ba.sake.tupson.enums.Enum1.Enum1Case","integer":123,"str":"str"}"""
     )
     assertEquals(
       s2.toJson,
-      """{"@type":"ba.sake.tupson.enums.Enum1$Enum1Case","integer":null,"str":"str"}"""
+      """{"@type":"ba.sake.tupson.enums.Enum1.Enum1Case","integer":null,"str":"str"}"""
     )
   }
 
@@ -98,28 +98,4 @@ class JsonWriterSuite extends munit.FunSuite {
     )
   }
 
-}
-
-case class CaseClass1(str: String, integer: Int) derives JsonRW
-case class CaseClass2(bla: String, c1: CaseClass1) derives JsonRW
-
-package seal {
-  sealed trait Sealed1 derives JsonRW
-  case class Sealed1Case(str: String, integer: Int) extends Sealed1
-  case class Sealed2Case(str: String) extends Sealed1
-  case object Sealed3 extends Sealed1
-}
-
-package enums {
-  enum Enum1 derives JsonRW:
-    case Enum1Case(str: String, integer: Option[Int])
-    case Enum2Case()
-    case Enum3Case
-
-  enum Abc derives JsonRW:
-    case Abc1, Abc2
-}
-
-package rec {
-  case class Node(children: List[Node]) derives JsonRW
 }

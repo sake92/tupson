@@ -12,6 +12,11 @@ object tupson extends Module {
   }
 }
 
+object examples extends ScalaModule {
+  def moduleDeps = Seq(tupson.jvm)
+  def scalaVersion = "3.1.3"
+}
+
 trait TupsonCommonModule extends SbtModule with PublishModule {
 
   def artifactName = "tupson"
@@ -20,7 +25,7 @@ trait TupsonCommonModule extends SbtModule with PublishModule {
 
   def ivyDeps = Agg(
     ivy"org.typelevel::jawn-ast::1.3.2",
-    ivy"org.typelevel::shapeless3-deriving::3.1.0"
+    ivy"com.softwaremill.magnolia1_3::magnolia::1.1.4"
   )
 
   override def sources = T.sources(
