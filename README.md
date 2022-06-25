@@ -1,6 +1,6 @@
 # tupson
 
-Stupid simple Scala library for writing and reading JSON.  
+Stupid simple Scala 3 library for writing and reading JSON.  
 
 Notes: It just supports writing currently.
 
@@ -14,14 +14,12 @@ Run [ammonite](https://ammonite.io/) (for [Scala 3](https://github.com/com-lihao
 $ amm
 
 @ import $ivy.`ba.sake::tupson:0.1.3`
-@ import ba.sake.tupson.JsonRW
-@ import ba.sake.tupson.JsonRW.toJson
+@ import ba.sake.tupson.*
 ```
 
 ### Writing simple types
 ```scala
-import ba.sake.tupson.JsonRW
-import ba.sake.tupson.JsonRW.toJson
+import ba.sake.tupson.*
 
 println(true.toJson)    // true
 println(1.123.toJson)   // 1.123
@@ -36,12 +34,13 @@ println(Option.empty[Int].toJson)   // null
 ### Writing case classes
 
 ```scala
+import ba.sake.tupson.*
+
 case class Address(street: String)
 case class Person(name: String, age: Int, adress: Address) derives JsonRW
 
-println(
-    Person("Meho", 33, Address("Sebilj")).toJson
-)
+val person = Person("Meho", 33, Address("Sebilj"))
+println(person.toJson)
 // {"adress":{"street":"Sebilj"},"age":33,"name":"Meho"}
 ```
 
@@ -55,7 +54,8 @@ enum Color derives JsonRW:
   case Hex(num: String)
   case Yellow
 
-println(Color.Hex("FFF").toJson)
-// {"@type":"ba.sake.Color$Hex","num":"FFF"}
+val color = Color.Hex("FFF")
+println(color.toJson)
+// {"@type":"ba.sake.Color.Hex","num":"FFF"}
 ```
 

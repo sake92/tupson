@@ -1,7 +1,5 @@
 package ba.sake.tupson
 
-import JsonRW.toJson
-
 class WriteSuite extends munit.FunSuite {
 
   test("write primitives") {
@@ -96,6 +94,21 @@ class WriteSuite extends munit.FunSuite {
       n1.toJson,
       """{"children":[{"children":[]}]}"""
     )
+  }
+
+  /* rename a key */
+  test("write with changed name") {
+    import rename.*
+    val r1 = Renamed(1)
+    assertEquals(
+      r1.toJson,
+      """{"newName":1}"""
+    )
+
+    intercept[TupsonException] {
+      val r2 = DuplicateName(1, "")
+      r2.toJson
+    }
   }
 
 }

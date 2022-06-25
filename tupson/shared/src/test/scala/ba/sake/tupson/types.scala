@@ -24,3 +24,7 @@ package rec {
   case class Node(children: List[Node]) derives JsonRW
 }
 
+package rename {
+  case class Renamed(@named("newName") x: Int) derives JsonRW
+  case class DuplicateName(x: Int, @named("x") y: String) derives JsonRW
+}
