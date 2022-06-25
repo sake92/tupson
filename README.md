@@ -44,7 +44,7 @@ println(person.toJson)
 // {"address":{"street":"Sebilj"},"age":33,"name":"Meho"}
 ```
 
-Note that you don't need `derives JsonRW` on Address, although it is recommended!
+Note that you don't even need `derives JsonRW` anywhere, although it is recommended for performance reasons!
 
 
 ### Writing enums and sealed traits
@@ -59,3 +59,16 @@ println(color.toJson)
 // {"@type":"ba.sake.Color.Hex","num":"FFF"}
 ```
 
+### Rename a field
+
+You can use the `@named` annotation to give a field a different name:
+
+```scala
+import ba.sake.tupson.*
+
+case class Address(@named("street_no") streetNo: String)
+
+val address = Address("My Street 123")
+println(address.toJson)
+// {"street_no":"My Street 123"}
+```
