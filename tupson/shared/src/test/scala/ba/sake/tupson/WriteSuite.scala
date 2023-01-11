@@ -52,12 +52,12 @@ class WriteSuite extends munit.FunSuite {
   test("write case class") {
     assertEquals(
       CaseClass1("str", 123).toJson,
-      """{"integer":123,"str":"str"}"""
+      """{"str":"str","integer":123}"""
     )
 
     assertEquals(
       CaseClass2("c2", CaseClass1("str", 123)).toJson,
-      """{"bla":"c2","c1":{"integer":123,"str":"str"}}"""
+      """{"bla":"c2","c1":{"str":"str","integer":123}}"""
     )
   }
 
@@ -67,7 +67,7 @@ class WriteSuite extends munit.FunSuite {
     val s1: Sealed1 = Sealed1Case("str", 123)
     assertEquals(
       s1.toJson,
-      """{"@type":"ba.sake.tupson.seal.Sealed1Case","integer":123,"str":"str"}"""
+      """{"str":"str","@type":"ba.sake.tupson.seal.Sealed1Case","integer":123}"""
     )
   }
 
@@ -78,11 +78,11 @@ class WriteSuite extends munit.FunSuite {
     val s2: Enum1 = Enum1.Enum1Case("str", None)
     assertEquals(
       s1.toJson,
-      """{"@type":"ba.sake.tupson.enums.Enum1.Enum1Case","integer":123,"str":"str"}"""
+      """{"str":"str","@type":"ba.sake.tupson.enums.Enum1.Enum1Case","integer":123}"""
     )
     assertEquals(
       s2.toJson,
-      """{"@type":"ba.sake.tupson.enums.Enum1.Enum1Case","integer":null,"str":"str"}"""
+      """{"str":"str","@type":"ba.sake.tupson.enums.Enum1.Enum1Case","integer":null}"""
     )
   }
 

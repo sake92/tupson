@@ -30,13 +30,11 @@ println(Seq(1, 2, 3).toJson) // [1,2,3]
 println(Option(123).toJson)         // 123
 println(Option.empty[Int].toJson)   // null
 
-// keys are sorted always
 val map = Map(
   "x" -> "xyz",
   "a" -> "abc"
 )
-println(map.toJson)   // {"a":"abc","x":"xyz"}
-
+println(map.toJson)   // { "x":"xyz", "a":"abc" }
 ```
 
 ### Writing case classes

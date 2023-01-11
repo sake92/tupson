@@ -7,9 +7,10 @@ import ba.sake.tupson.*
 
 case class CC(
     @named("x") i: Int,
+
     s: String,
 
     // this would throw exception:
-    //@named("x")
+    // @named("x")
     j: Int
 ) derives JsonRW
