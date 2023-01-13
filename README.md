@@ -91,7 +91,9 @@ case class MyData(
     s: String
 ) derives JsonRW
 
-"""{ "bln":true, "int":5 }""".parseJson[MyData] // success
+"""{ "bln":true, "int":5, "s":"dsds" }""".parseJson[MyData] // success
 
-// MissingKeysException
+"""{ "bln":true """.parseJson[MyData] // TupsonException: incomplete JSON
+
+"""{ "bln":true }""" // MissingKeysException: int, s
 ```
