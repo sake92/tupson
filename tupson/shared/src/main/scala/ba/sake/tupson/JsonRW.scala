@@ -1,11 +1,8 @@
 package ba.sake.tupson
 
-import scala.util.Try
+import scala.reflect.ClassTag
 import org.typelevel.jawn.ast.*
 import magnolia1.{*, given}
-import scala.util.Failure
-import scala.util.Success
-import scala.reflect.ClassTag
 
 trait JsonRW[T]:
   def write(value: T): JValue

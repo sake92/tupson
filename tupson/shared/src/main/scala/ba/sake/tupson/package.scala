@@ -1,6 +1,5 @@
 package ba.sake.tupson
 
-import scala.annotation.StaticAnnotation
 import org.typelevel.jawn.ast.FastRenderer
 import org.typelevel.jawn.ast.JParser
 import org.typelevel.jawn.ParseException
