@@ -13,7 +13,7 @@ Or [scala-cli](https://scala-cli.virtuslab.org/).
 ```bash
 $ amm
 
-@ import $ivy.`ba.sake::tupson:0.1.5`
+@ import $ivy.`ba.sake::tupson:0.2.0`
 @ import ba.sake.tupson.*
 ```
 
