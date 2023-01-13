@@ -1,4 +1,4 @@
-import mill._, scalalib._, scalajslib._, publish._
+import mill._, scalalib._, scalajslib._, publish._, scalafmt._
 
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.1.4`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
@@ -17,7 +17,7 @@ object examples extends ScalaModule {
   def scalaVersion = "3.1.3"
 }
 
-trait TupsonCommonModule extends SbtModule with PublishModule {
+trait TupsonCommonModule extends SbtModule with PublishModule with ScalafmtModule {
 
   def artifactName = "tupson"
   
@@ -34,7 +34,7 @@ trait TupsonCommonModule extends SbtModule with PublishModule {
     )
   )
 
-  object test extends Tests with TestModule.Munit {
+  object test extends Tests with TestModule.Munit with ScalafmtModule {
     def ivyDeps = Agg(
       ivy"org.scalameta::munit::0.7.29"
     )

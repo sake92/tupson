@@ -13,6 +13,8 @@ class WriteSuite extends munit.FunSuite {
 
     assertEquals(1.toJson, "1")
 
+    assertEquals(1L.toJson, "1")
+
     assertEquals("".toJson, "\"\"")
     assertEquals("abc".toJson, "\"abc\"")
 
@@ -64,7 +66,7 @@ class WriteSuite extends munit.FunSuite {
   /* sealed trait */
   test("write sealed trait hierarchy") {
     import seal.*
-    val s1: Sealed1 = Sealed1Case("str", 123)
+    val s1: SealedBase = Sealed1Case("str", 123)
     assertEquals(
       s1.toJson,
       """{"str":"str","@type":"ba.sake.tupson.seal.Sealed1Case","integer":123}"""
@@ -96,19 +98,20 @@ class WriteSuite extends munit.FunSuite {
     )
   }
 
-  /* rename a key */
-  test("write with changed name") {
-    import rename.*
-    val r1 = Renamed(1)
+  /* weird key names */
+  test("write with weird key name") {
+    import weird_named.*
+    val r1 = WeirdNamed(1)
     assertEquals(
       r1.toJson,
-      """{"newName":1}"""
+      """{"weird named key":1}"""
     )
 
+    /*
     intercept[TupsonException] {
       val r2 = DuplicateName(1, "")
       r2.toJson
-    }
+    }*/
   }
 
 }

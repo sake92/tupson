@@ -1,10 +1,9 @@
 # tupson
 
-Stupid simple Scala 3 library for writing and reading JSON.  
+Stupid simple/minimalistic Scala 3 library for writing and reading JSON.
 
-Notes: It just supports writing currently.
-
-
+It only does `String <=> T` conversions.  
+No streaming.
 
 ## Write
 
@@ -67,14 +66,14 @@ println(color.toJson)
 
 ### Rename a field
 
-You can use the `@named` annotation to give a field a different name:
+You can use the Scala lang feature to use weird names for keys:
 
 ```scala
 import ba.sake.tupson.*
 
-case class Address(@named("street_no") streetNo: String)
+case class Address(`street no`: String)
 
 val address = Address("My Street 123")
 println(address.toJson)
-// {"street_no":"My Street 123"}
+// {"street no":"My Street 123"}
 ```
