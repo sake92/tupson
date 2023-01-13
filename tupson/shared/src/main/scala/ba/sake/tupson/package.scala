@@ -3,6 +3,8 @@ package ba.sake.tupson
 import scala.annotation.StaticAnnotation
 import org.typelevel.jawn.ast.FastRenderer
 import org.typelevel.jawn.ast.JParser
+import org.typelevel.jawn.ParseException
+import org.typelevel.jawn.IncompleteParseException
 
 extension [T](value: T)(using rw: JsonRW[T]) {
   def toJson: String =
@@ -11,15 +13,20 @@ extension [T](value: T)(using rw: JsonRW[T]) {
 }
 
 extension (strValue: String) {
-  def parseJson[T](using rw: JsonRW[T]): T =
-    // TODO try catch exceptions..
-    // ParseException(msg: String, index: Int, line: Int, col: Int) extends Exception(msg)
-    // IncompleteParseException
+  def parseJson[T](using rw: JsonRW[T]): T = try {
     val jValue = JParser.parseUnsafe(strValue)
     rw.parse(jValue)
+  } catch {
+    case e: ParseException =>
+      throw TupsonException("JSON parsing exception", e)
+    case e: IncompleteParseException =>
+      throw TupsonException("JSON parsing exception", e)
+  }
+
 }
 
-class TupsonException(msg: String) extends Exception(msg)
+class TupsonException(msg: String, cause: Throwable = null)
+    extends Exception(msg, cause)
 
 class MissingKeysException(val keys: Set[String])
-    extends TupsonException(s"Missing keys: $keys")
+    extends TupsonException(s"Missing keys: ${keys.mkString(", ")}")

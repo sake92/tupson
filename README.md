@@ -7,7 +7,8 @@ No streaming.
 
 ## Write
 
-Run [ammonite](https://ammonite.io/) (for [Scala 3](https://github.com/com-lihaoyi/Ammonite/releases/download/2.5.4/3.1-2.5.4)) to try it:
+You can use [ammonite](https://ammonite.io/) (for [Scala 3](https://github.com/com-lihaoyi/Ammonite/releases/download/2.5.4/3.1-2.5.4)) to try it.  
+Or [scala-cli](https://scala-cli.virtuslab.org/).
 
 ```bash
 $ amm
@@ -66,7 +67,7 @@ println(color.toJson)
 
 ### Rename a field
 
-You can use the Scala lang feature to use weird names for keys:
+You can use the Scala's "backticks" language feature to use weird names for keys:
 
 ```scala
 import ba.sake.tupson.*
@@ -76,4 +77,21 @@ case class Address(`street no`: String)
 val address = Address("My Street 123")
 println(address.toJson)
 // {"street no":"My Street 123"}
+```
+
+## Parse
+
+Same as above applies to parsing.  
+You will get a `TupsonException` if parsing fails.
+
+```scala
+case class MyData(
+    bln: Boolean,
+    int: Int,
+    s: String
+) derives JsonRW
+
+"""{ "bln":true, "int":5 }""".parseJson[MyData] // success
+
+// MissingKeysException
 ```

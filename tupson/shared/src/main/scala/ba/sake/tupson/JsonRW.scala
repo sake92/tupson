@@ -128,13 +128,18 @@ object JsonRW extends AutoDerivation[JsonRW]:
       JObject(members)
     override def parse(jValue: JValue): T = jValue match
       case JObject(map) =>
-        // TODO validate ALL KEYS, stonx MissingKeysException
+        var missingKeys = Set.empty[String]
+        ctx.params.foreach { param =>
+          if !map.contains(param.label) then missingKeys += param.label
+        }
+        if missingKeys.nonEmpty then throw MissingKeysException(missingKeys)
+
         ctx.construct { param =>
           map
             .get(param.label)
             .map(param.typeclass.parse)
             .orElse(param.default)
-            .getOrElse(throw MissingKeysException(Set(param.label)))
+            .get
         }
       case other => error(s"Expected a JSON object but got ${other.valueType}")
   }
