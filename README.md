@@ -2,8 +2,7 @@
 
 Stupid simple/minimalistic Scala 3 library for writing and reading JSON.
 
-It only does `String <=> T` conversions.  
-No streaming.
+It only does `String <=> T` conversions, no streaming.
 
 ## Write
 
@@ -19,8 +18,6 @@ $ amm
 
 ### Writing simple types
 ```scala
-import ba.sake.tupson.*
-
 println(true.toJson)    // true
 println(1.123.toJson)   // 1.123
 println("abc".toJson)   // "abc"
@@ -40,8 +37,6 @@ println(map.toJson)   // { "x":"xyz", "a":"abc" }
 ### Writing case classes
 
 ```scala
-import ba.sake.tupson.*
-
 case class Address(street: String)
 case class Person(name: String, age: Int, address: Address) derives JsonRW
 
@@ -65,19 +60,23 @@ println(color.toJson)
 // {"@type":"ba.sake.Color.Hex","num":"FFF"}
 ```
 
-### Rename a field
+### Unusual/weird key names
 
 You can use the Scala's "backticks" language feature to use weird names for keys:
 
 ```scala
-import ba.sake.tupson.*
-
 case class Address(`street no`: String)
 
 val address = Address("My Street 123")
 println(address.toJson)
 // {"street no":"My Street 123"}
 ```
+
+Benefits:
+- your code is easy for "grep"/Ctrl+F
+- no mismatch between serialized version and your code
+- your internal/core models are separate from JSON, as they should be
+- mapping between models is explicit
 
 ## Parse
 
@@ -93,7 +92,7 @@ case class MyData(
 
 """{ "bln":true, "int":5, "s":"dsds" }""".parseJson[MyData] // success
 
-"""{ "bln":true """.parseJson[MyData] // TupsonException: incomplete JSON
+"""{ "bln":true """.parseJson[MyData]  // TupsonException: incomplete JSON
 
-"""{ "bln":true }""" // MissingKeysException: int, s
+"""{ "bln":true }""".parseJson[MyData] // MissingKeysException: int, s
 ```
