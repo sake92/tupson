@@ -1,19 +1,22 @@
 # tupson
 
-Stupid simple/minimalistic Scala 3 library for writing and reading JSON.
+Stupid simple, minimalistic Scala 3 library for writing and reading JSON.
 
-It only does `String <=> T` conversions, no streaming.
+It only does `String <=> T` conversions, no streaming.  
+It covers 99% of use cases when building HTTP APIs.
 
 ## Write
 
-You can use [ammonite](https://ammonite.io/) (for [Scala 3](https://github.com/com-lihaoyi/Ammonite/releases/download/2.5.4/3.1-2.5.4)) to try it.  
-Or [scala-cli](https://scala-cli.virtuslab.org/).
-
+You can use [scala-cli](https://scala-cli.virtuslab.org/) to try it:
 ```bash
-$ amm
+scala-cli scala-cli-example.scala
 
-@ import $ivy.`ba.sake::tupson:0.2.0`
-@ import ba.sake.tupson.*
+Compiling project (Scala 3.2.1, JVM)
+Compiled project (Scala 3.2.1, JVM)
+
+{"str":"xyz","bln":true,"list":["a","b"],"int":5,"dbl":3.14}
+RoundtripData(true,5,3.14,xyz,ArraySeq(a, b))
+before == after: true
 ```
 
 ### Writing simple types

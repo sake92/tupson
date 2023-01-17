@@ -106,12 +106,6 @@ class WriteSuite extends munit.FunSuite {
       r1.toJson,
       """{"weird named key":1}"""
     )
-
-    /*
-    intercept[TupsonException] {
-      val r2 = DuplicateName(1, "")
-      r2.toJson
-    }*/
   }
 
 }
