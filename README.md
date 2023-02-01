@@ -2,10 +2,11 @@
 
 Stupid simple, minimalistic Scala 3 library for writing and reading JSON.
 
-It only does `String <=> T` conversions, no streaming.  
-It covers 99% of use cases when building HTTP APIs.
+It only does `String <=> T` conversions, no streaming.
 
-Usage:
+## Usage
+
+Setup:
 ```scala
 def ivyDeps = Agg(
   ivy"ba.sake::tupson:0.3.0"
@@ -14,9 +15,7 @@ def scalacOptions =
   super.scalacOptions() ++ Seq("-Yretain-trees")
 ```
 
-## Write
-
-You can use [scala-cli](https://scala-cli.virtuslab.org/) to try it:
+You can use [scala-cli](https://scala-cli.virtuslab.org/) to try it locally:
 ```bash
 scala-cli scala-cli-example.scala
 
@@ -27,6 +26,8 @@ Compiled project (Scala 3.2.1, JVM)
 RoundtripData(true,5,3.14,xyz,ArraySeq(a, b))
 before == after: true
 ```
+
+Or you can use [Scastie](https://scastie.scala-lang.org/pQdrpZNiQEOkHAkBvn8YeA) to play with it online.
 
 ### Writing simple types
 ```scala
@@ -54,7 +55,7 @@ case class Person(name: String, age: Int, address: Address) derives JsonRW
 
 val person = Person("Meho", 33, Address("Sebilj"))
 println(person.toJson)
-// {"address":{"street":"Sebilj"},"age":33,"name":"Meho"}
+// { "age":33, "name":"Meho", "address":{"street":"Sebilj"} }
 ```
 
 Note that you don't even need `derives JsonRW` anywhere, although it is recommended for performance reasons!
@@ -69,8 +70,10 @@ enum Color derives JsonRW:
 
 val color = Color.Hex("FFF")
 println(color.toJson)
-// {"@type":"ba.sake.Color.Hex","num":"FFF"}
+// {"@type":"Hex","num":"FFF"}
 ```
+
+The `@type` key is used to figure out what subtype of enum/sealed trait it is.
 
 ### Unusual/weird key names
 
@@ -128,7 +131,7 @@ parsedConfig.port.getOrElse(...)
 case class MyConfig(url: String, port: Int = 1234)
 ```
 
-
+See scastie demo here: https://scastie.scala-lang.org/SSSnMIhNS1Ggi3Ttr3iD3A
 
 
 
