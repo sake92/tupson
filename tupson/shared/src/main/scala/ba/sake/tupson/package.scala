@@ -27,5 +27,5 @@ extension (strValue: String) {
 class TupsonException(msg: String, cause: Throwable = null)
     extends Exception(msg, cause)
 
-class MissingKeysException(val keys: Set[String])
-    extends TupsonException(s"Missing keys: ${keys.mkString(", ")}")
+class MissingRequiredKeysException(val keys: Set[String])
+    extends TupsonException(s"Missing required keys: ${keys.mkString(", ")}")

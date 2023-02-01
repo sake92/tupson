@@ -6,7 +6,8 @@ import magnolia1.{*, given}
 
 trait JsonRW[T]:
   def write(value: T): JValue
-  def parse(jValue: JValue): T = ???
+  def parse(jValue: JValue): T
+  def default: Option[T] = None
 
 object JsonRW extends AutoDerivation[JsonRW]:
 
@@ -77,6 +78,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
     override def parse(jValue: JValue): Option[T] = jValue match
       case JNull => None
       case other => Option(trw.parse(jValue))
+    override def default: Option[Option[T]] = Some(None)
   }
 
   given [T: ClassTag](using trw: JsonRW[T]): JsonRW[Array[T]] = new {
@@ -124,17 +126,23 @@ object JsonRW extends AutoDerivation[JsonRW]:
         }
       JObject(members)
     override def parse(jValue: JValue): T = jValue match
-      case JObject(map) =>
-        var missingKeys = Set.empty[String]
+      case JObject(jsonMap) =>
+        var missingRequiredKeys = Set.empty[String]
         ctx.params.foreach { param =>
-          if !map.contains(param.label) then missingKeys += param.label
+          val keyPresent = jsonMap.contains(param.label)
+          val hasGlobalDefault = param.typeclass.default.nonEmpty
+          val hasLocalDefault = param.default.nonEmpty
+          if !keyPresent && !hasGlobalDefault && !hasLocalDefault then
+            missingRequiredKeys += param.label
         }
-        if missingKeys.nonEmpty then throw MissingKeysException(missingKeys)
+        if missingRequiredKeys.nonEmpty then
+          throw MissingRequiredKeysException(missingRequiredKeys)
 
         ctx.construct { param =>
-          map
+          jsonMap
             .get(param.label)
             .map(param.typeclass.parse)
+            .orElse(param.typeclass.default)
             .orElse(param.default)
             .get
         }
@@ -150,9 +158,9 @@ object JsonRW extends AutoDerivation[JsonRW]:
         obj
       }
     override def parse(jValue: JValue): T = jValue match
-      case JObject(map) =>
-        val typeName: String = map.get("@type") match
-          case None             => throw MissingKeysException(Set("@type"))
+      case JObject(jsonMap) =>
+        val typeName: String = jsonMap.get("@type") match
+          case None => throw MissingRequiredKeysException(Set("@type"))
           case Some(JString(s)) => s
           case Some(other) =>
             error(s"Expected a (@type: String) but got ${other.valueType}")

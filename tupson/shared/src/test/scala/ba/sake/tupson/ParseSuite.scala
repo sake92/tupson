@@ -78,7 +78,7 @@ class ParseSuite extends munit.FunSuite {
       CaseClass2("c2", CaseClass1("str", 123))
     )
 
-    intercept[MissingKeysException] {
+    intercept[MissingRequiredKeysException] {
       // missing "integer" key
       """{"str":"str"}""".parseJson[CaseClass1]
     }
@@ -111,6 +111,40 @@ class ParseSuite extends munit.FunSuite {
         .parseJson[Enum1],
       Enum1.Enum1Case("str", None)
     )
+  }
+
+  /* missing key -> default global value */
+  test("parse missing keys to their global defaults") {
+    assertEquals(
+      """{}""".parseJson[CaseClassOpt],
+      CaseClassOpt(None)
+    )
+    assertEquals(
+      """{ "str": null }""".parseJson[CaseClassOpt],
+      CaseClassOpt(None)
+    )
+    assertEquals(
+      """{ "str": "value" }""".parseJson[CaseClassOpt],
+      CaseClassOpt(Some("value"))
+    )
+  }
+
+  /* missing key -> default "local" value */
+  test("parse missing keys to their local defaults") {
+    assertEquals(
+      """{}""".parseJson[CaseClassDefault],
+      CaseClassDefault(List.empty)
+    )
+    assertEquals(
+      """{ "lst": ["value"] }""".parseJson[CaseClassDefault],
+      CaseClassDefault(List("value"))
+    )
+    intercept[TupsonException] {
+      assertEquals(
+        """{ "lst": null }""".parseJson[CaseClassDefault],
+        CaseClassDefault(List.empty)
+      )
+    }
   }
 
   /* recursive data type */

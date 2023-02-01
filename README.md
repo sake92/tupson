@@ -5,6 +5,15 @@ Stupid simple, minimalistic Scala 3 library for writing and reading JSON.
 It only does `String <=> T` conversions, no streaming.  
 It covers 99% of use cases when building HTTP APIs.
 
+Usage:
+```scala
+def ivyDeps = Agg(
+  ivy"ba.sake::tupson:0.3.0"
+)
+def scalacOptions =
+  super.scalacOptions() ++ Seq("-Yretain-trees")
+```
+
 ## Write
 
 You can use [scala-cli](https://scala-cli.virtuslab.org/) to try it:
@@ -97,5 +106,36 @@ case class MyData(
 
 """{ "bln":true """.parseJson[MyData]  // TupsonException: incomplete JSON
 
-"""{ "bln":true }""".parseJson[MyData] // MissingKeysException: int, s
+"""{ "bln":true }""".parseJson[MyData] // MissingRequiredKeysException: int, s
 ```
+
+
+### Missing keys / backwards compatibility
+
+Let's say you had a `case class MyConfig(url: String)`.  
+Now you need to add another property: `port: Int`, but without breaking existing serialized values.
+
+You have 2 options:
+1. use an `Option[Int]`, and set a default value later if it is missing
+2. use a `Int = MyDefaultValue` to avoid `Option` gymnastics
+
+```scala
+// option 1
+case class MyConfig(url: String, port: Option[Int])
+parsedConfig.port.getOrElse(...)
+
+// option 2
+case class MyConfig(url: String, port: Int = 1234)
+```
+
+
+
+
+
+
+
+
+
+
+
+

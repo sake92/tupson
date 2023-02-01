@@ -15,13 +15,23 @@ object tupson extends Module {
 object examples extends ScalaModule {
   def moduleDeps = Seq(tupson.jvm)
   def scalaVersion = "3.1.3"
+  def scalacOptions = super.scalacOptions() ++ Seq(
+    "-Yretain-trees" // Required by magnolia
+  )
 }
 
-trait TupsonCommonModule extends SbtModule with PublishModule with ScalafmtModule {
+trait TupsonCommonModule
+    extends SbtModule
+    with PublishModule
+    with ScalafmtModule {
 
   def artifactName = "tupson"
-  
+
   def scalaVersion = "3.1.3"
+
+  def scalacOptions = super.scalacOptions() ++ Seq(
+    "-Yretain-trees" // Required by magnolia
+  )
 
   def ivyDeps = Agg(
     ivy"org.typelevel::jawn-ast::1.3.2",
