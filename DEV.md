@@ -5,9 +5,10 @@
 
 ./mill __.reformat
 
-```
+./mill tupson.__.test
 
-## Keys must be present, even if null
-https://stackoverflow.com/questions/21188145/is-it-worth-to-exclude-null-fields-from-a-json-server-response-in-a-web-applicat
+
+git tag -a 0.3.0 -m "Handle missing keys and default values"
+```
 
 
