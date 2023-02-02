@@ -13,7 +13,12 @@ object JsonRW extends AutoDerivation[JsonRW]:
 
   def apply[T](using rw: JsonRW[T]) = rw
 
-  private def error(msg: String): Nothing =
+  private def typeMismatchError(
+      expectedType: String,
+      jsonValue: JValue
+  ): Nothing =
+    val msg =
+      s"Expected a $expectedType but got ${jsonValue.valueType}: '${jsonValue.render()}'"
     throw TupsonException(msg)
 
   /* basic instances */
@@ -21,14 +26,15 @@ object JsonRW extends AutoDerivation[JsonRW]:
     override def write(value: String): JValue = JString(value)
     override def parse(jValue: JValue): String = jValue match
       case JString(s) => s
-      case other      => error(s"Expected a String but got ${other.valueType}")
+      case other      => typeMismatchError("String", other)
   }
 
   given JsonRW[Char] = new {
     override def write(value: Char): JValue = JString(value.toString)
     override def parse(jValue: JValue): Char = jValue match
-      case JString(s) => s.head
-      case other      => error(s"Expected a Char but got ${other.valueType}")
+      case JString(s) =>
+        s.headOption.getOrElse(typeMismatchError("Char", jValue))
+      case other => typeMismatchError("Char", other)
   }
 
   given JsonRW[Boolean] = new {
@@ -36,7 +42,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
     override def parse(jValue: JValue): Boolean = jValue match
       case JTrue  => true
       case JFalse => false
-      case other  => error(s"Expected a Boolean but got ${other.valueType}")
+      case other  => typeMismatchError("Boolean", other)
   }
 
   given JsonRW[Float] = new {
@@ -44,7 +50,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
     override def parse(jValue: JValue): Float = jValue match
       case DoubleNum(n) => n.toFloat
       case DeferNum(n)  => n.toFloat
-      case other        => error(s"Expected a Float but got ${other.valueType}")
+      case other        => typeMismatchError("Float", other)
   }
 
   given JsonRW[Double] = new {
@@ -52,7 +58,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
     override def parse(jValue: JValue): Double = jValue match
       case DoubleNum(n) => n.toDouble
       case DeferNum(n)  => n.toDouble
-      case other => error(s"Expected a Double but got ${other.valueType}")
+      case other        => typeMismatchError("Double", other)
   }
 
   given JsonRW[Int] = new {
@@ -60,7 +66,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
     override def parse(jValue: JValue): Int = jValue match
       case LongNum(n)   => n.toInt
       case DeferLong(s) => s.toInt
-      case other        => error(s"Expected an Int but got ${other.valueType}")
+      case other        => typeMismatchError("Int", other)
   }
 
   given JsonRW[Long] = new {
@@ -68,7 +74,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
     override def parse(jValue: JValue): Long = jValue match
       case LongNum(n)   => n
       case DeferLong(s) => s.toLong
-      case other        => error(s"Expected a Long but got ${other.valueType}")
+      case other        => typeMismatchError("Long", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Option[T]] = new {
@@ -86,7 +92,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
       JArray(value.map(trw.write))
     override def parse(jValue: JValue): Array[T] = jValue match
       case JArray(arr) => arr.map(trw.parse)
-      case other       => error(s"Expected an Array but got ${other.valueType}")
+      case other       => typeMismatchError("Array", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[List[T]] = new {
@@ -94,7 +100,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
       JArray(value.map(trw.write).toArray)
     override def parse(jValue: JValue): List[T] = jValue match
       case JArray(arr) => arr.toList.map(trw.parse)
-      case other       => error(s"Expected a List but got ${other.valueType}")
+      case other       => typeMismatchError("List", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Seq[T]] = new {
@@ -102,7 +108,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
       JArray(value.map(trw.write).toArray)
     override def parse(jValue: JValue): Seq[T] = jValue match
       case JArray(arr) => arr.toSeq.map(trw.parse)
-      case other       => error(s"Expected a Seq but got ${other.valueType}")
+      case other       => typeMismatchError("Seq", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Map[String, T]] = new {
@@ -111,7 +117,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
       JObject(members.to(scala.collection.mutable.Map))
     override def parse(jValue: JValue): Map[String, T] = jValue match
       case JObject(map) => map.mapValues(trw.parse).toMap
-      case other        => error(s"Expected a Map but got ${other.valueType}")
+      case other        => typeMismatchError("Map", other)
   }
 
   /* derived instances */
@@ -142,11 +148,11 @@ object JsonRW extends AutoDerivation[JsonRW]:
           jsonMap
             .get(param.label)
             .map(param.typeclass.parse)
-            .orElse(param.typeclass.default)
             .orElse(param.default)
+            .orElse(param.typeclass.default)
             .get
         }
-      case other => error(s"Expected a JSON object but got ${other.valueType}")
+      case other => typeMismatchError("JSON object", other)
   }
 
   override def split[T](ctx: SealedTrait[JsonRW, T]): JsonRW[T] = new {
@@ -154,7 +160,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
       ctx.choose(value) { sub =>
         val subObject = sub.cast(value)
         val obj = sub.typeclass.write(subObject).asInstanceOf[JObject]
-        obj.set("@type", JString(sub.typeInfo.full))
+        obj.set("@type", JString(sub.typeInfo.short))
         obj
       }
     override def parse(jValue: JValue): T = jValue match
@@ -162,15 +168,18 @@ object JsonRW extends AutoDerivation[JsonRW]:
         val typeName: String = jsonMap.get("@type") match
           case None => throw MissingRequiredKeysException(Set("@type"))
           case Some(JString(s)) => s
-          case Some(other) =>
-            error(s"Expected a (@type: String) but got ${other.valueType}")
+          case Some(other)      => typeMismatchError("@type: String", other)
 
-        val subtype = ctx.subtypes.find(_.typeInfo.full == typeName) match
-          case None     => error(s"Subtype not found: $typeName")
+        val subtypeNames = ctx.subtypes.map(_.typeInfo.short).map(t => s"'$t'")
+        val subtype = ctx.subtypes.find(_.typeInfo.short == typeName) match
+          case None =>
+            throw TupsonException(
+              s"Subtype not found: '$typeName'. Possible values: ${subtypeNames.mkString(", ")}"
+            )
           case Some(st) => st
 
         subtype.typeclass.parse(jValue)
-      case other => error(s"Expected a JSON object but got ${other.valueType}")
+      case other => typeMismatchError("JSON object", other)
   }
 
 end JsonRW

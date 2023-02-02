@@ -73,7 +73,9 @@ println(color.toJson)
 // {"@type":"Hex","num":"FFF"}
 ```
 
-The `@type` key is used to figure out what subtype of enum/sealed trait it is.
+The `@type` key is used to figure out what subtype of enum/sealed trait it is.  
+Its value is the simple type of class or enum case.  
+This makes JSON independent of scala/java package and it is more readable/understandable.
 
 ### Unusual/weird key names
 

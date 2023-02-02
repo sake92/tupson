@@ -69,7 +69,7 @@ class WriteSuite extends munit.FunSuite {
     val s1: SealedBase = Sealed1Case("str", 123)
     assertEquals(
       s1.toJson,
-      """{"str":"str","@type":"ba.sake.tupson.seal.Sealed1Case","integer":123}"""
+      """{"str":"str","@type":"Sealed1Case","integer":123}"""
     )
   }
 
@@ -78,14 +78,37 @@ class WriteSuite extends munit.FunSuite {
     import enums.*
     val s1: Enum1 = Enum1.Enum1Case("str", Some(123))
     val s2: Enum1 = Enum1.Enum1Case("str", None)
+    val s3: Enum1 = Enum1.`eNum CaseD`
     assertEquals(
       s1.toJson,
-      """{"str":"str","@type":"ba.sake.tupson.enums.Enum1.Enum1Case","integer":123}"""
+      """{"str":"str","@type":"Enum1Case","integer":123}"""
     )
     assertEquals(
       s2.toJson,
-      """{"str":"str","@type":"ba.sake.tupson.enums.Enum1.Enum1Case","integer":null}"""
+      """{"str":"str","@type":"Enum1Case","integer":null}"""
     )
+    assertEquals(
+      s3.toJson,
+      """{"@type":"eNum CaseD"}"""
+    )
+  }
+
+  test("write nested hierarchy like flat type name") {
+    import enums.*
+
+    val burried1 = inner.burried.Inside.Abc
+    assertEquals(
+      burried1.toJson,
+      """{"@type":"Abc"}"""
+    )
+
+    /* no worky yet
+    val burried2 = (new inner.instance).Inside.Def
+    assertEquals(
+      burried2.toJson,
+      """{"@type":"Def"}"""
+    )
+     */
   }
 
   /* recursive data type */

@@ -1,5 +1,7 @@
 package ba.sake.tupson
 
+import ba.sake.tupson.enums.inner.burried
+
 class ParseSuite extends munit.FunSuite {
 
   test("parse primitives") {
@@ -92,7 +94,7 @@ class ParseSuite extends munit.FunSuite {
   test("parse sealed trait hierarchy") {
     import seal.*
     assertEquals(
-      """{"str":"str","@type":"ba.sake.tupson.seal.Sealed1Case","integer":123}"""
+      """{"str":"str","@type":"Sealed1Case","integer":123}"""
         .parseJson[SealedBase],
       Sealed1Case("str", 123)
     )
@@ -102,15 +104,26 @@ class ParseSuite extends munit.FunSuite {
   test("parse enum hierarchy") {
     import enums.*
     assertEquals(
-      """{"str":"str","@type":"ba.sake.tupson.enums.Enum1.Enum1Case","integer":123}"""
+      """{"str":"str","@type":"Enum1Case","integer":123}"""
         .parseJson[Enum1],
       Enum1.Enum1Case("str", Some(123))
     )
     assertEquals(
-      """{"str":"str","@type":"ba.sake.tupson.enums.Enum1.Enum1Case","integer":null}"""
+      """{"str":"str","@type":"Enum1Case","integer":null}"""
         .parseJson[Enum1],
       Enum1.Enum1Case("str", None)
     )
+    assertEquals(
+      """{"@type":"eNum CaseD"}"""
+        .parseJson[Enum1],
+      Enum1.`eNum CaseD`
+    )
+    assertEquals(
+      """{"@type":"Abc"}"""
+        .parseJson[burried.Inside],
+      burried.Inside.Abc
+    )
+
   }
 
   /* missing key -> default global value */
@@ -133,16 +146,21 @@ class ParseSuite extends munit.FunSuite {
   test("parse missing keys to their local defaults") {
     assertEquals(
       """{}""".parseJson[CaseClassDefault],
-      CaseClassDefault(List.empty)
+      CaseClassDefault(List.empty, Some("default"))
     )
     assertEquals(
-      """{ "lst": ["value"] }""".parseJson[CaseClassDefault],
-      CaseClassDefault(List("value"))
+      """{ "lst": ["value"], "str": "string" }""".parseJson[CaseClassDefault],
+      CaseClassDefault(List("value"), Some("string"))
+    )
+    assertEquals(
+      """{ "lst": ["value"], "str": null }""".parseJson[CaseClassDefault],
+      CaseClassDefault(List("value"), None)
     )
     intercept[TupsonException] {
+      // "lst" must not be null
       assertEquals(
         """{ "lst": null }""".parseJson[CaseClassDefault],
-        CaseClassDefault(List.empty)
+        CaseClassDefault(List.empty, None)
       )
     }
   }
