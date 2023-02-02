@@ -5,21 +5,19 @@ import org.typelevel.jawn.ast.*
 import magnolia1.{*, given}
 
 trait JsonRW[T]:
+
   def write(value: T): JValue
+
   def parse(jValue: JValue): T
+
+  /** Global default for `T` when key is missing in JSON.
+    */
   def default: Option[T] = None
+end JsonRW
 
 object JsonRW extends AutoDerivation[JsonRW]:
 
   def apply[T](using rw: JsonRW[T]) = rw
-
-  private def typeMismatchError(
-      expectedType: String,
-      jsonValue: JValue
-  ): Nothing =
-    val msg =
-      s"Expected a $expectedType but got ${jsonValue.valueType}: '${jsonValue.render()}'"
-    throw TupsonException(msg)
 
   /* basic instances */
   given JsonRW[String] = new {
@@ -181,5 +179,14 @@ object JsonRW extends AutoDerivation[JsonRW]:
         subtype.typeclass.parse(jValue)
       case other => typeMismatchError("JSON object", other)
   }
+
+  private def typeMismatchError(
+      expectedType: String,
+      jsonValue: JValue
+  ): Nothing =
+    val badJsonSnippet = jsonValue.render().take(100)
+    throw TupsonException(
+      s"Expected a ${expectedType} but got ${jsonValue.valueType}: '${badJsonSnippet}'"
+    )
 
 end JsonRW
