@@ -1,5 +1,3 @@
-//> using lib "ba.sake::tupson:0.5.0"
-
 import ba.sake.tupson.*
 
 @main def roundtrip: Unit = {

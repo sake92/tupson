@@ -66,10 +66,15 @@ class WriteSuite extends munit.FunSuite {
   /* sealed trait */
   test("write sealed trait hierarchy") {
     import seal.*
-    val s1: SealedBase = Sealed1Case("str", 123)
+    val s1: SealedBase = SealedCase1("str", 123)
     assertEquals(
       s1.toJson,
-      """{"str":"str","@type":"Sealed1Case","integer":123}"""
+      """{"str":"str","@type":"SealedCase1","integer":123}"""
+    )
+    val s2: SealedBase = SealedCase2
+    assertEquals(
+      s2.toJson,
+      """{"@type":"SealedCase2"}"""
     )
   }
 
@@ -81,7 +86,7 @@ class WriteSuite extends munit.FunSuite {
       s1.toJson,
       """ "Red" """.trim
     )
-    
+
     val c1 = Color.Green
     assertEquals(
       c1.toJson,

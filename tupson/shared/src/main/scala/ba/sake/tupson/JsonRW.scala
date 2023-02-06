@@ -151,7 +151,6 @@ object JsonRW extends AutoDerivation[JsonRW]:
             .get
         }
       case JString(enumName) =>
-        println(ctx.typeInfo)
         ctx.rawConstruct(Seq()) // instantiate simple enum's case
       case other => typeMismatchError("JSON object", other)
   }

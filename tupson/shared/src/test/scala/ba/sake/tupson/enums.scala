@@ -6,9 +6,9 @@ package enums {
     case Red, Yellow, Green
 
   enum Color(val rgb: Int):
-    case Red   extends Color(0xFF0000)
-    case Green extends Color(0x00FF00)
-    case Blue  extends Color(0x0000FF)
+    case Red extends Color(0xff0000)
+    case Green extends Color(0x00ff00)
+    case Blue extends Color(0x0000ff)
 
   enum Enum1 derives JsonRW:
     case Enum1Case(str: String, integer: Option[Int])

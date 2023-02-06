@@ -94,9 +94,9 @@ class ParseSuite extends munit.FunSuite {
   test("parse sealed trait hierarchy") {
     import seal.*
     assertEquals(
-      """{"str":"str","@type":"Sealed1Case","integer":123}"""
+      """{"str":"str","@type":"SealedCase1","integer":123}"""
         .parseJson[SealedBase],
-      Sealed1Case("str", 123)
+      SealedCase1("str", 123)
     )
   }
 

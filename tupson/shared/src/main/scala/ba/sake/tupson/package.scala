@@ -24,7 +24,7 @@ extension (strValue: String) {
 
 }
 
-class TupsonException(msg: String, cause: Throwable = null)
+sealed class TupsonException(msg: String, cause: Throwable = null)
     extends Exception(msg, cause)
 
 class MissingRequiredKeysException(val keys: Set[String])

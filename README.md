@@ -44,31 +44,41 @@ You can also use [Scastie](https://scastie.scala-lang.org/pQdrpZNiQEOkHAkBvn8YeA
 ```
 
 ---
-## Simple/core types
+---
+## Core types
 
 ```scala
 
+// write a value to JSON string
+val myValue = 123
+println(123.toJson) // "123"
 
-println(true.toJson)    // true
-println("true".parse)    // true
-
-println(1.123.toJson)   // 1.123
-
-println("abc".toJson)   // "abc"
-
-println(Seq(1, 2, 3).toJson) // [1,2,3]
-
-println(Option(123).toJson)         // 123
-println(Option.empty[Int].toJson)   // null
-
-val map = Map(
-  "x" -> "xyz",
-  "a" -> "abc"
-)
-println(map.toJson)   // { "x":"xyz", "a":"abc" }
+// parse a value from JSON string
+val myParsedValue = """ 123 """.parseJson[Int]
+println(myParsedValue) // 123
 ```
 
-### Writing case classes
+Simple types: `Int`, `Double`, `Boolean`, `String` etc work out of the box.
+
+### Collections
+
+`List[T]`, `Seq[T]`, `Array[T]` are supported.  
+> Note that `T` needs to have a `JsonRW[T]` given instance!
+
+### Maps
+
+`Map[String, T]` work as you expect.  
+> Note that `T` needs to have a `JsonRW[T]` given instance!
+
+### Options
+
+`Option[T]` work as you expect.  
+`None` corresponds to JSON's `null`.  
+> Note that `T` needs to have a `JsonRW[T]` given instance!
+
+
+---
+## Case classes
 
 ```scala
 case class Address(street: String)
@@ -79,10 +89,11 @@ println(person.toJson)
 // { "age":33, "name":"Meho", "address":{"street":"Sebilj"} }
 ```
 
-Note that you *don't even need* `derives JsonRW` anywhere, although it is recommended for compile-performance reasons!
+Note that you *don't even need* `derives JsonRW` anywhere, although it is recommended for compile-performance reasons!  
+`Tupson` will generate a `JsonRW[T]` typeclass instance if it can not find one.
 
-
-### Writing simple enums 
+---
+## Simple enums 
 
 Simple enums (Java-esque ones) are serialized as strings.
 ```scala
@@ -94,7 +105,8 @@ println(semaphore.toJson)
 // "Red"
 ```
 
-## Writing ADT enums and sealed traits
+---
+## Enum ADTs and sealed traits
 
 ```scala
 enum Color derives JsonRW:
@@ -110,7 +122,8 @@ The `@type` key is used to figure out what subtype of enum/sealed trait it is.
 Its value is the simple type of class or enum case.  
 This makes JSON independent of scala/java package and it is more readable/understandable.
 
-### Unusual/weird key names
+---
+## Unusual/weird key names
 
 You can use the Scala's "backticks" language feature to use weird names for keys:
 
@@ -128,7 +141,9 @@ Benefits:
 - your internal/core models are separate from JSON, as they should be
 - mapping between models is explicit
 
-## Parse
+---
+---
+## Parsing
 
 Same as above applies to parsing.  
 You will get a `TupsonException` if parsing fails.
@@ -147,8 +162,8 @@ case class MyData(
 """{ "bln":true }""".parseJson[MyData] // MissingRequiredKeysException: int, s
 ```
 
-
-### Missing keys / backwards compatibility
+---
+## Missing keys / backwards compatibility
 
 Let's say you had a `case class MyConfig(url: String)`.  
 Now you need to add another property: `port: Int`, but without breaking existing serialized values.
