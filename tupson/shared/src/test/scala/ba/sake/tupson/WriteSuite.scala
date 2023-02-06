@@ -74,7 +74,22 @@ class WriteSuite extends munit.FunSuite {
   }
 
   /* enum */
-  test("write enum hierarchy") {
+  test("write singleton enum as string") {
+    import enums.*
+    val s1 = Semaphore.Red
+    assertEquals(
+      s1.toJson,
+      """ "Red" """.trim
+    )
+    
+    val c1 = Color.Green
+    assertEquals(
+      c1.toJson,
+      """ "Green" """.trim
+    )
+  }
+
+  test("write enum ADT") {
     import enums.*
     val s1: Enum1 = Enum1.Enum1Case("str", Some(123))
     val s2: Enum1 = Enum1.Enum1Case("str", None)
@@ -99,7 +114,7 @@ class WriteSuite extends munit.FunSuite {
     val burried1 = inner.burried.Inside.Abc
     assertEquals(
       burried1.toJson,
-      """{"@type":"Abc"}"""
+      """"Abc""""
     )
 
     /* no worky yet

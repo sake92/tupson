@@ -6,33 +6,54 @@ It only does `String <=> T` conversions, no streaming.
 
 ## Usage
 
-Setup:
+Setup in sbt:
+```scala
+libraryDependencies ++= Seq(
+  "ba.sake" %%% "tupson" % "0.5.0"
+)
+scalacOptions ++= Seq(
+  "-Yretain-trees"
+)
+```
+
+Setup in Mill:
 ```scala
 def ivyDeps = Agg(
-  ivy"ba.sake::tupson:0.3.0"
+  ivy"ba.sake::tupson:0.5.0"
 )
-def scalacOptions =
-  super.scalacOptions() ++ Seq("-Yretain-trees")
+def scalacOptions = super.scalacOptions() ++ Seq(
+  "-Yretain-trees"
+)
 ```
 
-You can use [scala-cli](https://scala-cli.virtuslab.org/) to try it locally:
-```bash
-scala-cli scala-cli-example.scala
-
-Compiling project (Scala 3.2.1, JVM)
-Compiled project (Scala 3.2.1, JVM)
-
-{"str":"xyz","bln":true,"list":["a","b"],"int":5,"dbl":3.14}
-RoundtripData(true,5,3.14,xyz,ArraySeq(a, b))
-before == after: true
-```
-
-Or you can use [Scastie](https://scastie.scala-lang.org/pQdrpZNiQEOkHAkBvn8YeA) to play with it online.
-
-### Writing simple types
+Setup in scala-cli:
 ```scala
+//> using lib "ba.sake::tupson:0.5.0"
+```
+
+You can also use [Scastie](https://scastie.scala-lang.org/pQdrpZNiQEOkHAkBvn8YeA) to play with `tupson` online.
+
+
+---
+## Examples
+
+[Examples](examples\src\main\scala) are runnable with [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html):
+
+```sh
+./mill examples.runMain write
+```
+
+---
+## Simple/core types
+
+```scala
+
+
 println(true.toJson)    // true
+println("true".parse)    // true
+
 println(1.123.toJson)   // 1.123
+
 println("abc".toJson)   // "abc"
 
 println(Seq(1, 2, 3).toJson) // [1,2,3]
@@ -58,10 +79,22 @@ println(person.toJson)
 // { "age":33, "name":"Meho", "address":{"street":"Sebilj"} }
 ```
 
-Note that you don't even need `derives JsonRW` anywhere, although it is recommended for performance reasons!
+Note that you *don't even need* `derives JsonRW` anywhere, although it is recommended for compile-performance reasons!
 
 
-### Writing enums and sealed traits
+### Writing simple enums 
+
+Simple enums (Java-esque ones) are serialized as strings.
+```scala
+enum Semaphore derives JsonRW:
+  case Red, Yellow, Green
+
+val semaphore = Semaphore.Red
+println(semaphore.toJson)
+// "Red"
+```
+
+## Writing ADT enums and sealed traits
 
 ```scala
 enum Color derives JsonRW:

@@ -101,7 +101,21 @@ class ParseSuite extends munit.FunSuite {
   }
 
   /* enum */
-  test("parse enum hierarchy") {
+  test("parse singleton enum from string") {
+    import enums.*
+
+    assertEquals(
+      """ "Red" """.parseJson[Semaphore],
+      Semaphore.Red
+    )
+
+    assertEquals(
+      """ "Green" """.parseJson[Color],
+      Color.Green
+    )
+  }
+
+  test("parse enum ADT") {
     import enums.*
     assertEquals(
       """{"str":"str","@type":"Enum1Case","integer":123}"""
@@ -118,12 +132,6 @@ class ParseSuite extends munit.FunSuite {
         .parseJson[Enum1],
       Enum1.`eNum CaseD`
     )
-    assertEquals(
-      """{"@type":"Abc"}"""
-        .parseJson[burried.Inside],
-      burried.Inside.Abc
-    )
-
   }
 
   /* missing key -> default global value */

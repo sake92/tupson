@@ -145,24 +145,31 @@ object JsonRW extends AutoDerivation[JsonRW]:
         ctx.construct { param =>
           jsonMap
             .get(param.label)
-            .map(param.typeclass.parse)
+            .map(param.typeclass.parse) // TODO try catch
             .orElse(param.default)
             .orElse(param.typeclass.default)
             .get
         }
+      case JString(enumName) =>
+        println(ctx.typeInfo)
+        ctx.rawConstruct(Seq()) // instantiate simple enum's case
       case other => typeMismatchError("JSON object", other)
   }
 
   override def split[T](ctx: SealedTrait[JsonRW, T]): JsonRW[T] = new {
     override def write(value: T): JValue =
       ctx.choose(value) { sub =>
-        val subObject = sub.cast(value)
-        val obj = sub.typeclass.write(subObject).asInstanceOf[JObject]
-        obj.set("@type", JString(sub.typeInfo.short))
-        obj
+        if ctx.isSingletonCasesEnum then {
+          JsonRW[String].write(sub.typeInfo.short)
+        } else {
+          val subObject = sub.cast(value)
+          val obj = sub.typeclass.write(subObject).asInstanceOf[JObject]
+          obj.set("@type", JString(sub.typeInfo.short))
+          obj
+        }
       }
     override def parse(jValue: JValue): T = jValue match
-      case JObject(jsonMap) =>
+      case JObject(jsonMap) if !ctx.isSingletonCasesEnum =>
         val typeName: String = jsonMap.get("@type") match
           case None => throw MissingRequiredKeysException(Set("@type"))
           case Some(JString(s)) => s
@@ -177,7 +184,19 @@ object JsonRW extends AutoDerivation[JsonRW]:
           case Some(st) => st
 
         subtype.typeclass.parse(jValue)
-      case other => typeMismatchError("JSON object", other)
+      case JString(enumName) if ctx.isSingletonCasesEnum =>
+        val subtypeNames = ctx.subtypes.map(_.typeInfo.short).map(t => s"'$t'")
+        val subtype = ctx.subtypes.find(_.typeInfo.short == enumName) match
+          case None =>
+            throw TupsonException(
+              s"Enum value not found: '$enumName'. Possible values: ${subtypeNames.mkString(", ")}"
+            )
+          case Some(st) => st
+
+        subtype.typeclass.parse(jValue)
+      case other =>
+        if ctx.isSingletonCasesEnum then typeMismatchError("String", other)
+        else typeMismatchError("JSON object", other)
   }
 
   private def typeMismatchError(

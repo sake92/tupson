@@ -1,3 +1,6 @@
+
+//> using lib "ba.sake::tupson:0.5.0"
+
 import ba.sake.tupson.*
 
 @main def parse: Unit = {
@@ -7,7 +10,6 @@ import ba.sake.tupson.*
   println(s"Parsing data: $x")
   println(x.parseJson[ParsedData])
 }
-
 
 case class ParsedData(
     bln: Boolean,

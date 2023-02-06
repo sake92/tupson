@@ -5,37 +5,27 @@ import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 object tupson extends Module {
 
-  object jvm extends TupsonCommonModule
+  object jvm extends TupsonPublishModule
 
-  object js extends TupsonCommonModule with ScalaJSModule {
-    def scalaJSVersion = "1.10.0"
+  object js extends TupsonPublishModule with ScalaJSModule {
+    def scalaJSVersion = "1.13.0"
   }
 }
 
-object examples extends ScalaModule {
+object examples extends TupsonCommonModule {
   def moduleDeps = Seq(tupson.jvm)
-  def scalaVersion = "3.1.3"
-  def scalacOptions = super.scalacOptions() ++ Seq(
-    "-Yretain-trees" // Required by magnolia
-  )
 }
 
-trait TupsonCommonModule
-    extends SbtModule
-    with PublishModule
-    with ScalafmtModule {
-
-  def artifactName = "tupson"
-
-  def scalaVersion = "3.1.3"
+trait TupsonCommonModule extends SbtModule with ScalafmtModule {
+  def scalaVersion = "3.2.1"
 
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-Yretain-trees" // Required by magnolia
   )
 
   def ivyDeps = Agg(
-    ivy"org.typelevel::jawn-ast::1.3.2",
-    ivy"com.softwaremill.magnolia1_3::magnolia::1.1.4"
+    ivy"org.typelevel::jawn-ast::1.4.0",
+    ivy"com.softwaremill.magnolia1_3::magnolia::1.2.6+10-27d0e677+20230206-1103-SNAPSHOT"
   )
 
   override def sources = T.sources(
@@ -54,6 +44,11 @@ trait TupsonCommonModule
       )
     )
   }
+}
+
+trait TupsonPublishModule extends TupsonCommonModule with PublishModule {
+
+  def artifactName = "tupson"
 
   override def publishVersion: T[String] = VcsVersion.vcsState().format()
 
