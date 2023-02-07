@@ -17,16 +17,15 @@ object examples extends TupsonCommonModule {
 }
 
 trait TupsonCommonModule extends SbtModule with ScalafmtModule {
-  def scalaVersion = "3.2.1"
+  def scalaVersion = "3.2.2"
 
   def scalacOptions = super.scalacOptions() ++ Seq(
-    "-Yretain-trees" // Required by magnolia
+    "-Yretain-trees", // Required by magnolia
   )
 
   def ivyDeps = Agg(
     ivy"org.typelevel::jawn-ast::1.4.0",
-    ivy"com.github.sake92.magnolia:magnolia_3:disambiguate-singleton-enums-SNAPSHOT"
-   // ivy"com.softwaremill.magnolia1_3::magnolia::1.2.6+10-27d0e677+20230206-1103-SNAPSHOT"
+    ivy"com.github.sake92.magnolia::magnolia::disambiguate-singleton-enums-SNAPSHOT"
   )
 
   def repositoriesTask() = T.task { super.repositoriesTask() ++ Seq(
