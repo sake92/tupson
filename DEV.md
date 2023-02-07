@@ -10,8 +10,8 @@
 ./mill examples.runMain bla
 
 
-git tag -a 0.3.0 -m "Handle missing keys and default values"
-git push origin 0.3.0
+git tag -a 0.5.0 -m "Write singleton cases enum as a string."
+git push origin 0.5.0
 ```
 
 

@@ -37,7 +37,7 @@ You can also use [Scastie](https://scastie.scala-lang.org/pQdrpZNiQEOkHAkBvn8YeA
 ---
 ## Examples
 
-[Examples](examples\src\main\scala) are runnable with [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html):
+[Examples](examples/src/main/scala) are runnable with [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html):
 
 ```sh
 ./mill examples.runMain write
