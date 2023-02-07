@@ -31,7 +31,7 @@ Setup in scala-cli:
 //> using lib "ba.sake::tupson:0.5.0"
 ```
 
-You can also use [Scastie](https://scastie.scala-lang.org/pQdrpZNiQEOkHAkBvn8YeA) to play with `tupson` online.
+You can also use [Scastie](https://scastie.scala-lang.org/EPtuU6OURsKHykCm7uaj7w) to play with `tupson` online.
 
 
 ---
