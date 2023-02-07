@@ -25,8 +25,13 @@ trait TupsonCommonModule extends SbtModule with ScalafmtModule {
 
   def ivyDeps = Agg(
     ivy"org.typelevel::jawn-ast::1.4.0",
-    ivy"com.softwaremill.magnolia1_3::magnolia::1.2.6+10-27d0e677+20230206-1103-SNAPSHOT"
+    ivy"com.github.sake92.magnolia:magnolia_3:disambiguate-singleton-enums-SNAPSHOT"
+   // ivy"com.softwaremill.magnolia1_3::magnolia::1.2.6+10-27d0e677+20230206-1103-SNAPSHOT"
   )
+
+  def repositoriesTask() = T.task { super.repositoriesTask() ++ Seq(
+    coursier.maven.MavenRepository("https://jitpack.io")
+  )}
 
   override def sources = T.sources(
     super.sources() ++ Seq(

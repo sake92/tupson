@@ -1,7 +1,7 @@
 import ba.sake.tupson.*
 
 @main def parse: Unit = {
-  var x = """{
+  val x = """{
     "str":"xyz", "bln":true, "list":["a","b"], "int":5, "dbl":3.14
   }"""
   println(s"Parsing data: $x")

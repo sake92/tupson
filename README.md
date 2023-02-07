@@ -118,9 +118,9 @@ println(color.toJson)
 // {"@type":"Hex","num":"FFF"}
 ```
 
-The `@type` key is used to figure out what subtype of enum/sealed trait it is.  
+The `@type` key is used to specify the *subtype* of enum/sealed trait.  
 Its value is the simple type of class or enum case.  
-This makes JSON independent of scala/java package and it is more readable/understandable.
+This makes JSON independent of scala/java package and it is more readable.
 
 ---
 ## Unusual/weird key names
@@ -145,8 +145,7 @@ Benefits:
 ---
 ## Parsing
 
-Same as above applies to parsing.  
-You will get a `TupsonException` if parsing fails.
+If parsing fails you get a `TupsonException`.
 
 ```scala
 case class MyData(
@@ -155,11 +154,16 @@ case class MyData(
     s: String
 ) derives JsonRW
 
-"""{ "bln":true, "int":5, "s":"dsds" }""".parseJson[MyData] // success
+"""{ "bln":true, "int":5, "s":"dsds" }""".parseJson[MyData]
+// success
 
-"""{ "bln":true """.parseJson[MyData]  // TupsonException: incomplete JSON
+"""{ "bln":true """.parseJson[MyData]
+// incomplete JSON
 
-"""{ "bln":true }""".parseJson[MyData] // MissingRequiredKeysException: int, s
+"""{ "bln":true }""".parseJson[MyData]
+// Key 'bln': Expected Boolean but got 123: Number
+// Key 'int': Missing value
+// Key 's': Missing value
 ```
 
 ---
@@ -180,8 +184,6 @@ parsedConfig.port.getOrElse(...)
 // option 2
 case class MyConfig(url: String, port: Int = 1234)
 ```
-
-See scastie demo here: https://scastie.scala-lang.org/SSSnMIhNS1Ggi3Ttr3iD3A
 
 
 

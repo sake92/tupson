@@ -80,13 +80,21 @@ class ParseSuite extends munit.FunSuite {
       CaseClass2("c2", CaseClass1("str", 123))
     )
 
-    intercept[MissingRequiredKeysException] {
+    intercept[ParsingException] {
       // missing "integer" key
       """{"str":"str"}""".parseJson[CaseClass1]
     }
     intercept[TupsonException] {
       // has to be an object
       """5""".parseJson[CaseClass1]
+    }
+    interceptMessage[ParsingException](
+      """
+      |Key 'str': Expected String but got 123: Number
+      |Key 'integer': Missing value
+      |""".stripMargin.trim
+    ) {
+      """{ "str":123 }""".parseJson[CaseClass1]
     }
   }
 
@@ -108,15 +116,20 @@ class ParseSuite extends munit.FunSuite {
       """ "Red" """.parseJson[Semaphore],
       Semaphore.Red
     )
-
     assertEquals(
       """ "Green" """.parseJson[Color],
       Color.Green
     )
+    interceptMessage[TupsonException](
+      "Enum value not found: 'eeeeeee'. Possible values: 'Red', 'Green', 'Blue'"
+    ) {
+      """ "eeeeeee" """.parseJson[Color]
+    }
   }
 
   test("parse enum ADT") {
     import enums.*
+
     assertEquals(
       """{"str":"str","@type":"Enum1Case","integer":123}"""
         .parseJson[Enum1],
@@ -132,6 +145,11 @@ class ParseSuite extends munit.FunSuite {
         .parseJson[Enum1],
       Enum1.`eNum CaseD`
     )
+    interceptMessage[TupsonException](
+      "Subtype not found: 'the-what'. Possible values: 'Enum1Case', 'Enum2Case', 'eNum CaseD'"
+    ) {
+      """ {"@type":"the-what"} """.parseJson[Enum1]
+    }
   }
 
   /* missing key -> default global value */

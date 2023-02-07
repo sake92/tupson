@@ -27,5 +27,9 @@ extension (strValue: String) {
 sealed class TupsonException(msg: String, cause: Throwable = null)
     extends Exception(msg, cause)
 
-class MissingRequiredKeysException(val keys: Set[String])
-    extends TupsonException(s"Missing required keys: ${keys.mkString(", ")}")
+final class ParsingException(val keyErrors: Seq[(String, TupsonException)])
+    extends TupsonException(
+      keyErrors
+        .map((k, e) => s"Key '$k': ${e.getMessage()}")
+        .mkString("\n")
+    )

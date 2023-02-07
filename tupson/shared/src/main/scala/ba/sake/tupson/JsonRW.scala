@@ -2,7 +2,8 @@ package ba.sake.tupson
 
 import scala.reflect.ClassTag
 import org.typelevel.jawn.ast.*
-import magnolia1.{*, given}
+import magnolia2.{*, given}
+import scala.collection.mutable.ListBuffer
 
 trait JsonRW[T]:
 
@@ -131,27 +132,35 @@ object JsonRW extends AutoDerivation[JsonRW]:
       JObject(members)
     override def parse(jValue: JValue): T = jValue match
       case JObject(jsonMap) =>
-        var missingRequiredKeys = Set.empty[String]
+        val arguments = ListBuffer.empty[Any]
+        val keyErrors = ListBuffer.empty[(String, TupsonException)]
         ctx.params.foreach { param =>
           val keyPresent = jsonMap.contains(param.label)
           val hasGlobalDefault = param.typeclass.default.nonEmpty
           val hasLocalDefault = param.default.nonEmpty
           if !keyPresent && !hasGlobalDefault && !hasLocalDefault then
-            missingRequiredKeys += param.label
+            keyErrors += param.label -> TupsonException("Missing value")
+          else
+            arguments += jsonMap
+              .get(param.label)
+              .map { paramJValue =>
+                try {
+                  param.typeclass.parse(paramJValue)
+                } catch {
+                  case e: TupsonException =>
+                    keyErrors += param.label -> e
+                }
+              }
+              .orElse(param.default)
+              .orElse(param.typeclass.default)
+              .get
         }
-        if missingRequiredKeys.nonEmpty then
-          throw MissingRequiredKeysException(missingRequiredKeys)
 
-        ctx.construct { param =>
-          jsonMap
-            .get(param.label)
-            .map(param.typeclass.parse) // TODO try catch
-            .orElse(param.default)
-            .orElse(param.typeclass.default)
-            .get
-        }
+        if keyErrors.nonEmpty then throw ParsingException(keyErrors.toSeq)
+
+        ctx.rawConstruct(arguments.toSeq)
       case JString(enumName) =>
-        ctx.rawConstruct(Seq()) // instantiate simple enum's case
+        ctx.rawConstruct(Seq()) // instantiate enum's singleton case
       case other => typeMismatchError("JSON object", other)
   }
 
@@ -170,7 +179,10 @@ object JsonRW extends AutoDerivation[JsonRW]:
     override def parse(jValue: JValue): T = jValue match
       case JObject(jsonMap) if !ctx.isSingletonCasesEnum =>
         val typeName: String = jsonMap.get("@type") match
-          case None => throw MissingRequiredKeysException(Set("@type"))
+          case None =>
+            throw ParsingException(
+              Seq("@type" -> TupsonException("Missing value"))
+            )
           case Some(JString(s)) => s
           case Some(other)      => typeMismatchError("@type: String", other)
 
@@ -204,7 +216,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
   ): Nothing =
     val badJsonSnippet = jsonValue.render().take(100)
     throw TupsonException(
-      s"Expected a ${expectedType} but got ${jsonValue.valueType}: '${badJsonSnippet}'"
+      s"Expected ${expectedType} but got ${badJsonSnippet}: ${jsonValue.valueType.capitalize}"
     )
 
 end JsonRW
