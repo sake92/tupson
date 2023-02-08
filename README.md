@@ -14,7 +14,7 @@ libraryDependencies ++= Seq(
 scalacOptions ++= Seq(
   "-Yretain-trees"
 )
-resolvers += "https://jitpack.io"
+resolvers += "jitpack" at "https://jitpack.io"
 ```
 
 Setup in Mill:
@@ -36,7 +36,7 @@ Setup in scala-cli:
 //> using lib "ba.sake::tupson:0.5.1"
 ```
 
-You can also use [Scastie](https://scastie.scala-lang.org/EPtuU6OURsKHykCm7uaj7w) to play with `tupson` online.
+You can also use [Scastie](https://scastie.scala-lang.org/SPzw87ArSXqiFlmjT0G9BA) to play with `tupson` online.
 
 
 ---
@@ -96,6 +96,13 @@ println(person.toJson)
 
 Note that you *don't even need* `derives JsonRW` anywhere, although it is recommended for compile-performance reasons!  
 `Tupson` will generate a `JsonRW[T]` typeclass instance if it can not find one.
+
+It is also recommended to add `derives JsonRW` to all your (de)serialized types if code won't compile with this error:
+> [error]   3 |sealed trait Statement derives JsonRW  
+> [error]     |                               ^  
+> [error]     |    method paramsFromMaps is declared as `inline`, but was not inlined  
+> [error]     |  
+> [error]     |    Try increasing `-Xmax-inlines` above 32  
 
 ---
 ## Simple enums 
