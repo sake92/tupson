@@ -14,6 +14,8 @@ libraryDependencies ++= Seq(
 scalacOptions ++= Seq(
   "-Yretain-trees"
 )
+
+// won't be needed after magnolia 2 is released
 resolvers += "jitpack" at "https://jitpack.io"
 ```
 
@@ -33,6 +35,7 @@ def repositoriesTask() = T.task { super.repositoriesTask() ++ Seq(
 
 Setup in scala-cli:
 ```scala
+//> using repository "jitpack"
 //> using lib "ba.sake::tupson:0.5.1"
 ```
 
