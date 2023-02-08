@@ -9,7 +9,7 @@ It only does `String <=> T` conversions, no streaming.
 Setup in sbt:
 ```scala
 libraryDependencies ++= Seq(
-  "ba.sake" %%% "tupson" % "0.5.0"
+  "ba.sake" %%% "tupson" % "0.5.1"
 )
 scalacOptions ++= Seq(
   "-Yretain-trees"
@@ -20,7 +20,7 @@ resolvers += "https://jitpack.io"
 Setup in Mill:
 ```scala
 def ivyDeps = Agg(
-  ivy"ba.sake::tupson:0.5.0"
+  ivy"ba.sake::tupson:0.5.1"
 )
 def scalacOptions = super.scalacOptions() ++ Seq(
   "-Yretain-trees"
@@ -33,7 +33,7 @@ def repositoriesTask() = T.task { super.repositoriesTask() ++ Seq(
 
 Setup in scala-cli:
 ```scala
-//> using lib "ba.sake::tupson:0.5.0"
+//> using lib "ba.sake::tupson:0.5.1"
 ```
 
 You can also use [Scastie](https://scastie.scala-lang.org/EPtuU6OURsKHykCm7uaj7w) to play with `tupson` online.
