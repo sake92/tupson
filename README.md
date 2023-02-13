@@ -100,13 +100,6 @@ println(person.toJson)
 Note that you *don't even need* `derives JsonRW` anywhere, although it is recommended for compile-performance reasons!  
 `Tupson` will generate a `JsonRW[T]` typeclass instance if it can not find one.
 
-It is also recommended to add `derives JsonRW` to all your (de)serialized types if code won't compile with this error:
-> [error]   3 |sealed trait Statement derives JsonRW  
-> [error]     |                               ^  
-> [error]     |    method paramsFromMaps is declared as `inline`, but was not inlined  
-> [error]     |  
-> [error]     |    Try increasing `-Xmax-inlines` above 32  
-
 ---
 ## Simple enums 
 
@@ -202,8 +195,27 @@ case class MyConfig(url: String, port: Int = 1234)
 
 
 
+---
+---
+## Troubleshooting
 
+If you get an error like this:
+> [error]   3 |sealed trait Statement derives JsonRW  
+> [error]     |                               ^  
+> [error]     |    method paramsFromMaps is declared as `inline`, but was not inlined  
+> [error]     |  
+> [error]     |    Try increasing `-Xmax-inlines` above 32  
 
+then you can try 2 things to fix it:
+- add more `derives JsonRW` to your (de)serialized types
+- add this to your `build.sbt`:
+  ```scala
+    scalacOptions ++= Seq(
+      "-Xmax-inlines",
+      "64", // increase if needed
+      "-Yretain-trees"
+    )
+  ```
 
 
 
