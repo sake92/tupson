@@ -160,8 +160,11 @@ object JsonRW extends AutoDerivation[JsonRW]:
 
         ctx.rawConstruct(arguments.toSeq)
       case JString(enumName) =>
-        ctx.rawConstruct(Seq()) // instantiate enum's singleton case
-      case other => typeMismatchError("JSON object", other)
+        if ctx.params.isEmpty then
+          ctx.rawConstruct(Seq()) // instantiate enum's singleton case
+        else 
+          typeMismatchError("JSON object", jValue)
+      case _ => typeMismatchError("JSON object", jValue)
   }
 
   override def split[T](ctx: SealedTrait[JsonRW, T]): JsonRW[T] = new {

@@ -96,6 +96,12 @@ class ParseSuite extends munit.FunSuite {
     ) {
       """{ "str":123 }""".parseJson[CaseClass1]
     }
+
+    val ex = intercept[ParsingException] {
+      // missing "integer" key
+      """{"bla":"str", "c1": ""}""".parseJson[CaseClass2]
+    }
+    println(ex)
   }
 
   /* sealed trait */
