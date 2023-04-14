@@ -110,6 +110,14 @@ object JsonRW extends AutoDerivation[JsonRW]:
       case other       => typeMismatchError("Seq", other)
   }
 
+  given [T](using trw: JsonRW[T]): JsonRW[Set[T]] = new {
+    override def write(value: Set[T]): JValue =
+      JArray(value.map(trw.write).toArray)
+    override def parse(jValue: JValue): Set[T] = jValue match
+      case JArray(arr) => arr.toSet.map(trw.parse)
+      case other       => typeMismatchError("Set", other)
+  }
+
   given [T](using trw: JsonRW[T]): JsonRW[Map[String, T]] = new {
     override def write(value: Map[String, T]): JValue =
       val members = value.map((k, v) => k -> trw.write(v))
@@ -133,13 +141,13 @@ object JsonRW extends AutoDerivation[JsonRW]:
     override def parse(jValue: JValue): T = jValue match
       case JObject(jsonMap) =>
         val arguments = ListBuffer.empty[Any]
-        val keyErrors = ListBuffer.empty[(String, TupsonException)]
+        val keyErrors = ListBuffer.empty[ParseError]
         ctx.params.foreach { param =>
           val keyPresent = jsonMap.contains(param.label)
           val hasGlobalDefault = param.typeclass.default.nonEmpty
           val hasLocalDefault = param.default.nonEmpty
           if !keyPresent && !hasGlobalDefault && !hasLocalDefault then
-            keyErrors += param.label -> TupsonException("Missing value")
+            keyErrors += ParseError(param.label, param.label, "is missing")
           else
             arguments += jsonMap
               .get(param.label)
@@ -147,8 +155,17 @@ object JsonRW extends AutoDerivation[JsonRW]:
                 try {
                   param.typeclass.parse(paramJValue)
                 } catch {
-                  case e: TupsonException =>
-                    keyErrors += param.label -> e
+                  case pe: ParsingException =>
+                    keyErrors ++= pe.errors.map(e =>
+                      e.withPath(s"${param.label}.${e.name}")
+                    )
+                  case e: TypeErrorException =>
+                    keyErrors += ParseError(
+                      param.label,
+                      param.label,
+                      e.getMessage,
+                      e.value
+                    )
                 }
               }
               .orElse(param.default)
@@ -162,9 +179,8 @@ object JsonRW extends AutoDerivation[JsonRW]:
       case JString(enumName) =>
         if ctx.params.isEmpty then
           ctx.rawConstruct(Seq()) // instantiate enum's singleton case
-        else 
-          typeMismatchError("JSON object", jValue)
-      case _ => typeMismatchError("JSON object", jValue)
+        else typeMismatchError("Object", jValue)
+      case _ => typeMismatchError("Object", jValue)
   }
 
   override def split[T](ctx: SealedTrait[JsonRW, T]): JsonRW[T] = new {
@@ -175,7 +191,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
         } else {
           val subObject = sub.cast(value)
           val obj = sub.typeclass.write(subObject).asInstanceOf[JObject]
-          obj.set("@type", JString(sub.typeInfo.short))
+          obj.set("@type", JString(sub.typeInfo.short)) // TODO annotation
           obj
         }
       }
@@ -184,7 +200,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
         val typeName: String = jsonMap.get("@type") match
           case None =>
             throw ParsingException(
-              Seq("@type" -> TupsonException("Missing value"))
+              Seq(ParseError("@type", "@type", "is missing"))
             )
           case Some(JString(s)) => s
           case Some(other)      => typeMismatchError("@type: String", other)
@@ -210,7 +226,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
         subtype.typeclass.parse(jValue)
       case other =>
         if ctx.isSingletonCasesEnum then typeMismatchError("String", other)
-        else typeMismatchError("JSON object", other)
+        else typeMismatchError("Object", other)
   }
 
   private def typeMismatchError(
@@ -218,8 +234,9 @@ object JsonRW extends AutoDerivation[JsonRW]:
       jsonValue: JValue
   ): Nothing =
     val badJsonSnippet = jsonValue.render().take(100)
-    throw TupsonException(
-      s"Expected ${expectedType} but got ${badJsonSnippet}: ${jsonValue.valueType.capitalize}"
+    throw TypeErrorException(
+      s"should be ${expectedType} but it is ${jsonValue.valueType.capitalize}",
+      Some(badJsonSnippet)
     )
 
 end JsonRW

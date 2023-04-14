@@ -1,9 +1,8 @@
 package ba.sake.tupson
 
+import org.typelevel.jawn
 import org.typelevel.jawn.ast.FastRenderer
 import org.typelevel.jawn.ast.JParser
-import org.typelevel.jawn.ParseException
-import org.typelevel.jawn.IncompleteParseException
 
 extension [T](value: T)(using rw: JsonRW[T]) {
   def toJson: String =
@@ -16,9 +15,12 @@ extension (strValue: String) {
     val jValue = JParser.parseUnsafe(strValue)
     rw.parse(jValue)
   } catch {
-    case e: ParseException =>
+    case pe: ParsingException =>
+      val parseErrors = pe.errors.map(e => e.withPath(s"$$.${e.path}"))
+      throw ParsingException(parseErrors)
+    case e: jawn.ParseException =>
       throw TupsonException("JSON parsing exception", e)
-    case e: IncompleteParseException =>
+    case e: jawn.IncompleteParseException =>
       throw TupsonException("JSON parsing exception", e)
   }
 
@@ -27,9 +29,27 @@ extension (strValue: String) {
 sealed class TupsonException(msg: String, cause: Throwable = null)
     extends Exception(msg, cause)
 
-final class ParsingException(val keyErrors: Seq[(String, TupsonException)])
+final class TypeErrorException(msg: String, val value: Option[String]) extends TupsonException(msg)
+
+final class ParsingException(val errors: Seq[ParseError])
     extends TupsonException(
-      keyErrors
-        .map((k, e) => s"Key '$k': ${e.getMessage()}")
-        .mkString("\n")
+      errors
+        .map(_.text)
+        .mkString("; ")
     )
+
+case class ParseError(
+    path: String,
+    name: String,
+    msg: String,
+    value: Option[Any] = None // TODO delete ?
+) {
+  def withValue(v: Any) = copy(value = Some(v))
+  def withPath(p: String) = copy(path = p)
+  def withName(n: String) = copy(name = n)
+
+  def text: String = value match {
+    case Some(v) => s"Key '$path' with value '$v' $msg"
+    case None    => s"Key '$path' $msg"
+  }
+}

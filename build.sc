@@ -25,6 +25,7 @@ trait TupsonCommonModule extends SbtModule with ScalafmtModule {
 
   def ivyDeps = Agg(
     ivy"org.typelevel::jawn-ast::1.4.0",
+    ivy"com.lihaoyi::sourcecode::0.3.0",
     ivy"com.github.sake92.magnolia::magnolia::disambiguate-singleton-enums-SNAPSHOT"
   )
 
