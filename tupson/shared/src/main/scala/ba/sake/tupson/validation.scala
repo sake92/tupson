@@ -11,8 +11,8 @@ case class FieldValidationError(
 class FieldsValidationException(val errors: Seq[FieldValidationError]) extends RuntimeException(errors.mkString("; "))
 
 //////////
-case class CheckField[T](text: sourcecode.Text[T], checks: Seq[Check[T]] = Seq.empty[Check[T]]) {
-  def is(p: T => Boolean, msg: String): CheckField[T] =
+case class FieldChecks[T](text: sourcecode.Text[T], checks: Seq[Check[T]] = Seq.empty[Check[T]]) {
+  def is(p: T => Boolean, msg: String): FieldChecks[T] =
     copy(checks = checks.appended(Check(p, msg)))
 
   def validate: Seq[FieldValidationError] =
@@ -25,9 +25,9 @@ case class CheckField[T](text: sourcecode.Text[T], checks: Seq[Check[T]] = Seq.e
 }
 case class Check[T](p: T => Boolean, msg: String)
 
-def check[T](text: sourcecode.Text[T]): CheckField[T] = CheckField(text)
+def check[T](text: sourcecode.Text[T]): FieldChecks[T] = FieldChecks(text)
 
-def validate(checks: CheckField[?]*): Unit = {
+def validate(checks: FieldChecks[?]*): Unit = {
   val errors = checks.flatMap(_.validate)
   if errors.nonEmpty then throw new FieldsValidationException(errors)
 }

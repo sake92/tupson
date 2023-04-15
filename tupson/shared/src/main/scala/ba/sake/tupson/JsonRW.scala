@@ -1,11 +1,11 @@
 package ba.sake.tupson
 
 import scala.reflect.ClassTag
+import scala.collection.mutable.ArrayDeque
 import org.typelevel.jawn.ast.*
 import magnolia2.{*, given}
-import scala.collection.mutable.ListBuffer
-import ba.sake.validation.FieldsValidationException
-import ba.sake.validation.FieldValidationError
+
+import ba.sake.validation.*
 
 trait JsonRW[T]:
 
@@ -89,24 +89,30 @@ object JsonRW extends AutoDerivation[JsonRW]:
   }
 
   /* collections */
-  private def rethrowingKeysErrors[T](parentPath: String, values: Seq[JValue])(using trw: JsonRW[T]): Seq[T] = {
-    val parsedValues = ListBuffer.empty[T]
-    val keyErrors = ListBuffer.empty[ParseError]
-    val validationErrors = ListBuffer.empty[FieldValidationError]
-    val res = values.zipWithIndex.map { (v, i) =>
-      val path = s"$parentPath[$i]"
+  private def rethrowingKeysErrors[T](path: String, values: Seq[JValue])(using trw: JsonRW[T]): Seq[T] = {
+    val parsedValues = ArrayDeque.empty[T]
+    val keyErrors = ArrayDeque.empty[ParseError]
+    val validationErrors = ArrayDeque.empty[FieldValidationError]
+    values.zipWithIndex.foreach { (v, i) =>
+      val subPath = s"$path[$i]"
       try {
-        parsedValues += trw.parse(path, v)
+        parsedValues += trw.parse(subPath, v)
       } catch {
         case pe: ParsingException =>
           keyErrors ++= pe.errors
         case e: FieldsValidationException =>
-          validationErrors ++= e.errors.map(_.withPath(path))
+          validationErrors ++= e.errors
       }
     }
     if keyErrors.nonEmpty then throw ParsingException(keyErrors.toSeq)
     if validationErrors.nonEmpty then throw FieldsValidationException(validationErrors.toSeq)
-    else parsedValues.toSeq
+
+    try {
+      parsedValues.toSeq
+    } catch {
+      case _: ClassCastException =>
+        throw new RuntimeException("wtffffffff")
+    }
   }
 
   given [T: ClassTag](using trw: JsonRW[T]): JsonRW[Array[T]] = new {
@@ -163,28 +169,28 @@ object JsonRW extends AutoDerivation[JsonRW]:
           members(param.label) = jValue
         }
       JObject(members)
-    override def parse(parentPath: String, jValue: JValue): T = jValue match
+    override def parse(path: String, jValue: JValue): T = jValue match
       case JObject(jsonMap) =>
-        val arguments = ListBuffer.empty[Any]
-        val keyErrors = ListBuffer.empty[ParseError]
-        val validationErrors = ListBuffer.empty[FieldValidationError]
+        val arguments = ArrayDeque.empty[Any]
+        val keyErrors = ArrayDeque.empty[ParseError]
+        val validationErrors = ArrayDeque.empty[FieldValidationError]
         ctx.params.foreach { param =>
-          val path = s"$parentPath.${param.label}"
+          val subPath = s"$path.${param.label}"
           val keyPresent = jsonMap.contains(param.label)
           val hasGlobalDefault = param.typeclass.default.nonEmpty
           val hasLocalDefault = param.default.nonEmpty
-          if !keyPresent && !hasGlobalDefault && !hasLocalDefault then keyErrors += ParseError(path, "is missing")
+          if !keyPresent && !hasGlobalDefault && !hasLocalDefault then keyErrors += ParseError(subPath, "is missing")
           else
             arguments += jsonMap
               .get(param.label)
               .map { paramJValue =>
                 try {
-                  param.typeclass.parse(path, paramJValue)
+                  param.typeclass.parse(subPath, paramJValue)
                 } catch {
                   case pe: ParsingException =>
                     keyErrors ++= pe.errors
                   case e: FieldsValidationException =>
-                    validationErrors ++= e.errors.map(_.withPath(path))
+                    validationErrors ++= e.errors
                 }
               }
               .orElse(param.default)
@@ -195,11 +201,17 @@ object JsonRW extends AutoDerivation[JsonRW]:
         if keyErrors.nonEmpty then throw ParsingException(keyErrors.toSeq)
         if validationErrors.nonEmpty then throw FieldsValidationException(validationErrors.toSeq)
 
-        ctx.rawConstruct(arguments.toSeq)
+        try {
+          ctx.rawConstruct(arguments.toSeq)
+        } catch {
+          case fve: FieldsValidationException =>
+            val validationErrors = fve.errors.map(e => e.withPath(s"$path.${e.path}"))
+            throw new FieldsValidationException(validationErrors)
+        }
       case JString(enumName) =>
         if ctx.params.isEmpty then ctx.rawConstruct(Seq()) // instantiate enum's singleton case
-        else typeMismatchError(parentPath, "Object", jValue)
-      case _ => typeMismatchError(parentPath, "Object", jValue)
+        else typeMismatchError(path, "Object", jValue)
+      case _ => typeMismatchError(path, "Object", jValue)
   }
 
   override def split[T](ctx: SealedTrait[JsonRW, T]): JsonRW[T] = new {
@@ -217,8 +229,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
     override def parse(path: String, jValue: JValue): T = jValue match
       case JObject(jsonMap) if !ctx.isSingletonCasesEnum =>
         val typeName: String = jsonMap.get("@type") match
-          case None =>
-            throw ParsingException(ParseError("@type", "is missing"))
+          case None             => throw ParsingException(ParseError("@type", "is missing"))
           case Some(JString(s)) => s
           case Some(other)      => typeMismatchError(path, "@type: String", other)
 

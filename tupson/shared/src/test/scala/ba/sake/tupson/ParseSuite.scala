@@ -1,5 +1,6 @@
 package ba.sake.tupson
 
+import ba.sake.validation.*
 import ba.sake.tupson.enums.inner.burried
 
 class ParseSuite extends munit.FunSuite {
@@ -11,8 +12,8 @@ class ParseSuite extends munit.FunSuite {
       """5""".parseJson[Boolean]
     }
     assertEquals(
-      ParseError("$", "should be Boolean but it is Number", Some("5")),
-      ex.errors.head
+      ex.errors.head,
+      ParseError("$", "should be Boolean but it is Number", Some("5"))
     )
 
     // https://github.com/scala-js/scala-js/blob/v1.7.1/test-suite/shared/src/test/scala/org/scalajs/testsuite/javalib/lang/FloatTest.scala#L81-L85
@@ -55,19 +56,19 @@ class ParseSuite extends munit.FunSuite {
       """5""".parseJson[List[Int]]
     }
     assertEquals(
-      ParseError("$", "should be List but it is Number", Some("5")),
-      ex1.errors.head
+      ex1.errors.head,
+      ParseError("$", "should be List but it is Number", Some("5"))
     )
 
     val ex2 = intercept[ParsingException] {
       """[ true, "" ]""".parseJson[List[Int]]
     }
     assertEquals(
+      ex2.errors,
       Seq(
         ParseError("$[0]", "should be Int but it is Boolean", Some("true")),
         ParseError("$[1]", "should be Int but it is String", Some(""""""""))
-      ),
-      ex2.errors
+      )
     )
   }
 
@@ -107,8 +108,8 @@ class ParseSuite extends munit.FunSuite {
       """{"str":"str"}""".parseJson[CaseClass1]
     }
     assertEquals(
-      ParseError("$.integer", "is missing", None),
-      ex1.errors.head
+      ex1.errors.head,
+      ParseError("$.integer", "is missing", None)
     )
 
     intercept[TupsonException] {
@@ -119,23 +120,51 @@ class ParseSuite extends munit.FunSuite {
       """{ "str":123 }""".parseJson[CaseClass1]
     }
     assertEquals(
+      ex2.errors,
       Seq(
         ParseError("$.str", "should be String but it is Number", Some("123")),
         ParseError("$.integer", "is missing", None)
-      ),
-      ex2.errors
+      )
     )
 
     val ex3 = intercept[ParsingException] {
-      // missing "integer" key
       """{"bla":"str", "c1": { "str":123 }}""".parseJson[CaseClass2]
     }
     assertEquals(
+      ex3.errors,
       Seq(
         ParseError("$.c1.str", "should be String but it is Number", Some("123")),
         ParseError("$.c1.integer", "is missing", None)
-      ),
-      ex3.errors
+      )
+    )
+  }
+
+  test("validate case class") {
+    val ex1 = intercept[FieldsValidationException] {
+      """{ "str": "a", "integer": -50, "list": [{"str": "bsss"}] }""".parseJson[ValidCaseClass2]
+    }
+    // will return "deepest" object with errors
+    // since we cannot construct its parent if it is invalid object
+    // it is kinda a bummer vs JEE or json-schema...
+    assertEquals(
+      ex1.errors,
+      Seq(
+        FieldValidationError("$.str", "a", "must be > 3"),
+        FieldValidationError("$.integer", -50, "must be positive")
+      )
+    )
+
+    val ex2 = intercept[FieldsValidationException] {
+      """{ "str": "a", "integer": -50, "list": [{"str": "b"}] }""".parseJson[ValidCaseClass2]
+    }
+    // will return "deepest" object with errors
+    // since we cannot construct its parent if it is invalid object
+    // it is kinda a bummer vs JEE or json-schema...
+    assertEquals(
+      ex2.errors,
+      Seq(
+        FieldValidationError("$.list[0].str", "b", "must be > 3")
+      )
     )
   }
 
@@ -143,8 +172,7 @@ class ParseSuite extends munit.FunSuite {
   test("parse sealed trait hierarchy") {
     import seal.*
     assertEquals(
-      """{"str":"str","@type":"SealedCase1","integer":123}"""
-        .parseJson[SealedBase],
+      """{"str":"str","@type":"SealedCase1","integer":123}""".parseJson[SealedBase],
       SealedCase1("str", 123)
     )
   }
@@ -172,18 +200,15 @@ class ParseSuite extends munit.FunSuite {
     import enums.*
 
     assertEquals(
-      """{"str":"str","@type":"Enum1Case","integer":123}"""
-        .parseJson[Enum1],
+      """{"str":"str","@type":"Enum1Case","integer":123}""".parseJson[Enum1],
       Enum1.Enum1Case("str", Some(123))
     )
     assertEquals(
-      """{"str":"str","@type":"Enum1Case","integer":null}"""
-        .parseJson[Enum1],
+      """{"str":"str","@type":"Enum1Case","integer":null}""".parseJson[Enum1],
       Enum1.Enum1Case("str", None)
     )
     assertEquals(
-      """{"@type":"eNum CaseD"}"""
-        .parseJson[Enum1],
+      """{"@type":"eNum CaseD"}""".parseJson[Enum1],
       Enum1.`eNum CaseD`
     )
     interceptMessage[TupsonException](
