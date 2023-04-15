@@ -173,39 +173,44 @@ object JsonRW extends AutoDerivation[JsonRW]:
       case JObject(jsonMap) =>
         val arguments = ArrayDeque.empty[Any]
         val keyErrors = ArrayDeque.empty[ParseError]
-        val validationErrors = ArrayDeque.empty[FieldValidationError]
+        val subValidationErrors = ArrayDeque.empty[FieldValidationError]
         ctx.params.foreach { param =>
           val subPath = s"$path.${param.label}"
           val keyPresent = jsonMap.contains(param.label)
           val hasGlobalDefault = param.typeclass.default.nonEmpty
           val hasLocalDefault = param.default.nonEmpty
           if !keyPresent && !hasGlobalDefault && !hasLocalDefault then keyErrors += ParseError(subPath, "is missing")
-          else
-            arguments += jsonMap
+          else {
+            val argOpt = jsonMap
               .get(param.label)
-              .map { paramJValue =>
+              .flatMap { paramJValue =>
                 try {
-                  param.typeclass.parse(subPath, paramJValue)
+                  Some(param.typeclass.parse(subPath, paramJValue))
                 } catch {
                   case pe: ParsingException =>
                     keyErrors ++= pe.errors
+                    None
                   case e: FieldsValidationException =>
-                    validationErrors ++= e.errors
+                    subValidationErrors ++= e.errors
+                    None
                 }
               }
+
+            val argOpt2 = argOpt
               .orElse(param.default)
               .orElse(param.typeclass.default)
-              .get
+            arguments += argOpt2.getOrElse(null) //????? :/ check if sane
+          }
+
         }
 
         if keyErrors.nonEmpty then throw ParsingException(keyErrors.toSeq)
-        if validationErrors.nonEmpty then throw FieldsValidationException(validationErrors.toSeq)
 
         try {
           ctx.rawConstruct(arguments.toSeq)
         } catch {
           case fve: FieldsValidationException =>
-            val validationErrors = fve.errors.map(e => e.withPath(s"$path.${e.path}"))
+            val validationErrors = subValidationErrors.toSeq ++ fve.errors.map(e => e.withPath(s"$path.${e.path}"))
             throw new FieldsValidationException(validationErrors)
         }
       case JString(enumName) =>

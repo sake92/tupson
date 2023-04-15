@@ -168,10 +168,8 @@ case class MyData(
 """{ "bln":true """.parseJson[MyData]
 // incomplete JSON
 
-"""{ "bln":true }""".parseJson[MyData]
-// Key 'bln': Expected Boolean but got 123: Number
-// Key 'int': Missing value
-// Key 's': Missing value
+"""{ "bln":123 }""".parseJson[MyData]
+// Key '$.bln' with value '123' should be Boolean but it is Number; Key '$.int' is missing; Key '$.s' is missing
 ```
 
 ---
