@@ -7,9 +7,13 @@ class ParseSuite extends munit.FunSuite {
   test("parse primitives") {
     assertEquals("true".parseJson[Boolean], true)
     assertEquals("false".parseJson[Boolean], false)
-    intercept[TupsonException] {
+    val ex = intercept[ParsingException] {
       """5""".parseJson[Boolean]
     }
+    assertEquals(
+      ParseError("$", "should be Boolean but it is Number", Some("5")),
+      ex.errors.head
+    )
 
     // https://github.com/scala-js/scala-js/blob/v1.7.1/test-suite/shared/src/test/scala/org/scalajs/testsuite/javalib/lang/FloatTest.scala#L81-L85
     assertEquals("1.233".parseJson[Float], 1.233f)
@@ -46,6 +50,25 @@ class ParseSuite extends munit.FunSuite {
     assertEquals("[1,2,3]".parseJson[Seq[Int]], Seq(1, 2, 3))
     assertEquals("[1,2,3]".parseJson[List[Int]], List(1, 2, 3))
     assertEquals("[1,2,3]".parseJson[Array[Int]].toSeq, Array(1, 2, 3).toSeq)
+
+    val ex1 = intercept[ParsingException] {
+      """5""".parseJson[List[Int]]
+    }
+    assertEquals(
+      ParseError("$", "should be List but it is Number", Some("5")),
+      ex1.errors.head
+    )
+
+    val ex2 = intercept[ParsingException] {
+      """[ true, "" ]""".parseJson[List[Int]]
+    }
+    assertEquals(
+      Seq(
+        ParseError("$[0]", "should be Int but it is Boolean", Some("true")),
+        ParseError("$[1]", "should be Int but it is String", Some(""""""""))
+      ),
+      ex2.errors
+    )
   }
 
   test("parse Option") {
@@ -80,28 +103,40 @@ class ParseSuite extends munit.FunSuite {
       CaseClass2("c2", CaseClass1("str", 123))
     )
 
-    intercept[ParsingException] {
-      // missing "integer" key
+    val ex1 = intercept[ParsingException] {
       """{"str":"str"}""".parseJson[CaseClass1]
     }
+    assertEquals(
+      ParseError("$.integer", "is missing", None),
+      ex1.errors.head
+    )
+
     intercept[TupsonException] {
       // has to be an object
       """5""".parseJson[CaseClass1]
     }
-    interceptMessage[ParsingException](
-      """
-      |Key 'str': Expected String but got 123: Number
-      |Key 'integer': Missing value
-      |""".stripMargin.trim
-    ) {
+    val ex2 = intercept[ParsingException] {
       """{ "str":123 }""".parseJson[CaseClass1]
     }
+    assertEquals(
+      Seq(
+        ParseError("$.str", "should be String but it is Number", Some("123")),
+        ParseError("$.integer", "is missing", None)
+      ),
+      ex2.errors
+    )
 
-    val ex = intercept[ParsingException] {
+    val ex3 = intercept[ParsingException] {
       // missing "integer" key
-      """{"bla":"str", "c1": ""}""".parseJson[CaseClass2]
+      """{"bla":"str", "c1": { "str":123 }}""".parseJson[CaseClass2]
     }
-    println(ex)
+    assertEquals(
+      Seq(
+        ParseError("$.c1.str", "should be String but it is Number", Some("123")),
+        ParseError("$.c1.integer", "is missing", None)
+      ),
+      ex3.errors
+    )
   }
 
   /* sealed trait */

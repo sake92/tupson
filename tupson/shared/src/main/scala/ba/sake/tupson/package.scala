@@ -25,8 +25,6 @@ extension (strValue: String) {
 
 sealed class TupsonException(msg: String, cause: Throwable = null) extends Exception(msg, cause)
 
-final class TypeErrorException(val path: String, msg: String, val value: Option[String]) extends TupsonException(msg)
-
 final class ParsingException(val errors: Seq[ParseError])
     extends TupsonException(
       errors

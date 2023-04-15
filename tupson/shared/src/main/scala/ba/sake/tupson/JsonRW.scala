@@ -100,8 +100,6 @@ object JsonRW extends AutoDerivation[JsonRW]:
       } catch {
         case pe: ParsingException =>
           keyErrors ++= pe.errors
-        case e: TypeErrorException =>
-          keyErrors += ParseError(path, e.getMessage, e.value)
         case e: FieldsValidationException =>
           validationErrors ++= e.errors.map(_.withPath(path))
       }
@@ -175,8 +173,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
           val keyPresent = jsonMap.contains(param.label)
           val hasGlobalDefault = param.typeclass.default.nonEmpty
           val hasLocalDefault = param.default.nonEmpty
-          if !keyPresent && !hasGlobalDefault && !hasLocalDefault then
-            keyErrors += ParseError(path, "is missing")
+          if !keyPresent && !hasGlobalDefault && !hasLocalDefault then keyErrors += ParseError(path, "is missing")
           else
             arguments += jsonMap
               .get(param.label)
@@ -186,8 +183,6 @@ object JsonRW extends AutoDerivation[JsonRW]:
                 } catch {
                   case pe: ParsingException =>
                     keyErrors ++= pe.errors
-                  case e: TypeErrorException =>
-                    keyErrors += ParseError(e.path, e.getMessage, e.value)
                   case e: FieldsValidationException =>
                     validationErrors ++= e.errors.map(_.withPath(path))
                 }
@@ -257,10 +252,12 @@ object JsonRW extends AutoDerivation[JsonRW]:
       jsonValue: JValue
   ): Nothing =
     val badJsonSnippet = jsonValue.render().take(100)
-    throw TypeErrorException(
-      path,
-      s"should be ${expectedType} but it is ${jsonValue.valueType.capitalize}",
-      Some(badJsonSnippet)
+    throw ParsingException(
+      ParseError(
+        path,
+        s"should be ${expectedType} but it is ${jsonValue.valueType.capitalize}",
+        Some(badJsonSnippet)
+      )
     )
 
 end JsonRW
