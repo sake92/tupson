@@ -9,7 +9,7 @@ trait JsonRW[T]:
 
   def write(value: T): JValue
 
-  def parse(jValue: JValue): T
+  def parse(path: String, jValue: JValue): T
 
   /** Global default for `T` when key is missing in JSON.
     */
@@ -23,108 +23,128 @@ object JsonRW extends AutoDerivation[JsonRW]:
   /* basic instances */
   given JsonRW[String] = new {
     override def write(value: String): JValue = JString(value)
-    override def parse(jValue: JValue): String = jValue match
+    override def parse(path: String, jValue: JValue): String = jValue match
       case JString(s) => s
-      case other      => typeMismatchError("String", other)
+      case other      => typeMismatchError(path, "String", other)
   }
 
   given JsonRW[Char] = new {
     override def write(value: Char): JValue = JString(value.toString)
-    override def parse(jValue: JValue): Char = jValue match
+    override def parse(path: String, jValue: JValue): Char = jValue match
       case JString(s) =>
-        s.headOption.getOrElse(typeMismatchError("Char", jValue))
-      case other => typeMismatchError("Char", other)
+        s.headOption.getOrElse(typeMismatchError(path, "Char", jValue))
+      case other => typeMismatchError(path, "Char", other)
   }
 
   given JsonRW[Boolean] = new {
     override def write(value: Boolean): JValue = JBool(value)
-    override def parse(jValue: JValue): Boolean = jValue match
+    override def parse(path: String, jValue: JValue): Boolean = jValue match
       case JTrue  => true
       case JFalse => false
-      case other  => typeMismatchError("Boolean", other)
+      case other  => typeMismatchError(path, "Boolean", other)
   }
 
   given JsonRW[Float] = new {
     override def write(value: Float): JValue = DoubleNum(value)
-    override def parse(jValue: JValue): Float = jValue match
+    override def parse(path: String, jValue: JValue): Float = jValue match
       case DoubleNum(n) => n.toFloat
       case DeferNum(n)  => n.toFloat
-      case other        => typeMismatchError("Float", other)
+      case other        => typeMismatchError(path, "Float", other)
   }
 
   given JsonRW[Double] = new {
     override def write(value: Double): JValue = DoubleNum(value)
-    override def parse(jValue: JValue): Double = jValue match
+    override def parse(path: String, jValue: JValue): Double = jValue match
       case DoubleNum(n) => n.toDouble
       case DeferNum(n)  => n.toDouble
-      case other        => typeMismatchError("Double", other)
+      case other        => typeMismatchError(path, "Double", other)
   }
 
   given JsonRW[Int] = new {
     override def write(value: Int): JValue = LongNum(value)
-    override def parse(jValue: JValue): Int = jValue match
+    override def parse(path: String, jValue: JValue): Int = jValue match
       case LongNum(n)   => n.toInt
       case DeferLong(s) => s.toInt
-      case other        => typeMismatchError("Int", other)
+      case other        => typeMismatchError(path, "Int", other)
   }
 
   given JsonRW[Long] = new {
     override def write(value: Long): JValue = LongNum(value)
-    override def parse(jValue: JValue): Long = jValue match
+    override def parse(path: String, jValue: JValue): Long = jValue match
       case LongNum(n)   => n
       case DeferLong(s) => s.toLong
-      case other        => typeMismatchError("Long", other)
+      case other        => typeMismatchError(path, "Long", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Option[T]] = new {
     override def write(value: Option[T]): JValue = value match
       case None    => JNull
       case Some(v) => trw.write(v)
-    override def parse(jValue: JValue): Option[T] = jValue match
+    override def parse(path: String, jValue: JValue): Option[T] = jValue match
       case JNull => None
-      case other => Option(trw.parse(jValue))
+      case other => Option(trw.parse(path, jValue))
     override def default: Option[Option[T]] = Some(None)
+  }
+
+  /* collections */
+  private def rethrowingKeysErrors[T](path: String, values: Seq[JValue])(using trw: JsonRW[T]): Seq[T] = {
+    val parsedValues = ListBuffer.empty[T]
+    val keyErrors = ListBuffer.empty[ParseError]
+    val res = values.zipWithIndex.map { (v, i) =>
+      try {
+        parsedValues += trw.parse(s"$path[$i]", v)
+      } catch {
+        case pe: ParsingException =>
+          keyErrors ++= pe.errors
+        case e: TypeErrorException =>
+          keyErrors += ParseError(e.path, e.getMessage, e.value)
+      }
+    }
+    if keyErrors.nonEmpty then throw ParsingException(keyErrors.toSeq)
+    else parsedValues.toSeq
   }
 
   given [T: ClassTag](using trw: JsonRW[T]): JsonRW[Array[T]] = new {
     override def write(value: Array[T]): JValue =
       JArray(value.map(trw.write))
-    override def parse(jValue: JValue): Array[T] = jValue match
-      case JArray(arr) => arr.map(trw.parse)
-      case other       => typeMismatchError("Array", other)
+    override def parse(path: String, jValue: JValue): Array[T] = jValue match
+      case JArray(arr) => rethrowingKeysErrors(path, arr).toArray
+      case other       => typeMismatchError(path, "Array", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[List[T]] = new {
     override def write(value: List[T]): JValue =
       JArray(value.map(trw.write).toArray)
-    override def parse(jValue: JValue): List[T] = jValue match
-      case JArray(arr) => arr.toList.map(trw.parse)
-      case other       => typeMismatchError("List", other)
+    override def parse(path: String, jValue: JValue): List[T] = jValue match
+      case JArray(list) => rethrowingKeysErrors(path, list).toList
+      case other        => typeMismatchError(path, "List", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Seq[T]] = new {
     override def write(value: Seq[T]): JValue =
       JArray(value.map(trw.write).toArray)
-    override def parse(jValue: JValue): Seq[T] = jValue match
-      case JArray(arr) => arr.toSeq.map(trw.parse)
-      case other       => typeMismatchError("Seq", other)
+    override def parse(path: String, jValue: JValue): Seq[T] = jValue match
+      case JArray(seq) => rethrowingKeysErrors(path, seq)
+      case other       => typeMismatchError(path, "Seq", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Set[T]] = new {
     override def write(value: Set[T]): JValue =
       JArray(value.map(trw.write).toArray)
-    override def parse(jValue: JValue): Set[T] = jValue match
-      case JArray(arr) => arr.toSet.map(trw.parse)
-      case other       => typeMismatchError("Set", other)
+    override def parse(path: String, jValue: JValue): Set[T] = jValue match
+      case JArray(set) => rethrowingKeysErrors(path, set).toSet
+      case other       => typeMismatchError(path, "Set", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Map[String, T]] = new {
     override def write(value: Map[String, T]): JValue =
       val members = value.map((k, v) => k -> trw.write(v))
       JObject(members.to(scala.collection.mutable.Map))
-    override def parse(jValue: JValue): Map[String, T] = jValue match
-      case JObject(map) => map.mapValues(trw.parse).toMap
-      case other        => typeMismatchError("Map", other)
+    override def parse(path: String, jValue: JValue): Map[String, T] =
+      jValue match
+        case JObject(map) =>
+          map.map((k, v) => k -> trw.parse(s"$path.$k", v)).toMap
+        case other => typeMismatchError(path, "Map", other)
   }
 
   /* derived instances */
@@ -138,7 +158,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
           members(param.label) = jValue
         }
       JObject(members)
-    override def parse(jValue: JValue): T = jValue match
+    override def parse(path: String, jValue: JValue): T = jValue match
       case JObject(jsonMap) =>
         val arguments = ListBuffer.empty[Any]
         val keyErrors = ListBuffer.empty[ParseError]
@@ -147,25 +167,18 @@ object JsonRW extends AutoDerivation[JsonRW]:
           val hasGlobalDefault = param.typeclass.default.nonEmpty
           val hasLocalDefault = param.default.nonEmpty
           if !keyPresent && !hasGlobalDefault && !hasLocalDefault then
-            keyErrors += ParseError(param.label, param.label, "is missing")
+            keyErrors += ParseError(s"$path.${param.label}", "is missing")
           else
             arguments += jsonMap
               .get(param.label)
               .map { paramJValue =>
                 try {
-                  param.typeclass.parse(paramJValue)
+                  param.typeclass.parse(s"$path.${param.label}", paramJValue)
                 } catch {
                   case pe: ParsingException =>
-                    keyErrors ++= pe.errors.map(e =>
-                      e.withPath(s"${param.label}.${e.name}")
-                    )
+                    keyErrors ++= pe.errors
                   case e: TypeErrorException =>
-                    keyErrors += ParseError(
-                      param.label,
-                      param.label,
-                      e.getMessage,
-                      e.value
-                    )
+                    keyErrors += ParseError(e.path, e.getMessage, e.value)
                 }
               }
               .orElse(param.default)
@@ -177,10 +190,9 @@ object JsonRW extends AutoDerivation[JsonRW]:
 
         ctx.rawConstruct(arguments.toSeq)
       case JString(enumName) =>
-        if ctx.params.isEmpty then
-          ctx.rawConstruct(Seq()) // instantiate enum's singleton case
-        else typeMismatchError("Object", jValue)
-      case _ => typeMismatchError("Object", jValue)
+        if ctx.params.isEmpty then ctx.rawConstruct(Seq()) // instantiate enum's singleton case
+        else typeMismatchError(path, "Object", jValue)
+      case _ => typeMismatchError(path, "Object", jValue)
   }
 
   override def split[T](ctx: SealedTrait[JsonRW, T]): JsonRW[T] = new {
@@ -195,15 +207,13 @@ object JsonRW extends AutoDerivation[JsonRW]:
           obj
         }
       }
-    override def parse(jValue: JValue): T = jValue match
+    override def parse(path: String, jValue: JValue): T = jValue match
       case JObject(jsonMap) if !ctx.isSingletonCasesEnum =>
         val typeName: String = jsonMap.get("@type") match
           case None =>
-            throw ParsingException(
-              Seq(ParseError("@type", "@type", "is missing"))
-            )
+            throw ParsingException(ParseError("@type", "is missing"))
           case Some(JString(s)) => s
-          case Some(other)      => typeMismatchError("@type: String", other)
+          case Some(other)      => typeMismatchError(path, "@type: String", other)
 
         val subtypeNames = ctx.subtypes.map(_.typeInfo.short).map(t => s"'$t'")
         val subtype = ctx.subtypes.find(_.typeInfo.short == typeName) match
@@ -213,7 +223,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
             )
           case Some(st) => st
 
-        subtype.typeclass.parse(jValue)
+        subtype.typeclass.parse(path, jValue)
       case JString(enumName) if ctx.isSingletonCasesEnum =>
         val subtypeNames = ctx.subtypes.map(_.typeInfo.short).map(t => s"'$t'")
         val subtype = ctx.subtypes.find(_.typeInfo.short == enumName) match
@@ -223,18 +233,20 @@ object JsonRW extends AutoDerivation[JsonRW]:
             )
           case Some(st) => st
 
-        subtype.typeclass.parse(jValue)
+        subtype.typeclass.parse(path, jValue)
       case other =>
-        if ctx.isSingletonCasesEnum then typeMismatchError("String", other)
-        else typeMismatchError("Object", other)
+        if ctx.isSingletonCasesEnum then typeMismatchError(path, "String", other)
+        else typeMismatchError(path, "Object", other)
   }
 
   private def typeMismatchError(
+      path: String,
       expectedType: String,
       jsonValue: JValue
   ): Nothing =
     val badJsonSnippet = jsonValue.render().take(100)
     throw TypeErrorException(
+      path,
       s"should be ${expectedType} but it is ${jsonValue.valueType.capitalize}",
       Some(badJsonSnippet)
     )

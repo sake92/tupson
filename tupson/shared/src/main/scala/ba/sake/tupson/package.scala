@@ -13,11 +13,8 @@ extension [T](value: T)(using rw: JsonRW[T]) {
 extension (strValue: String) {
   def parseJson[T](using rw: JsonRW[T]): T = try {
     val jValue = JParser.parseUnsafe(strValue)
-    rw.parse(jValue)
+    rw.parse("$", jValue)
   } catch {
-    case pe: ParsingException =>
-      val parseErrors = pe.errors.map(e => e.withPath(s"$$.${e.path}"))
-      throw ParsingException(parseErrors)
     case e: jawn.ParseException =>
       throw TupsonException("JSON parsing exception", e)
     case e: jawn.IncompleteParseException =>
@@ -26,10 +23,9 @@ extension (strValue: String) {
 
 }
 
-sealed class TupsonException(msg: String, cause: Throwable = null)
-    extends Exception(msg, cause)
+sealed class TupsonException(msg: String, cause: Throwable = null) extends Exception(msg, cause)
 
-final class TypeErrorException(msg: String, val value: Option[String]) extends TupsonException(msg)
+final class TypeErrorException(val path: String, msg: String, val value: Option[String]) extends TupsonException(msg)
 
 final class ParsingException(val errors: Seq[ParseError])
     extends TupsonException(
@@ -37,16 +33,20 @@ final class ParsingException(val errors: Seq[ParseError])
         .map(_.text)
         .mkString("; ")
     )
+object ParsingException {
+  def apply(errors: Seq[ParseError]): ParsingException =
+    new ParsingException(errors)
+  def apply(pe: ParseError): ParsingException =
+    new ParsingException(Seq(pe))
+}
 
 case class ParseError(
     path: String,
-    name: String,
     msg: String,
-    value: Option[Any] = None // TODO delete ?
+    value: Option[Any] = None
 ) {
-  def withValue(v: Any) = copy(value = Some(v))
   def withPath(p: String) = copy(path = p)
-  def withName(n: String) = copy(name = n)
+  def withValue(v: Any) = copy(value = Some(v))
 
   def text: String = value match {
     case Some(v) => s"Key '$path' with value '$v' $msg"

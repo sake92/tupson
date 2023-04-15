@@ -7,10 +7,10 @@ case class FieldValidationError(
     msg: String
 )
 
-class FieldValidationException(error: FieldValidationError)
+class FieldValidationException(val error: FieldValidationError)
     extends RuntimeException(error.toString)
 
-class FieldsValidationException(errors: Seq[FieldValidationError])
+class FieldsValidationException(val errors: Seq[FieldValidationError])
     extends RuntimeException(errors.mkString("; "))
 
 def check[T](
