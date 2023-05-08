@@ -143,9 +143,10 @@ class ParseSuite extends munit.FunSuite {
     val ex1 = intercept[FieldsValidationException] {
       """{ "str": "a", "integer": -50, "list": [{"str": "bsss"}] }""".parseJson[ValidCaseClass2]
     }
-    // will return "deepest" object with errors
-    // since we cannot construct its parent if it is invalid object
-    // it is kinda a bummer vs JEE or json-schema...
+    // - validation is fail-fast
+    // - will return "deepest" object with errors
+    // since we cannot CONSTRUCT its PARENT if it is invalid object..
+
     assertEquals(
       ex1.errors,
       Seq(
@@ -161,9 +162,7 @@ class ParseSuite extends munit.FunSuite {
     assertEquals(
       ex2.errors,
       Seq(
-        FieldValidationError("$.list[0].str", "b", "must be > 3"),
-        FieldValidationError("$.str", "a", "must be > 3"),
-        FieldValidationError("$.integer", -50, "must be positive")
+        FieldValidationError("$.list[0].str", "b", "must be > 3")
       )
     )
   }

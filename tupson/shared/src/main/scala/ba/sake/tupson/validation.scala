@@ -2,7 +2,7 @@ package ba.sake.validation
 
 case class FieldValidationError(
     path: String,
-    fieldValue: Any,
+    value: Any,
     msg: String
 ) {
   def withPath(p: String) = copy(path = p)
@@ -17,7 +17,8 @@ case class FieldChecks[T](text: sourcecode.Text[T], checks: Seq[Check[T]] = Seq.
 
   def validate: Seq[FieldValidationError] =
     checks.flatMap { case Check(p, msg) =>
-      Option.when(!p(text.value)) {
+      // we EXPLICITLY SKIP nulls here
+      Option.when(text.value != null && !p(text.value)) {
         FieldValidationError(text.source, text.value, msg)
       }
     }

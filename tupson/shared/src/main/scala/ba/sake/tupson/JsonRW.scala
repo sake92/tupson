@@ -1,5 +1,6 @@
 package ba.sake.tupson
 
+import java.util.UUID
 import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayDeque
 import org.typelevel.jawn.ast.*
@@ -78,6 +79,13 @@ object JsonRW extends AutoDerivation[JsonRW]:
       case other        => typeMismatchError(path, "Long", other)
   }
 
+  given JsonRW[UUID] = new {
+    override def write(value: UUID): JValue = JString(value.toString())
+    override def parse(path: String, jValue: JValue): UUID = jValue match
+      case JString(s) => UUID.fromString(s)
+      case other      => typeMismatchError(path, "UUID", other)
+  }
+
   given [T](using trw: JsonRW[T]): JsonRW[Option[T]] = new {
     override def write(value: Option[T]): JValue = value match
       case None    => JNull
@@ -107,12 +115,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
     if keyErrors.nonEmpty then throw ParsingException(keyErrors.toSeq)
     if validationErrors.nonEmpty then throw FieldsValidationException(validationErrors.toSeq)
 
-    try {
-      parsedValues.toSeq
-    } catch {
-      case _: ClassCastException =>
-        throw new RuntimeException("wtffffffff")
-    }
+    parsedValues.toSeq
   }
 
   given [T: ClassTag](using trw: JsonRW[T]): JsonRW[Array[T]] = new {
@@ -173,46 +176,49 @@ object JsonRW extends AutoDerivation[JsonRW]:
       case JObject(jsonMap) =>
         val arguments = ArrayDeque.empty[Any]
         val keyErrors = ArrayDeque.empty[ParseError]
-        val subValidationErrors = ArrayDeque.empty[FieldValidationError]
+        val keyValidationErrors = ArrayDeque.empty[FieldValidationError]
         ctx.params.foreach { param =>
-          val subPath = s"$path.${param.label}"
+          val keyPath = s"$path.${param.label}"
           val keyPresent = jsonMap.contains(param.label)
           val hasGlobalDefault = param.typeclass.default.nonEmpty
           val hasLocalDefault = param.default.nonEmpty
-          if !keyPresent && !hasGlobalDefault && !hasLocalDefault then keyErrors += ParseError(subPath, "is missing")
+          if !keyPresent && !hasGlobalDefault && !hasLocalDefault then keyErrors += ParseError(keyPath, "is missing")
           else {
             val argOpt = jsonMap
               .get(param.label)
               .flatMap { paramJValue =>
                 try {
-                  Some(param.typeclass.parse(subPath, paramJValue))
+                  Some(param.typeclass.parse(keyPath, paramJValue))
                 } catch {
                   case pe: ParsingException =>
                     keyErrors ++= pe.errors
                     None
                   case e: FieldsValidationException =>
-                    subValidationErrors ++= e.errors
+                    keyValidationErrors ++= e.errors
                     None
                 }
               }
 
-            val argOpt2 = argOpt
+            val arg = argOpt
               .orElse(param.default)
               .orElse(param.typeclass.default)
-            arguments += argOpt2.getOrElse(null) //????? :/ check if sane
+              .getOrElse(null) // WE. DONT. ALLOW. NULLS
+            arguments += arg
           }
-
         }
 
         if keyErrors.nonEmpty then throw ParsingException(keyErrors.toSeq)
+       // if keyValidationErrors.nonEmpty then throw FieldsValidationException(keyValidationErrors.toSeq)
 
         try {
           ctx.rawConstruct(arguments.toSeq)
         } catch {
           case fve: FieldsValidationException =>
-            val validationErrors = subValidationErrors.toSeq ++ fve.errors.map(e => e.withPath(s"$path.${e.path}"))
+            val validationErrors = keyValidationErrors.toSeq ++ fve.errors.map(e => e.withPath(s"$path.${e.path}"))
             throw new FieldsValidationException(validationErrors)
         }
+        if keyValidationErrors.nonEmpty then throw FieldsValidationException(keyValidationErrors.toSeq)
+        null.asInstanceOf[T]
       case JString(enumName) =>
         if ctx.params.isEmpty then ctx.rawConstruct(Seq()) // instantiate enum's singleton case
         else typeMismatchError(path, "Object", jValue)
