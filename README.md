@@ -89,16 +89,13 @@ Simple types: `Int`, `Double`, `Boolean`, `String` etc work out of the box.
 ## Case classes
 
 ```scala
-case class Address(street: String)
+case class Address(street: String) derives JsonRW
 case class Person(name: String, age: Int, address: Address) derives JsonRW
 
 val person = Person("Meho", 33, Address("Sebilj"))
 println(person.toJson)
 // { "age":33, "name":"Meho", "address":{"street":"Sebilj"} }
 ```
-
-Note that you *don't even need* `derives JsonRW` anywhere, although it is recommended for compile-performance reasons!  
-`Tupson` will generate a `JsonRW[T]` typeclass instance if it can not find one.
 
 ---
 ## Simple enums 
@@ -136,7 +133,7 @@ This makes JSON independent of scala/java package and it is more readable.
 You can use the Scala's "backticks" language feature to use weird names for keys:
 
 ```scala
-case class Address(`street no`: String)
+case class Address(`street no`: String) derives JsonRW
 
 val address = Address("My Street 123")
 println(address.toJson)
@@ -184,11 +181,11 @@ You have 2 options:
 
 ```scala
 // option 1
-case class MyConfig(url: String, port: Option[Int])
+case class MyConfig(url: String, port: Option[Int]) derives JsonRW
 parsedConfig.port.getOrElse(...)
 
 // option 2
-case class MyConfig(url: String, port: Int = 1234)
+case class MyConfig(url: String, port: Int = 1234) derives JsonRW
 ```
 
 

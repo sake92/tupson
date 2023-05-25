@@ -5,7 +5,7 @@ package enums {
   enum Semaphore derives JsonRW:
     case Red, Yellow, Green
 
-  enum Color(val rgb: Int):
+  enum Color(val rgb: Int) derives JsonRW:
     case Red extends Color(0xff0000)
     case Green extends Color(0x00ff00)
     case Blue extends Color(0x0000ff)
@@ -17,11 +17,11 @@ package enums {
 
   object inner {
     object burried {
-      enum Inside:
+      enum Inside derives JsonRW:
         case Abc
     }
     class instance {
-      enum Inside:
+      enum Inside derives JsonRW:
         case Def
     }
   }

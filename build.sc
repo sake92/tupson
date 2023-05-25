@@ -20,6 +20,7 @@ trait TupsonCommonModule extends SbtModule with ScalafmtModule {
   def scalaVersion = "3.2.2"
 
   def scalacOptions = super.scalacOptions() ++ Seq(
+    "-deprecation",
     "-Yretain-trees", // Required by magnolia
   )
 

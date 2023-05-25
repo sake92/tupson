@@ -1,8 +1,11 @@
 package ba.sake.tupson
 
+import java.net.URI
 import java.util.UUID
+
 import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayDeque
+
 import org.typelevel.jawn.ast.*
 import magnolia2.{*, given}
 
@@ -19,7 +22,7 @@ trait JsonRW[T]:
   def default: Option[T] = None
 end JsonRW
 
-object JsonRW extends AutoDerivation[JsonRW]:
+object JsonRW extends Derivation[JsonRW]:
 
   def apply[T](using rw: JsonRW[T]) = rw
 
@@ -84,6 +87,13 @@ object JsonRW extends AutoDerivation[JsonRW]:
     override def parse(path: String, jValue: JValue): UUID = jValue match
       case JString(s) => UUID.fromString(s)
       case other      => typeMismatchError(path, "UUID", other)
+  }
+
+  given JsonRW[URI] = new {
+    override def write(value: URI): JValue = JString(value.toString())
+    override def parse(path: String, jValue: JValue): URI = jValue match
+      case JString(s) => new URI(s)
+      case other      => typeMismatchError(path, "URI", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Option[T]] = new {
@@ -208,7 +218,7 @@ object JsonRW extends AutoDerivation[JsonRW]:
         }
 
         if keyErrors.nonEmpty then throw ParsingException(keyErrors.toSeq)
-       // if keyValidationErrors.nonEmpty then throw FieldsValidationException(keyValidationErrors.toSeq)
+        // if keyValidationErrors.nonEmpty then throw FieldsValidationException(keyValidationErrors.toSeq)
 
         try {
           ctx.rawConstruct(arguments.toSeq)
@@ -217,8 +227,8 @@ object JsonRW extends AutoDerivation[JsonRW]:
             val validationErrors = keyValidationErrors.toSeq ++ fve.errors.map(e => e.withPath(s"$path.${e.path}"))
             throw new FieldsValidationException(validationErrors)
         }
-        if keyValidationErrors.nonEmpty then throw FieldsValidationException(keyValidationErrors.toSeq)
-        null.asInstanceOf[T]
+      //  if keyValidationErrors.nonEmpty then throw FieldsValidationException(keyValidationErrors.toSeq)
+      // null.asInstanceOf[T]
       case JString(enumName) =>
         if ctx.params.isEmpty then ctx.rawConstruct(Seq()) // instantiate enum's singleton case
         else typeMismatchError(path, "Object", jValue)

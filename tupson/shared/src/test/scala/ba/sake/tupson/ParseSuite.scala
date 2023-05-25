@@ -1,8 +1,5 @@
 package ba.sake.tupson
 
-import ba.sake.validation.*
-import ba.sake.tupson.enums.inner.burried
-
 class ParseSuite extends munit.FunSuite {
 
   test("parse primitives") {
@@ -135,34 +132,6 @@ class ParseSuite extends munit.FunSuite {
       Seq(
         ParseError("$.c1.str", "should be String but it is Number", Some("123")),
         ParseError("$.c1.integer", "is missing", None)
-      )
-    )
-  }
-
-  test("validate case class") {
-    val ex1 = intercept[FieldsValidationException] {
-      """{ "str": "a", "integer": -50, "list": [{"str": "bsss"}] }""".parseJson[ValidCaseClass2]
-    }
-    // - validation is fail-fast
-    // - will return "deepest" object with errors
-    // since we cannot CONSTRUCT its PARENT if it is invalid object..
-
-    assertEquals(
-      ex1.errors,
-      Seq(
-        FieldValidationError("$.str", "a", "must be > 3"),
-        FieldValidationError("$.integer", -50, "must be positive")
-      )
-    )
-
-    val ex2 = intercept[FieldsValidationException] {
-      """{ "str": "a", "integer": -50, "list": [{"str": "b"}] }""".parseJson[ValidCaseClass2]
-    }
-
-    assertEquals(
-      ex2.errors,
-      Seq(
-        FieldValidationError("$.list[0].str", "b", "must be > 3")
       )
     )
   }

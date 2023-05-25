@@ -13,8 +13,8 @@ import ba.sake.tupson.*
   println(newConfig2)
 }
 
-case class OldConfig(url: String)
+case class OldConfig(url: String) derives JsonRW
 
-case class NewConfig1(url: String, port: Option[Int])
+case class NewConfig1(url: String, port: Option[Int]) derives JsonRW
 
-case class NewConfig2(url: String, port: Int = 1234)
+case class NewConfig2(url: String, port: Int = 1234) derives JsonRW
