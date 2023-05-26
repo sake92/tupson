@@ -22,5 +22,4 @@ git push origin 0.5.1
 
 
 ## TODO
-- annotation for @discriminator("myObjectType")
-
+-

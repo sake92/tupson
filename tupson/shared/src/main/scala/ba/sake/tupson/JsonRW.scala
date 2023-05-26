@@ -2,6 +2,7 @@ package ba.sake.tupson
 
 import java.net.URI
 import java.util.UUID
+import java.time.Instant
 
 import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayDeque
@@ -96,6 +97,14 @@ object JsonRW extends Derivation[JsonRW]:
       case other      => typeMismatchError(path, "URI", other)
   }
 
+  given JsonRW[Instant] = new {
+    override def write(value: Instant): JValue = JString(value.toString)
+
+    override def parse(path: String, jValue: JValue): Instant = jValue match
+      case JString(s) => Instant.parse(s)
+      case other      => typeMismatchError(path, "Instant", other)
+  }
+
   given [T](using trw: JsonRW[T]): JsonRW[Option[T]] = new {
     override def write(value: Option[T]): JValue = value match
       case None    => JNull
@@ -107,11 +116,11 @@ object JsonRW extends Derivation[JsonRW]:
   }
 
   /* collections */
-  private def rethrowingKeysErrors[T](path: String, values: Seq[JValue])(using trw: JsonRW[T]): Seq[T] = {
+  private def rethrowingKeysErrors[T](path: String, values: Array[JValue])(using trw: JsonRW[T]): Seq[T] = {
     val parsedValues = ArrayDeque.empty[T]
     val keyErrors = ArrayDeque.empty[ParseError]
     val validationErrors = ArrayDeque.empty[FieldValidationError]
-    values.zipWithIndex.foreach { (v, i) =>
+    values.zipWithIndex.foreach { case (v, i) =>
       val subPath = s"$path[$i]"
       try {
         parsedValues += trw.parse(subPath, v)
@@ -227,8 +236,6 @@ object JsonRW extends Derivation[JsonRW]:
             val validationErrors = keyValidationErrors.toSeq ++ fve.errors.map(e => e.withPath(s"$path.${e.path}"))
             throw new FieldsValidationException(validationErrors)
         }
-      //  if keyValidationErrors.nonEmpty then throw FieldsValidationException(keyValidationErrors.toSeq)
-      // null.asInstanceOf[T]
       case JString(enumName) =>
         if ctx.params.isEmpty then ctx.rawConstruct(Seq()) // instantiate enum's singleton case
         else typeMismatchError(path, "Object", jValue)
@@ -236,23 +243,26 @@ object JsonRW extends Derivation[JsonRW]:
   }
 
   override def split[T](ctx: SealedTrait[JsonRW, T]): JsonRW[T] = new {
+    private val discrOpt = ctx.annotations.find(_.isInstanceOf[discriminator]).map(_.asInstanceOf[discriminator])
+    val discrName = discrOpt.map(_.name).getOrElse("@type")
     override def write(value: T): JValue =
       ctx.choose(value) { sub =>
         if ctx.isSingletonCasesEnum then {
           JsonRW[String].write(sub.typeInfo.short)
         } else {
+
           val subObject = sub.cast(value)
           val obj = sub.typeclass.write(subObject).asInstanceOf[JObject]
-          obj.set("@type", JString(sub.typeInfo.short)) // TODO annotation
+          obj.set(discrName, JString(sub.typeInfo.short))
           obj
         }
       }
     override def parse(path: String, jValue: JValue): T = jValue match
       case JObject(jsonMap) if !ctx.isSingletonCasesEnum =>
-        val typeName: String = jsonMap.get("@type") match
-          case None             => throw ParsingException(ParseError("@type", "is missing"))
+        val typeName: String = jsonMap.get(discrName) match
+          case None             => throw ParsingException(ParseError(discrName, "is missing"))
           case Some(JString(s)) => s
-          case Some(other)      => typeMismatchError(path, "@type: String", other)
+          case Some(other)      => typeMismatchError(path, s"$discrName: String", other)
 
         val subtypeNames = ctx.subtypes.map(_.typeInfo.short).map(t => s"'$t'")
         val subtype = ctx.subtypes.find(_.typeInfo.short == typeName) match

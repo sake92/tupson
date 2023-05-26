@@ -186,6 +186,21 @@ class ParseSuite extends munit.FunSuite {
     }
   }
 
+  test("parse annotated with discriminator") {
+    import annotated.*
+
+    assertEquals("""{ "tip":"A" }""".parseJson[Annot1], Annot1.A)
+    assertEquals(
+      """{ "tip":"B", "x": "abc" }""".parseJson[Annot1],
+      Annot1.B("abc")
+    )
+    interceptMessage[TupsonException](
+      "Subtype not found: 'the-what'. Possible values: 'A', 'B'"
+    ) {
+      """ {"tip":"the-what"} """.parseJson[Annot1]
+    }
+  }
+
   /* missing key -> default global value */
   test("parse missing keys to their global defaults") {
     assertEquals(

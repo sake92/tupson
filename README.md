@@ -127,6 +127,12 @@ The `@type` key is used to specify the *subtype* of enum/sealed trait.
 Its value is the simple type of class or enum case.  
 This makes JSON independent of scala/java package and it is more readable.
 
+You can use some other key by annotating the enum/sealed type with `@discriminator`:
+```scala
+@discriminator("myOtherKey")
+enum Color derives JsonRW ...
+```
+
 ---
 ## Unusual/weird key names
 

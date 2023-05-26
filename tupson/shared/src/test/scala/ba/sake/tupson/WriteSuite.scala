@@ -113,6 +113,14 @@ class WriteSuite extends munit.FunSuite {
     )
   }
 
+  test("write annotated with discriminator") {
+    import annotated.*
+    val a1 = Annot1.A
+    val a2 = Annot1.B("abc")
+    assertEquals(a1.toJson, """{"tip":"A"}""")
+    assertEquals(a2.toJson, """{"x":"abc","tip":"B"}""")
+  }
+
   test("write nested hierarchy like flat type name") {
     import enums.*
 

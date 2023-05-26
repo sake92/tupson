@@ -1,5 +1,6 @@
 package ba.sake.tupson
 
+import scala.annotation.StaticAnnotation
 import org.typelevel.jawn
 import org.typelevel.jawn.ast.FastRenderer
 import org.typelevel.jawn.ast.JParser
@@ -23,6 +24,7 @@ extension (strValue: String) {
 
 }
 
+/* exceptions */
 sealed class TupsonException(msg: String, cause: Throwable = null) extends Exception(msg, cause)
 
 final class ParsingException(val errors: Seq[ParseError])
@@ -51,3 +53,6 @@ case class ParseError(
     case None    => s"Key '$path' $msg"
   }
 }
+
+/* annotations */
+case class discriminator(name: String) extends StaticAnnotation
