@@ -1,5 +1,6 @@
 package ba.sake.validation
 
+// TODO extract into a library
 case class FieldValidationError(
     path: String,
     value: Any,
