@@ -14,8 +14,10 @@
 git diff
 git commit -am "msg"
 
-git tag -a 0.6.0 -m "Fix Scala.js deps"
-git push origin 0.6.0
+# powershell..
+$VERSION="0.6.0"
+git tag -a $VERSION -m "Fix Scala.js deps"
+git push origin $VERSION
 
 
 ```
