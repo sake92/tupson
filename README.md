@@ -14,9 +14,6 @@ libraryDependencies ++= Seq(
 scalacOptions ++= Seq(
   "-Yretain-trees"
 )
-
-// won't be needed after magnolia 2 is released
-resolvers += "jitpack" at "https://jitpack.io"
 ```
 
 Setup in Mill:
@@ -27,15 +24,10 @@ def ivyDeps = Agg(
 def scalacOptions = super.scalacOptions() ++ Seq(
   "-Yretain-trees"
 )
-// won't be needed after magnolia 2 is released
-def repositoriesTask() = T.task { super.repositoriesTask() ++ Seq(
-  coursier.maven.MavenRepository("https://jitpack.io")
-)}
 ```
 
 Setup in scala-cli:
 ```scala
-//> using repository "jitpack"
 //> using lib "ba.sake::tupson:0.5.1"
 ```
 

@@ -7,8 +7,11 @@ import java.time.Instant
 import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayDeque
 
+import scala.compiletime.*
+import scala.deriving.*
+import scala.quoted.*
+
 import org.typelevel.jawn.ast.*
-import magnolia2.{*, given}
 
 import ba.sake.validation.*
 
@@ -21,9 +24,8 @@ trait JsonRW[T]:
   /** Global default for `T` when key is missing in JSON.
     */
   def default: Option[T] = None
-end JsonRW
 
-object JsonRW extends Derivation[JsonRW]:
+object JsonRW:
 
   def apply[T](using rw: JsonRW[T]) = rw
 
@@ -180,114 +182,213 @@ object JsonRW extends Derivation[JsonRW]:
         case other => typeMismatchError(path, "Map", other)
   }
 
-  /* derived instances */
-  override def join[T](ctx: CaseClass[Typeclass, T]): JsonRW[T] = new {
-    override def write(value: T): JValue =
-      val members = scala.collection.mutable.Map[String, JValue]()
-      ctx.params
-        .map { param =>
-          val p = param.deref(value)
-          val jValue = param.typeclass.write(p)
-          members(param.label) = jValue
-        }
-      JObject(members)
-    override def parse(path: String, jValue: JValue): T = jValue match
-      case JObject(jsonMap) =>
-        val arguments = ArrayDeque.empty[Any]
-        val keyErrors = ArrayDeque.empty[ParseError]
-        val keyValidationErrors = ArrayDeque.empty[FieldValidationError]
-        ctx.params.foreach { param =>
-          val keyPath = s"$path.${param.label}"
-          val keyPresent = jsonMap.contains(param.label)
-          val hasGlobalDefault = param.typeclass.default.nonEmpty
-          val hasLocalDefault = param.default.nonEmpty
-          if !keyPresent && !hasGlobalDefault && !hasLocalDefault then keyErrors += ParseError(keyPath, "is missing")
-          else {
-            val argOpt = jsonMap
-              .get(param.label)
-              .flatMap { paramJValue =>
-                try {
-                  Some(param.typeclass.parse(keyPath, paramJValue))
-                } catch {
-                  case pe: ParsingException =>
-                    keyErrors ++= pe.errors
-                    None
-                  case e: FieldsValidationException =>
-                    keyValidationErrors ++= e.errors
-                    None
-                }
-              }
+  /* macro derived instances */
+  inline def derived[T]: JsonRW[T] = ${ derivedMacro[T] }
 
-            val arg = argOpt
-              .orElse(param.default)
-              .orElse(param.typeclass.default)
-              .getOrElse(null) // WE. DONT. ALLOW. NULLS
-            arguments += arg
+  private def derivedMacro[T: Type](using Quotes): Expr[JsonRW[T]] = {
+    import quotes.reflect.*
+
+    val mirror: Expr[Mirror.Of[T]] = Expr.summon[Mirror.Of[T]].getOrElse {
+      report.errorAndAbort(
+        s"Cannot derive JsonRW[${Type.show[T]}] automatically because it is not a product or sum type"
+      )
+    }
+
+    def isAnnotation(a: quotes.reflect.Term): Boolean =
+      a.tpe.typeSymbol.maybeOwner.isNoSymbol ||
+        a.tpe.typeSymbol.owner.fullName != "scala.annotation.internal"
+
+    mirror match
+      case '{
+            type label <: Tuple;
+            $m: Mirror.ProductOf[T] { type MirroredElemTypes = elementTypes; type MirroredElemLabels = `label` }
+          } =>
+        val rwInstancesExpr = summonInstances[T, elementTypes]
+        val rwInstances = Expr.ofList(rwInstancesExpr)
+        val labels = Expr(Type.valueOfTuple[label].map(_.toList.map(_.toString)).getOrElse(List.empty))
+        val defaultValues = defaultValuesExpr[T]
+
+        '{
+
+          new JsonRW[T] {
+            override def write(value: T): JValue = {
+              val members = scala.collection.mutable.Map[String, JValue]()
+              val valueAsProd = ${ 'value.asExprOf[Product] }
+              $labels.zip(valueAsProd.productIterator).zip($rwInstances).foreach { case ((k, v), rw) =>
+                members(k) = rw.asInstanceOf[JsonRW[Any]].write(v)
+              }
+              JObject(members)
+            }
+
+            override def parse(path: String, jValue: JValue): T = jValue match
+              case JObject(jsonMap) =>
+                val arguments = ArrayDeque.empty[Any]
+                val keyErrors = ArrayDeque.empty[ParseError]
+                val keyValidationErrors = ArrayDeque.empty[FieldValidationError]
+                val defaultValuesMap = $defaultValues.toMap
+
+                $labels.zip($rwInstances).foreach { case (label, rw) =>
+                  val keyPath = s"$path.$label"
+                  val keyPresent = jsonMap.contains(label)
+                  val hasGlobalDefault = rw.default.nonEmpty
+
+                  val defaultOpt = defaultValuesMap(label)
+                  val hasLocalDefault = defaultOpt.isDefined
+
+                  if !keyPresent && !hasGlobalDefault && !hasLocalDefault then
+                    keyErrors += ParseError(keyPath, "is missing")
+                  else {
+                    val argOpt = jsonMap
+                      .get(label)
+                      .flatMap { paramJValue =>
+                        try {
+                          Some(rw.parse(keyPath, paramJValue))
+                        } catch {
+                          case pe: ParsingException =>
+                            keyErrors ++= pe.errors
+                            None
+                          case e: FieldsValidationException =>
+                            keyValidationErrors ++= e.errors
+                            None
+                        }
+                      }
+
+                    val arg = argOpt
+                      .orElse(defaultOpt.map(_()))
+                      .orElse(rw.default)
+                      .getOrElse(null) //  WE. DONT. ALLOW. NULLS .. TODO macro generate validation typeclass...
+
+                    arguments += arg
+                  }
+                }
+
+                if keyErrors.nonEmpty then throw ParsingException(keyErrors.toSeq)
+                // if keyValidationErrors.nonEmpty then throw FieldsValidationException(keyValidationErrors.toSeq)
+
+                try {
+
+                  $m.fromProduct(Tuple.fromArray(arguments.toArray))
+                } catch {
+                  case fve: FieldsValidationException =>
+                    val validationErrors =
+                      keyValidationErrors.toSeq ++ fve.errors.map(e => e.withPath(s"$path.${e.path}"))
+                    throw new FieldsValidationException(validationErrors)
+                }
+              case JString(enumName) =>
+                if $labels.isEmpty then $m.fromProduct(EmptyTuple) // instantiate enum's singleton case
+                else typeMismatchError(path, "Object", jValue)
+              case _ => typeMismatchError(path, "Object", jValue)
+
           }
         }
 
-        if keyErrors.nonEmpty then throw ParsingException(keyErrors.toSeq)
-        // if keyValidationErrors.nonEmpty then throw FieldsValidationException(keyValidationErrors.toSeq)
+      case '{
+            type label <: Tuple;
+            $m: Mirror.SumOf[T] { type MirroredElemTypes = elementTypes; type MirroredElemLabels = `label` }
+          } =>
+        val labels = Expr(Type.valueOfTuple[label].map(_.toList.map(_.toString)).getOrElse(List.empty))
 
-        try {
-          ctx.rawConstruct(arguments.toSeq)
-        } catch {
-          case fve: FieldsValidationException =>
-            val validationErrors = keyValidationErrors.toSeq ++ fve.errors.map(e => e.withPath(s"$path.${e.path}"))
-            throw new FieldsValidationException(validationErrors)
+        val rwInstancesExpr = summonInstances[T, elementTypes]
+        val rwInstances = Expr.ofList(rwInstancesExpr)
+
+        val annotations = Expr.ofList(TypeRepr.of[T].typeSymbol.annotations.filter(isAnnotation).map(_.asExpr))
+
+        val isSingleCasesEnum = isSingletonCasesEnum[T]
+
+        '{
+          val discrOpt = $annotations.find(_.isInstanceOf[discriminator]).map(_.asInstanceOf[discriminator])
+          val discrName = discrOpt.map(_.name).getOrElse("@type")
+          new JsonRW[T] {
+            override def write(value: T): JValue =
+              val index = $m.ordinal(value)
+              val typeName = $labels(index)
+              if $isSingleCasesEnum then {
+                val label = $labels(index)
+                JsonRW[String].write(label)
+              } else {
+                val rw = $rwInstances(index)
+                val obj = rw.asInstanceOf[JsonRW[Any]].write(value).asInstanceOf[JObject]
+                obj.set(discrName, JString(typeName))
+                obj
+              }
+
+            override def parse(path: String, jValue: JValue): T = jValue match
+              case JObject(jsonMap) if ! $isSingleCasesEnum =>
+                val typeName: String = jsonMap.get(discrName) match
+                  case None             => throw ParsingException(ParseError(discrName, "is missing"))
+                  case Some(JString(s)) => s
+                  case Some(other)      => typeMismatchError(path, s"$discrName: String", other)
+
+                val idx = $labels.indexWhere(_ == typeName)
+                if idx < 0 then
+                  throw TupsonException(
+                    s"Subtype not found: '$typeName'. Possible values: ${$labels.map(l => s"'$l'").mkString(", ")}"
+                  )
+                val rw = $rwInstances(idx)
+                rw.parse(path, jValue).asInstanceOf[T]
+
+              case JString(enumName) if $isSingleCasesEnum =>
+                val idx = $labels.indexWhere(_ == enumName)
+                if idx < 0 then
+                  throw TupsonException(
+                    s"Enum value not found: '$enumName'. Possible values: ${$labels.map(l => s"'$l'").mkString(", ")}"
+                  )
+                val rw = $rwInstances(idx)
+                rw.parse(path, jValue).asInstanceOf[T]
+              case other =>
+                if $isSingleCasesEnum then typeMismatchError(path, "String", other)
+                else typeMismatchError(path, "Object", other)
+          }
         }
-      case JString(enumName) =>
-        if ctx.params.isEmpty then ctx.rawConstruct(Seq()) // instantiate enum's singleton case
-        else typeMismatchError(path, "Object", jValue)
-      case _ => typeMismatchError(path, "Object", jValue)
   }
 
-  override def split[T](ctx: SealedTrait[JsonRW, T]): JsonRW[T] = new {
-    private val discrOpt = ctx.annotations.find(_.isInstanceOf[discriminator]).map(_.asInstanceOf[discriminator])
-    val discrName = discrOpt.map(_.name).getOrElse("@type")
-    override def write(value: T): JValue =
-      ctx.choose(value) { sub =>
-        if ctx.isSingletonCasesEnum then {
-          JsonRW[String].write(sub.typeInfo.short)
-        } else {
+  private def summonInstances[T: Type, Elems: Type](using Quotes): List[Expr[JsonRW[?]]] =
+    Type.of[Elems] match
+      case '[elem *: elems] => deriveOrSummon[T, elem] :: summonInstances[T, elems]
+      case '[EmptyTuple]    => Nil
 
-          val subObject = sub.cast(value)
-          val obj = sub.typeclass.write(subObject).asInstanceOf[JObject]
-          obj.set(discrName, JString(sub.typeInfo.short))
-          obj
+  private def deriveOrSummon[T: Type, Elem: Type](using Quotes): Expr[JsonRW[Elem]] =
+    Type.of[Elem] match
+      case '[T] => deriveRec[T, Elem]
+      case _    => '{ summonInline[JsonRW[Elem]] }
+
+  private def deriveRec[T: Type, Elem: Type](using Quotes): Expr[JsonRW[Elem]] =
+    Type.of[T] match
+      case '[Elem] => '{ error("infinite recursive derivation") }
+      case _       => derivedMacro[Elem] // recursive derivation
+
+  /* macro utils */
+  private def isSingletonCasesEnum[T: Type](using Quotes): Expr[Boolean] =
+    import quotes.reflect.*
+    val ts = TypeRepr.of[T].typeSymbol
+    Expr(ts.flags.is(Flags.Enum) && ts.companionClass.methodMember("values").nonEmpty)
+
+  private def defaultValuesExpr[T: Type](using
+      Quotes
+  ): Expr[List[(String, Option[() => Any])]] =
+    import quotes.reflect._
+    def exprOfOption(
+        oet: (Expr[String], Option[Expr[Any]])
+    ): Expr[(String, Option[() => Any])] = oet match {
+      case (label, None)     => Expr(label.valueOrAbort -> None)
+      case (label, Some(et)) => '{ $label -> Some(() => $et) }
+    }
+    val tpe = TypeRepr.of[T].typeSymbol
+    val terms = tpe.primaryConstructor.paramSymss.flatten
+      .filter(_.isValDef)
+      .zipWithIndex
+      .map { case (field, i) =>
+        exprOfOption {
+          Expr(field.name) -> tpe.companionClass
+            .declaredMethod(s"$$lessinit$$greater$$default$$${i + 1}")
+            .headOption
+            .flatMap(_.tree.asInstanceOf[DefDef].rhs)
+            .map(_.asExprOf[Any])
         }
       }
-    override def parse(path: String, jValue: JValue): T = jValue match
-      case JObject(jsonMap) if !ctx.isSingletonCasesEnum =>
-        val typeName: String = jsonMap.get(discrName) match
-          case None             => throw ParsingException(ParseError(discrName, "is missing"))
-          case Some(JString(s)) => s
-          case Some(other)      => typeMismatchError(path, s"$discrName: String", other)
+    Expr.ofList(terms)
 
-        val subtypeNames = ctx.subtypes.map(_.typeInfo.short).map(t => s"'$t'")
-        val subtype = ctx.subtypes.find(_.typeInfo.short == typeName) match
-          case None =>
-            throw TupsonException(
-              s"Subtype not found: '$typeName'. Possible values: ${subtypeNames.mkString(", ")}"
-            )
-          case Some(st) => st
-
-        subtype.typeclass.parse(path, jValue)
-      case JString(enumName) if ctx.isSingletonCasesEnum =>
-        val subtypeNames = ctx.subtypes.map(_.typeInfo.short).map(t => s"'$t'")
-        val subtype = ctx.subtypes.find(_.typeInfo.short == enumName) match
-          case None =>
-            throw TupsonException(
-              s"Enum value not found: '$enumName'. Possible values: ${subtypeNames.mkString(", ")}"
-            )
-          case Some(st) => st
-
-        subtype.typeclass.parse(path, jValue)
-      case other =>
-        if ctx.isSingletonCasesEnum then typeMismatchError(path, "String", other)
-        else typeMismatchError(path, "Object", other)
-  }
-
+  /* generaul utils */
   private def typeMismatchError(
       path: String,
       expectedType: String,

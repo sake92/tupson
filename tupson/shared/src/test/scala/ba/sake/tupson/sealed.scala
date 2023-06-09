@@ -7,7 +7,7 @@ package seal {
 }
 
 package annotated {
-  
+
   @discriminator("tip")
   enum Annot1 derives JsonRW:
     case A
