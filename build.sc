@@ -1,7 +1,7 @@
 import mill._, scalalib._, scalajslib._, publish._, scalafmt._
 
-import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.1.4`
-import de.tobiasroeser.mill.vcs.version.VcsVersion
+import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
+import io.kipp.mill.ci.release.CiReleaseModule
 
 object tupson extends Module {
 
@@ -47,11 +47,9 @@ trait TupsonCommonModule extends SbtModule with ScalafmtModule {
   }
 }
 
-trait TupsonPublishModule extends TupsonCommonModule with PublishModule {
+trait TupsonPublishModule extends TupsonCommonModule with CiReleaseModule {
 
   def artifactName = "tupson"
-
-  override def publishVersion: T[String] = VcsVersion.vcsState().format()
 
   def pomSettings = PomSettings(
     organization = "ba.sake",
