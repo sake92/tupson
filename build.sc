@@ -8,7 +8,7 @@ object tupson extends Module {
   object jvm extends TupsonPublishModule
 
   object js extends TupsonPublishModule with ScalaJSModule {
-    def scalaJSVersion = "1.13.0"
+    def scalaJSVersion = "1.13.1"
   }
 }
 
@@ -17,22 +17,17 @@ object examples extends TupsonCommonModule {
 }
 
 trait TupsonCommonModule extends SbtModule with ScalafmtModule {
-  def scalaVersion = "3.2.2"
+  def scalaVersion = "3.3.0"
 
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-deprecation",
-    "-Yretain-trees", // Required by magnolia
+    "-Yretain-trees", // required for default arguments
   )
 
   def ivyDeps = Agg(
-    ivy"org.typelevel::jawn-ast::1.4.0",
-    ivy"com.lihaoyi::sourcecode::0.3.0",
-    ivy"com.github.sake92.magnolia::magnolia::disambiguate-singleton-enums-SNAPSHOT"
+    ivy"org.typelevel::jawn-ast::1.5.0",
+    ivy"com.lihaoyi::sourcecode::0.3.0"
   )
-
-  def repositoriesTask() = T.task { super.repositoriesTask() ++ Seq(
-    coursier.maven.MavenRepository("https://jitpack.io")
-  )}
 
   override def sources = T.sources(
     super.sources() ++ Seq(
