@@ -15,8 +15,8 @@ git diff
 git commit -am "msg"
 
 # powershell..
-$VERSION="0.6.0"
-git tag -a $VERSION -m "Fix Scala.js deps"
+$VERSION="0.7.0"
+git tag -a $VERSION -m "Remove validation"
 git push origin $VERSION
 
 
@@ -24,4 +24,8 @@ git push origin $VERSION
 
 
 ## TODO
--
+- 
+
+
+
+

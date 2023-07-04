@@ -13,8 +13,6 @@ import scala.quoted.*
 
 import org.typelevel.jawn.ast.*
 
-import ba.sake.validation.*
-
 trait JsonRW[T]:
 
   def write(value: T): JValue
@@ -121,7 +119,6 @@ object JsonRW:
   private def rethrowingKeysErrors[T](path: String, values: Array[JValue])(using trw: JsonRW[T]): Seq[T] = {
     val parsedValues = ArrayDeque.empty[T]
     val keyErrors = ArrayDeque.empty[ParseError]
-    val validationErrors = ArrayDeque.empty[FieldValidationError]
     values.zipWithIndex.foreach { case (v, i) =>
       val subPath = s"$path[$i]"
       try {
@@ -129,12 +126,9 @@ object JsonRW:
       } catch {
         case pe: ParsingException =>
           keyErrors ++= pe.errors
-        case e: FieldsValidationException =>
-          validationErrors ++= e.errors
       }
     }
     if keyErrors.nonEmpty then throw ParsingException(keyErrors.toSeq)
-    if validationErrors.nonEmpty then throw FieldsValidationException(validationErrors.toSeq)
 
     parsedValues.toSeq
   }
@@ -224,7 +218,6 @@ object JsonRW:
               case JObject(jsonMap) =>
                 val arguments = ArrayDeque.empty[Any]
                 val keyErrors = ArrayDeque.empty[ParseError]
-                val keyValidationErrors = ArrayDeque.empty[FieldValidationError]
                 val defaultValuesMap = $defaultValues.toMap
 
                 $labels.zip($rwInstances).foreach { case (label, rw) =>
@@ -247,33 +240,21 @@ object JsonRW:
                           case pe: ParsingException =>
                             keyErrors ++= pe.errors
                             None
-                          case e: FieldsValidationException =>
-                            keyValidationErrors ++= e.errors
-                            None
                         }
                       }
 
-                    val arg = argOpt
+                    argOpt
                       .orElse(defaultOpt.map(_()))
                       .orElse(rw.default)
-                      .getOrElse(null) //  WE. DONT. ALLOW. NULLS .. TODO macro generate validation typeclass...
-
-                    arguments += arg
+                      .foreach { arg =>
+                        arguments += arg
+                      }
                   }
                 }
 
                 if keyErrors.nonEmpty then throw ParsingException(keyErrors.toSeq)
-                // if keyValidationErrors.nonEmpty then throw FieldsValidationException(keyValidationErrors.toSeq)
 
-                try {
-
-                  $m.fromProduct(Tuple.fromArray(arguments.toArray))
-                } catch {
-                  case fve: FieldsValidationException =>
-                    val validationErrors =
-                      keyValidationErrors.toSeq ++ fve.errors.map(e => e.withPath(s"$path.${e.path}"))
-                    throw new FieldsValidationException(validationErrors)
-                }
+                $m.fromProduct(Tuple.fromArray(arguments.toArray))
               case JString(enumName) =>
                 if $labels.isEmpty then $m.fromProduct(EmptyTuple) // instantiate enum's singleton case
                 else typeMismatchError(path, "Object", jValue)
