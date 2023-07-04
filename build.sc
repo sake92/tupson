@@ -21,13 +21,14 @@ trait TupsonCommonModule extends SbtModule with ScalafmtModule {
 
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-deprecation",
-    "-Yretain-trees", // required for default arguments
+    "-Yretain-trees" // required for default arguments
   )
 
   def ivyDeps = Agg(
     ivy"org.typelevel::jawn-ast::1.5.0"
   )
 
+  // shared sources between jvm and js
   override def sources = T.sources(
     super.sources() ++ Seq(
       PathRef(os.pwd / "tupson" / "shared" / "src" / "main" / "scala")
