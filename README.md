@@ -1,3 +1,8 @@
+
+<!--#
+version=0.7.0
+$-->
+
 # tupson
 
 Stupid simple, minimalistic Scala 3 library for writing and reading JSON.
@@ -9,7 +14,7 @@ It only does `String <=> T` conversions, no streaming.
 Setup in sbt:
 ```scala
 libraryDependencies ++= Seq(
-  "ba.sake" %%% "tupson" % "0.6.0"
+  "ba.sake" %%% "tupson" % "{{ version }}"
 )
 scalacOptions ++= Seq("-Yretain-trees")
 ```
@@ -17,14 +22,14 @@ scalacOptions ++= Seq("-Yretain-trees")
 Setup in Mill:
 ```scala
 def ivyDeps = Agg(
-  ivy"ba.sake::tupson:0.6.0"
+  ivy"ba.sake::tupson:{{ version }}"
 )
 def scalacOptions = super.scalacOptions() ++ Seq("-Yretain-trees")
 ```
 
 Setup in scala-cli:
 ```scala
-//> using lib "ba.sake::tupson:0.6.0"
+//> using lib "ba.sake::tupson:{{ version }}"
 ```
 
 You can also use this [Scastie example](https://scastie.scala-lang.org/SPzw87ArSXqiFlmjT0G9BA) to try `tupson` online.
