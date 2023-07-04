@@ -29,7 +29,7 @@ Setup in scala-cli:
 //> using dep ba.sake::tupson:0.7.0
 ```
 
-You can also use this [Scastie example](https://scastie.scala-lang.org/SPzw87ArSXqiFlmjT0G9BA) to try `tupson` online.
+You can also use this [Scastie example](https://scastie.scala-lang.org/JBnCoJcASVqOWaAfl8rcUA) to try `tupson` online.
 
 
 ---
