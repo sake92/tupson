@@ -1,16 +1,16 @@
 package ba.sake.tupson
 
 import java.net.URI
-import java.util.UUID
+import java.net.URL
 import java.time.Instant
-
+import java.time.LocalDate
+import java.time.Duration
+import java.util.UUID
 import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayDeque
-
 import scala.compiletime.*
 import scala.deriving.*
 import scala.quoted.*
-
 import org.typelevel.jawn.ast.*
 
 trait JsonRW[T]:
@@ -26,6 +26,12 @@ trait JsonRW[T]:
 object JsonRW:
 
   def apply[T](using rw: JsonRW[T]) = rw
+
+  // identity..
+  given JsonRW[JValue] = new {
+    override def write(value: JValue): JValue = value
+    override def parse(path: String, jValue: JValue): JValue = jValue
+  }
 
   /* basic instances */
   given JsonRW[String] = new {
@@ -90,6 +96,8 @@ object JsonRW:
       case other      => typeMismatchError(path, "UUID", other)
   }
 
+  // java.net
+  // there is no RW for InetAddress because it could do host lookups.. :/
   given JsonRW[URI] = new {
     override def write(value: URI): JValue = JString(value.toString())
     override def parse(path: String, jValue: JValue): URI = jValue match
@@ -97,12 +105,28 @@ object JsonRW:
       case other      => typeMismatchError(path, "URI", other)
   }
 
+  given JsonRW[URL] = new {
+    override def write(value: URL): JValue = JString(value.toString())
+    override def parse(path: String, jValue: JValue): URL = jValue match
+      case JString(s) => new URL(s).toURI().toURL()
+      case other      => typeMismatchError(path, "URL", other)
+  }
+
+  // java.time
   given JsonRW[Instant] = new {
     override def write(value: Instant): JValue = JString(value.toString)
 
     override def parse(path: String, jValue: JValue): Instant = jValue match
       case JString(s) => Instant.parse(s)
       case other      => typeMismatchError(path, "Instant", other)
+  }
+
+  given JsonRW[Duration] = new {
+    override def write(value: Duration): JValue = JString(value.toString)
+
+    override def parse(path: String, jValue: JValue): Duration = jValue match
+      case JString(s) => Duration.parse(s)
+      case other      => typeMismatchError(path, "Duration", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Option[T]] = new {

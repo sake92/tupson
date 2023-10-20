@@ -1,5 +1,10 @@
 package ba.sake.tupson
 
+import org.typelevel.jawn.ast.*
+import java.util.UUID
+import java.net.*
+import java.time.*
+
 class ParseSuite extends munit.FunSuite {
 
   test("parse primitives") {
@@ -28,10 +33,10 @@ class ParseSuite extends munit.FunSuite {
 
     assertEquals("1".parseJson[Long], 1L)
 
-    assertEquals("\"\"".parseJson[String], "")
-    assertEquals("\"abc\"".parseJson[String], "abc")
+    assertEquals(""" "" """.parseJson[String], "")
+    assertEquals(""" "abc" """.parseJson[String], "abc")
 
-    assertEquals("\"a\"".parseJson[Char], 'a')
+    assertEquals(""" "a" """.parseJson[Char], 'a')
   }
 
   test("parse Long") {
@@ -43,6 +48,54 @@ class ParseSuite extends munit.FunSuite {
     assertEquals("-9007199254740991".parseJson[Long], -9007199254740991L)
     assertEquals("-9007199254740992".parseJson[Long], -9007199254740992L)
   }
+
+  test("parse JValue") {
+    assertEquals(""" "aaa" """.parseJson[JValue], JString("aaa"))
+    assertEquals(""" 123 """.parseJson[JValue], JNum("123"))
+  }
+
+  test("parse UUID") {
+    assertEquals(
+      """ "aff39af5-af24-43a8-a306-457a9f07b1b8" """.parseJson[UUID],
+      UUID.fromString("aff39af5-af24-43a8-a306-457a9f07b1b8")
+    )
+  }
+
+  test("parse URI") {
+    intercept[URISyntaxException] {
+      """ "/?cmd=200&json={port:1,state:1}" """.parseJson[URI]
+    }
+    assertEquals(""" "file:/sdfdsfsdf" """.parseJson[URI], URI.create("file:/sdfdsfsdf"))
+  }
+
+  test("parse URL") {
+    intercept[MalformedURLException] {
+      """ "/?cmd=200&json={port:1,state:1}" """.parseJson[URL]
+    }
+    assertEquals(""" "file:/sdfdsfsdf" """.parseJson[URL], URL("file:/sdfdsfsdf"))
+  }
+
+  test("parse Instant") {
+    intercept[java.time.format.DateTimeParseException] {
+      """ "bddsfsdf" """.parseJson[Instant]
+    }
+    assertEquals(""" "2023-10-20T13:47:11.504575Z" """.parseJson[Instant], Instant.parse("2023-10-20T13:47:11.504575Z"))
+  }
+
+  test("parse Duration") {
+    intercept[java.time.format.DateTimeParseException] {
+      """ "gn536435erfef" """.parseJson[Duration]
+    }
+    assertEquals(""" "PT168H" """.parseJson[Duration], Duration.ofDays(7))
+    assertEquals(""" "PT42H" """.parseJson[Duration], Duration.ofHours(42))
+    assertEquals(""" "PT33M" """.parseJson[Duration], Duration.ofMinutes(33))
+    assertEquals(
+      """ "PT26H3M4.005000006S" """.parseJson[Duration],
+      Duration.ofDays(1).plusHours(2).plusMinutes(3).plusSeconds(4).plusMillis(5).plusNanos(6)
+    )
+  }
+
+  //////////////////////////
 
   test("parse Seq") {
     assertEquals("[1,2,3]".parseJson[Seq[Int]], Seq(1, 2, 3))
