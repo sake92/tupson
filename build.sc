@@ -17,7 +17,7 @@ object examples extends TupsonCommonModule {
 }
 
 trait TupsonCommonModule extends SbtModule with ScalafmtModule {
-  def scalaVersion = "3.3.0"
+  def scalaVersion = "3.3.1"
 
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-deprecation",
@@ -35,7 +35,7 @@ trait TupsonCommonModule extends SbtModule with ScalafmtModule {
     )
   )
 
-  object test extends Tests with TestModule.Munit with ScalafmtModule {
+  object test extends ScalaTests with TestModule.Munit with ScalafmtModule {
     def ivyDeps = Agg(
       ivy"org.scalameta::munit::0.7.29"
     )
