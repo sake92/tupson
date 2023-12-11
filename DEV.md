@@ -15,8 +15,8 @@ git diff
 git commit -am "msg"
 
 # powershell..
-$VERSION="0.7.0"
-git tag -a $VERSION -m "Remove validation"
+$VERSION="0.8.0"
+git tag -a $VERSION -m "Release $VERSION"
 git push origin $VERSION
 
 

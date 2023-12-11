@@ -60,7 +60,7 @@ Simple types: `Int`, `Double`, `Boolean`, `String` etc work out of the box.
 
 ### Collections
 
-`List[T]`, `Seq[T]`, `Array[T]` are supported.  
+`Seq[T]`, `Array[T]` are supported.  
 > Note that `T` needs to have a `JsonRW[T]` given instance!
 
 ### Maps

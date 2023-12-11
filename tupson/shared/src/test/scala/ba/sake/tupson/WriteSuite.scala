@@ -33,7 +33,6 @@ class WriteSuite extends munit.FunSuite {
 
   test("write Seq") {
     assertEquals(Seq(1, 2, 3).toJson, "[1,2,3]")
-    assertEquals(List(1, 2, 3).toJson, "[1,2,3]")
     assertEquals(Array(1, 2, 3).toJson, "[1,2,3]")
   }
 
@@ -142,7 +141,7 @@ class WriteSuite extends munit.FunSuite {
   /* recursive data type */
   test("write recursive data type") {
     import rec.*
-    val n1 = Node(List(Node(List.empty)))
+    val n1 = Node(Seq(Node(Seq.empty)))
     assertEquals(
       n1.toJson,
       """{"children":[{"children":[]}]}"""

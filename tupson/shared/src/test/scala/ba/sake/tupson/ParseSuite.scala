@@ -69,7 +69,7 @@ class ParseSuite extends munit.FunSuite {
   }
 
   test("parse URL") {
-    intercept[MalformedURLException] {
+    intercept[URISyntaxException] {
       """ "/?cmd=200&json={port:1,state:1}" """.parseJson[URL]
     }
     assertEquals(""" "file:/sdfdsfsdf" """.parseJson[URL], URL("file:/sdfdsfsdf"))
@@ -99,19 +99,18 @@ class ParseSuite extends munit.FunSuite {
 
   test("parse Seq") {
     assertEquals("[1,2,3]".parseJson[Seq[Int]], Seq(1, 2, 3))
-    assertEquals("[1,2,3]".parseJson[List[Int]], List(1, 2, 3))
     assertEquals("[1,2,3]".parseJson[Array[Int]].toSeq, Array(1, 2, 3).toSeq)
 
     val ex1 = intercept[ParsingException] {
-      """5""".parseJson[List[Int]]
+      """5""".parseJson[Seq[Int]]
     }
     assertEquals(
       ex1.errors.head,
-      ParseError("$", "should be List but it is Number", Some("5"))
+      ParseError("$", "should be Seq but it is Number", Some("5"))
     )
 
     val ex2 = intercept[ParsingException] {
-      """[ true, "" ]""".parseJson[List[Int]]
+      """[ true, "" ]""".parseJson[Seq[Int]]
     }
     assertEquals(
       ex2.errors,
@@ -274,21 +273,21 @@ class ParseSuite extends munit.FunSuite {
   test("parse missing keys to their local defaults") {
     assertEquals(
       """{}""".parseJson[CaseClassDefault],
-      CaseClassDefault(List.empty, Some("default"))
+      CaseClassDefault(Seq.empty, Some("default"))
     )
     assertEquals(
       """{ "lst": ["value"], "str": "string" }""".parseJson[CaseClassDefault],
-      CaseClassDefault(List("value"), Some("string"))
+      CaseClassDefault(Seq("value"), Some("string"))
     )
     assertEquals(
       """{ "lst": ["value"], "str": null }""".parseJson[CaseClassDefault],
-      CaseClassDefault(List("value"), None)
+      CaseClassDefault(Seq("value"), None)
     )
     intercept[TupsonException] {
       // "lst" must not be null
       assertEquals(
         """{ "lst": null }""".parseJson[CaseClassDefault],
-        CaseClassDefault(List.empty, None)
+        CaseClassDefault(Seq.empty, None)
       )
     }
   }
@@ -298,7 +297,7 @@ class ParseSuite extends munit.FunSuite {
     import rec.*
     assertEquals(
       """{"children":[{"children":[]}]}""".parseJson[Node],
-      Node(List(Node(List.empty)))
+      Node(Seq(Node(Seq.empty)))
     )
   }
 

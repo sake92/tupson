@@ -21,6 +21,8 @@ trait TupsonCommonModule extends SbtModule with ScalafmtModule {
 
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-deprecation",
+    "-Xcheck-macros",
+    "-Xmax-inlines:100",
     "-Yretain-trees" // required for default arguments
   )
 

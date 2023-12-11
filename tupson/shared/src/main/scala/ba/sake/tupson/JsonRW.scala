@@ -5,6 +5,7 @@ import java.net.URL
 import java.time.Instant
 import java.time.LocalDate
 import java.time.Duration
+import java.time.Period
 import java.util.UUID
 import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayDeque
@@ -108,7 +109,7 @@ object JsonRW:
   given JsonRW[URL] = new {
     override def write(value: URL): JValue = JString(value.toString())
     override def parse(path: String, jValue: JValue): URL = jValue match
-      case JString(s) => new URL(s).toURI().toURL()
+      case JString(s) => new URI(s).toURL()
       case other      => typeMismatchError(path, "URL", other)
   }
 
@@ -127,6 +128,14 @@ object JsonRW:
     override def parse(path: String, jValue: JValue): Duration = jValue match
       case JString(s) => Duration.parse(s)
       case other      => typeMismatchError(path, "Duration", other)
+  }
+
+  given JsonRW[Period] = new {
+    override def write(value: Period): JValue = JString(value.toString)
+
+    override def parse(path: String, jValue: JValue): Period = jValue match
+      case JString(s) => Period.parse(s)
+      case other      => typeMismatchError(path, "Period", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Option[T]] = new {
@@ -163,14 +172,6 @@ object JsonRW:
     override def parse(path: String, jValue: JValue): Array[T] = jValue match
       case JArray(arr) => rethrowingKeysErrors(path, arr).toArray
       case other       => typeMismatchError(path, "Array", other)
-  }
-
-  given [T](using trw: JsonRW[T]): JsonRW[List[T]] = new {
-    override def write(value: List[T]): JValue =
-      JArray(value.map(trw.write).toArray)
-    override def parse(path: String, jValue: JValue): List[T] = jValue match
-      case JArray(list) => rethrowingKeysErrors(path, list).toList
-      case other        => typeMismatchError(path, "List", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Seq[T]] = new {
