@@ -20,12 +20,8 @@ object JsonRW extends JsonRWInstances:
 
   def apply[T](using rw: JsonRW[T]) = rw
 
-    given JsonRW[JValue] = new {
-    override def write(value: JValue): JValue = value
-    override def parse(path: String, jValue: JValue): JValue = jValue
-  }
-
-  given JsonRW[String] = new {
+  // needed for enums macro
+  given JsonRW[String] with {
     override def write(value: String): JValue = JString(value)
     override def parse(path: String, jValue: JValue): String = jValue match
       case JString(s) => s

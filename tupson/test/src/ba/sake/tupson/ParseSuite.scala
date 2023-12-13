@@ -2,7 +2,6 @@ package ba.sake.tupson
 
 import org.typelevel.jawn.ast.*
 import java.util.UUID
-import java.net.*
 import java.time.*
 
 class ParseSuite extends munit.FunSuite {
@@ -59,20 +58,6 @@ class ParseSuite extends munit.FunSuite {
       """ "aff39af5-af24-43a8-a306-457a9f07b1b8" """.parseJson[UUID],
       UUID.fromString("aff39af5-af24-43a8-a306-457a9f07b1b8")
     )
-  }
-
-  test("parse URI") {
-    intercept[URISyntaxException] {
-      """ "/?cmd=200&json={port:1,state:1}" """.parseJson[URI]
-    }
-    assertEquals(""" "file:/sdfdsfsdf" """.parseJson[URI], URI.create("file:/sdfdsfsdf"))
-  }
-
-  test("parse URL") {
-    intercept[URISyntaxException] {
-      """ "/?cmd=200&json={port:1,state:1}" """.parseJson[URL]
-    }
-    assertEquals(""" "file:/sdfdsfsdf" """.parseJson[URL], URL("file:/sdfdsfsdf"))
   }
 
   test("parse Instant") {

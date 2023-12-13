@@ -13,8 +13,13 @@ import org.typelevel.jawn.ast.*
 
 private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
 
+  given JsonRW[JValue] with {
+    override def write(value: JValue): JValue = value
+    override def parse(path: String, jValue: JValue): JValue = jValue
+  }
+
   /* basic instances */
-  given JsonRW[Char] = new {
+  given JsonRW[Char] with {
     override def write(value: Char): JValue = JString(value.toString)
     override def parse(path: String, jValue: JValue): Char = jValue match
       case JString(s) =>
@@ -22,7 +27,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
       case other => JsonRW.typeMismatchError(path, "Char", other)
   }
 
-  given JsonRW[Boolean] = new {
+  given JsonRW[Boolean] with {
     override def write(value: Boolean): JValue = JBool(value)
     override def parse(path: String, jValue: JValue): Boolean = jValue match
       case JTrue  => true
@@ -30,7 +35,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
       case other  => JsonRW.typeMismatchError(path, "Boolean", other)
   }
 
-  given JsonRW[Float] = new {
+  given JsonRW[Float] with {
     override def write(value: Float): JValue = DoubleNum(value)
     override def parse(path: String, jValue: JValue): Float = jValue match
       case DoubleNum(n) => n.toFloat
@@ -38,7 +43,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
       case other        => JsonRW.typeMismatchError(path, "Float", other)
   }
 
-  given JsonRW[Double] = new {
+  given JsonRW[Double] with {
     override def write(value: Double): JValue = DoubleNum(value)
     override def parse(path: String, jValue: JValue): Double = jValue match
       case DoubleNum(n) => n.toDouble
@@ -46,7 +51,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
       case other        => JsonRW.typeMismatchError(path, "Double", other)
   }
 
-  given JsonRW[Int] = new {
+  given JsonRW[Int] with {
     override def write(value: Int): JValue = LongNum(value)
     override def parse(path: String, jValue: JValue): Int = jValue match
       case LongNum(n)   => n.toInt
@@ -54,7 +59,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
       case other        => JsonRW.typeMismatchError(path, "Int", other)
   }
 
-  given JsonRW[Long] = new {
+  given JsonRW[Long] with {
     override def write(value: Long): JValue = LongNum(value)
     override def parse(path: String, jValue: JValue): Long = jValue match
       case LongNum(n)   => n
@@ -62,31 +67,15 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
       case other        => JsonRW.typeMismatchError(path, "Long", other)
   }
 
-  given JsonRW[UUID] = new {
+  given JsonRW[UUID] with {
     override def write(value: UUID): JValue = JString(value.toString())
     override def parse(path: String, jValue: JValue): UUID = jValue match
       case JString(s) => UUID.fromString(s)
       case other      => JsonRW.typeMismatchError(path, "UUID", other)
   }
 
-  // java.net
-  // there is no RW for InetAddress because it could do host lookups.. :/
-  given JsonRW[URI] = new {
-    override def write(value: URI): JValue = JString(value.toString())
-    override def parse(path: String, jValue: JValue): URI = jValue match
-      case JString(s) => new URI(s)
-      case other      => JsonRW.typeMismatchError(path, "URI", other)
-  }
-
-  given JsonRW[URL] = new {
-    override def write(value: URL): JValue = JString(value.toString())
-    override def parse(path: String, jValue: JValue): URL = jValue match
-      case JString(s) => new URI(s).toURL()
-      case other      => JsonRW.typeMismatchError(path, "URL", other)
-  }
-
   // java.time
-  given JsonRW[Instant] = new {
+  given JsonRW[Instant] with {
     override def write(value: Instant): JValue = JString(value.toString)
 
     override def parse(path: String, jValue: JValue): Instant = jValue match
@@ -94,7 +83,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
       case other      => JsonRW.typeMismatchError(path, "Instant", other)
   }
 
-  given JsonRW[Duration] = new {
+  given JsonRW[Duration] with {
     override def write(value: Duration): JValue = JString(value.toString)
 
     override def parse(path: String, jValue: JValue): Duration = jValue match
@@ -102,7 +91,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
       case other      => JsonRW.typeMismatchError(path, "Duration", other)
   }
 
-  given JsonRW[Period] = new {
+  given JsonRW[Period] with {
     override def write(value: Period): JValue = JString(value.toString)
 
     override def parse(path: String, jValue: JValue): Period = jValue match
@@ -110,7 +99,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
       case other      => JsonRW.typeMismatchError(path, "Period", other)
   }
 
-  given [T](using trw: JsonRW[T]): JsonRW[Option[T]] = new {
+  given [T](using trw: JsonRW[T]): JsonRW[Option[T]] with {
     override def write(value: Option[T]): JValue = value match
       case None    => JNull
       case Some(v) => trw.write(v)
@@ -129,7 +118,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
       case other        => JsonRW.typeMismatchError(path, "List", other)
   }
 
-  given [T: ClassTag](using trw: JsonRW[T]): JsonRW[Array[T]] = new {
+  given [T: ClassTag](using trw: JsonRW[T]): JsonRW[Array[T]] with {
     override def write(value: Array[T]): JValue =
       JArray(value.map(trw.write))
     override def parse(path: String, jValue: JValue): Array[T] = jValue match
@@ -137,7 +126,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
       case other       => JsonRW.typeMismatchError(path, "Array", other)
   }
 
-  given [T](using trw: JsonRW[T]): JsonRW[Set[T]] = new {
+  given [T](using trw: JsonRW[T]): JsonRW[Set[T]] with {
     override def write(value: Set[T]): JValue =
       JArray(value.map(trw.write).toArray)
     override def parse(path: String, jValue: JValue): Set[T] = jValue match
@@ -145,7 +134,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
       case other       => JsonRW.typeMismatchError(path, "Set", other)
   }
 
-  given [T](using trw: JsonRW[T]): JsonRW[Map[String, T]] = new {
+  given [T](using trw: JsonRW[T]): JsonRW[Map[String, T]] with {
     override def write(value: Map[String, T]): JValue =
       val members = value.map((k, v) => k -> trw.write(v))
       JObject(members.to(scala.collection.mutable.Map))
