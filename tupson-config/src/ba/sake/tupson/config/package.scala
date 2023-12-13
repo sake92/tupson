@@ -5,7 +5,7 @@ import org.typelevel.jawn.ast.*
 import ba.sake.tupson.*
 
 extension (config: Config) {
-  def parse[T: JsonRW]() =
+  def parseConfig[T: JsonRW] =
     ConfigUtils.parse(config)
 }
 

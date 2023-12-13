@@ -6,8 +6,8 @@ import ba.sake.tupson.{given, *}
 
 class UtilTest extends munit.FunSuite {
 
-  test("conf parse normal") {
-    val config = ConfigFactory.load("test1").parse[Test1Conf]()
+  test("parseConfig normal") {
+    val config = ConfigFactory.load("test1").parseConfig[Test1Conf]
     assertEquals(
       config,
       Test1Conf(
@@ -21,10 +21,10 @@ class UtilTest extends munit.FunSuite {
       )
     )
   }
-  test("conf parse overriden by sys prop") {
+  test("parseConfig overriden by sys prop") {
     System.setProperty("sysprop.port", "1234")
     ConfigFactory.invalidateCaches()
-    val config = ConfigFactory.load("test_sys_prop").parse[TestSysPropConf]()
+    val config = ConfigFactory.load("test_sys_prop").parseConfig[TestSysPropConf]
     assertEquals(
       config,
       TestSysPropConf(
@@ -38,8 +38,8 @@ class UtilTest extends munit.FunSuite {
       )
     )
   }
-  test("conf parse overriden by env var") {
-    val config = ConfigFactory.load("test_env_var").parse[TestEnvVarConf]()
+  test("parseConfig overriden by env var") {
+    val config = ConfigFactory.load("test_env_var").parseConfig[TestEnvVarConf]
     assertEquals(
       config,
       TestEnvVarConf(
@@ -80,4 +80,3 @@ case class TestConf(
 enum TestConfPoly derives JsonRW:
   case Poly1()
   case Poly2(x: Int)
-

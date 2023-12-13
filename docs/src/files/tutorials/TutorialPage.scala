@@ -8,7 +8,8 @@ trait TutorialPage extends DocPage {
   override def categoryPosts = List(
     Index,
     Writing,
-    Parsing
+    Parsing,
+    ParsingConfig
   )
 
   override def pageCategory = Some(Index.pageSettings.label)

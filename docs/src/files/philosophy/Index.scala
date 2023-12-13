@@ -22,7 +22,7 @@ object Index extends PhilosophyPage {
     Benefits of ${Consts.ProjectName}'s simplistic approach:
     - your code is easy for "grep" / Ctrl+F
     - no mismatch between serialized version and your code
-    - your internal/core models are separate from JSON, as they should be
+    - your internal/domain models are separate from JSON, as they should be
     - mapping between models is explicit
   
     """.md
