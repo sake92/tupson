@@ -37,6 +37,7 @@ object ParsingConfig extends TutorialPage {
       """),
       s"Then, you can call `.parse[MyConf]` function on a `Config` to parse it to the desired type:".md,
       chl.scala(s"""
+      import java.net.URL
       import com.typesafe.config.ConfigFactory
       import ba.sake.tupson.{given, *}
       import ba.sake.tupson.config.*
@@ -48,9 +49,15 @@ object ParsingConfig extends TutorialPage {
         seq: Seq[String]
       ) derives JsonRW
 
-      val rawConfig = ConfigFactory.load()
+      val rawConfig = ConfigFactory.parseString(${tq}
+      port = 7777
+      url = "http://example.com"
+      string = "str"
+      seq = [a, "b", c]
+      ${tq})
+
       val myConf = rawConfig.parse[MyConf]()
-      // MyConf(7777, URL("http://example.com"), "str", Seq("a", "b", "c"))
+      // MyConf(7777,http://example.com,str,List(a, b, c))
       """)
     )
   )
