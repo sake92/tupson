@@ -34,7 +34,7 @@ Now you need to add another property: <code>port: Int</code>, but <strong>withou
 <li>use a <code>Int = MyDefaultValue</code> to avoid <code>Option</code> gymnastics</li>
 </ol>
 <section id="using-option"><h3>Using Option</h3><div><p>Using <code>Option[T]</code> is handy when you don't have a default value.<br />
-But it is a bit cumbersombe to handle:</p>
+But it is a bit cumbersome to handle:</p>
 <pre class="line-numbers" data-start="1"><code class="language-scala">
           case class MyConfig(url: String, port: Option[Int]) derives JsonRW
           parsedConfig.port.getOrElse(...)

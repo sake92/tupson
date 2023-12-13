@@ -39,6 +39,7 @@ This makes JSON independent of scala/java package and it is more readable.</p>
         case Yellow
 
       val color = Color.Hex(&quot;FFF&quot;)
+      
       println(color.toJson)
       // {&quot;@type&quot;:&quot;Hex&quot;,&quot;num&quot;:&quot;FFF&quot;}
       </code></pre></div><section id="custom-type-key"><h3>Custom type key</h3><div><p>You can use some other key by annotating the sum type with <code>@discriminator</code>:</p>
