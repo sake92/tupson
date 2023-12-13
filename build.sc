@@ -24,7 +24,18 @@ object tupson extends Module {
       ivy"org.typelevel::jawn-ast::1.5.0"
     )
   }
+}
 
+// jvm-only
+object `tupson-config` extends CommonScalaModule with CommonPublishModule {
+  def moduleDeps = Seq(tupson.jvm)
+  def ivyDeps = super.ivyDeps() ++ Agg(
+    ivy"com.typesafe:config:1.4.3"
+  )
+  object test extends ScalaTests with CommonTestModule {
+    def forkArgs = Seq("-Dconfig.override_with_env_vars=true")
+    def forkEnv = Map("CONFIG_FORCE_envvar_port" -> "1234")
+  }
 }
 
 object examples extends CommonScalaModule {
