@@ -1,7 +1,9 @@
-import mill._, scalalib._, scalajslib._, publish._, scalafmt._
-
 import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
+import $ivy.`ba.sake::mill-hepek::0.0.2`
+
+import mill._, scalalib._, scalajslib._, publish._, scalafmt._
 import io.kipp.mill.ci.release.CiReleaseModule
+import ba.sake.millhepek.MillHepekModule
 
 object tupson extends Module {
 
@@ -40,6 +42,12 @@ object `tupson-config` extends CommonScalaModule with CommonPublishModule {
 
 object examples extends CommonScalaModule {
   def moduleDeps = Seq(tupson.jvm)
+}
+
+object docs extends CommonScalaModule with MillHepekModule {
+  def ivyDeps = Agg(
+    ivy"ba.sake::hepek:0.22.0"
+  )
 }
 
 trait CommonScalaModule extends ScalaModule with ScalafmtModule {
