@@ -6,7 +6,7 @@ import io.kipp.mill.ci.release.CiReleaseModule
 object tupson extends Module {
 
   object jvm extends TupsonCommonModule {
-    object test extends ScalaTests with TupsonCommonTestModule
+    object test extends ScalaTests with CommonTestModule
   }
 
   object js extends TupsonCommonModule with ScalaJSModule {
@@ -14,7 +14,7 @@ object tupson extends Module {
     def ivyDeps = super.ivyDeps() ++ Agg(
       ivy"io.github.cquiroz::scala-java-time::2.5.0"
     )
-    object test extends ScalaJSTests with TupsonCommonTestModule
+    object test extends ScalaJSTests with CommonTestModule
   }
 
   trait TupsonCommonModule extends CommonScalaModule with PlatformScalaModule with CiReleaseModule with ScalafmtModule {
@@ -34,12 +34,6 @@ object tupson extends Module {
     )
   }
 
-  trait TupsonCommonTestModule extends TestModule.Munit {
-    def ivyDeps = Agg(
-      ivy"org.scalameta::munit::0.7.29"
-    )
-  }
-
 }
 
 object examples extends CommonScalaModule {
@@ -52,5 +46,11 @@ trait CommonScalaModule extends ScalaModule {
     "-Yretain-trees", // required for default arguments
     "-deprecation",
     "-Xcheck-macros"
+  )
+}
+
+trait CommonTestModule extends TestModule.Munit {
+  def ivyDeps = Agg(
+    ivy"org.scalameta::munit::0.7.29"
   )
 }
