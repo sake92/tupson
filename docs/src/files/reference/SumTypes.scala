@@ -39,7 +39,7 @@ object SumTypes extends ReferencePage {
       Section(
         s"Custom type key",
         div(
-          "You can use some other key by annotating the enum/sealed type with `@discriminator`:",
+          "You can use some other key by annotating the sum type with `@discriminator`:".md,
           chl.scala("""
           @discriminator("myOtherKey")
           enum Color derives JsonRW ...
