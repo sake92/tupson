@@ -17,15 +17,15 @@ object Index extends ReferencePage {
       s"""
       Simple types: `Int`, `Double`, `Boolean`, `String` etc work out of the box.
       """.md,
-      chl.scala("""
+      chl.scala(s"""
       import ba.sake.tupson.{given, *}
       
       // write a value to JSON string
       val myValue = 123
-      println(123.toJson) // "123"
+      println(123.toJson) // 123
 
       // parse a value from JSON string
-      val myParsedValue = \"\"\" 123 \"\"\".parseJson[Int]
+      val myParsedValue = ${tq}123${tq}.parseJson[Int]
       println(myParsedValue) // 123
       """)
     )

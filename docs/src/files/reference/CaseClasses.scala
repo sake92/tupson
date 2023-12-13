@@ -24,6 +24,7 @@ object CaseClasses extends ReferencePage {
       case class Person(name: String, age: Int, address: Address) derives JsonRW
 
       val person = Person("Meho", 33, Address("Sebilj"))
+      
       println(person.toJson)
       // { "age":33, "name":"Meho", "address":{"street":"Sebilj"} }
       """)

@@ -31,6 +31,7 @@ object SumTypes extends ReferencePage {
         case Yellow
 
       val color = Color.Hex("FFF")
+      
       println(color.toJson)
       // {"@type":"Hex","num":"FFF"}
       """)

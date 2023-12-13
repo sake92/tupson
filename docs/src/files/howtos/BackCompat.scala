@@ -27,7 +27,7 @@ object BackCompat extends HowToPage {
         div(
           s"""
           Using `Option[T]` is handy when you don't have a default value.  
-          But it is a bit cumbersombe to handle:
+          But it is a bit cumbersome to handle:
           """.md,
           chl.scala(s"""
           case class MyConfig(url: String, port: Option[Int]) derives JsonRW

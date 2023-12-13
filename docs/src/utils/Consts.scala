@@ -6,7 +6,10 @@ object Consts:
 
   val ArtifactOrg = "ba.sake"
   val ArtifactName = "tupson"
+  val ConfigArtifactName = "tupson-config"
   val ArtifactVersion = "0.10.0"
+
+  
 
   val GhHandle = "sake92"
   val GhProjectName = "tupson"
