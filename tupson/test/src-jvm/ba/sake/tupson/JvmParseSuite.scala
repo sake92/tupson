@@ -1,9 +1,8 @@
 package ba.sake.tupson
 
-import java.time.*
+import java.net.*
 
 class JvmParseSuite extends munit.FunSuite {
-
 
   test("parse URI") {
     intercept[URISyntaxException] {
@@ -20,4 +19,3 @@ class JvmParseSuite extends munit.FunSuite {
   }
 
 }
-

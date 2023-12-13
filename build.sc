@@ -17,18 +17,9 @@ object tupson extends Module {
     object test extends ScalaJSTests with CommonTestModule
   }
 
-  trait TupsonCommonModule extends CommonScalaModule with PlatformScalaModule with CiReleaseModule with ScalafmtModule {
+  trait TupsonCommonModule extends CommonScalaModule with CommonPublishModule with PlatformScalaModule {
     def artifactName = "tupson"
-    def pomSettings = PomSettings(
-      organization = "ba.sake",
-      url = "https://github.com/sake92/tupson",
-      licenses = Seq(License.Common.Apache2),
-      versionControl = VersionControl.github("sake92", "tupson"),
-      description = "Tupson JSON library",
-      developers = Seq(
-        Developer("sake92", "Sakib Hadžiavdić", "https://sake.ba")
-      )
-    )
+
     def ivyDeps = Agg(
       ivy"org.typelevel::jawn-ast::1.5.0"
     )
@@ -40,12 +31,25 @@ object examples extends CommonScalaModule {
   def moduleDeps = Seq(tupson.jvm)
 }
 
-trait CommonScalaModule extends ScalaModule {
+trait CommonScalaModule extends ScalaModule with ScalafmtModule {
   def scalaVersion = "3.3.1"
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-Yretain-trees", // required for default arguments
     "-deprecation",
     "-Xcheck-macros"
+  )
+}
+
+trait CommonPublishModule extends CiReleaseModule {
+  def pomSettings = PomSettings(
+    organization = "ba.sake",
+    url = "https://github.com/sake92/tupson",
+    licenses = Seq(License.Common.Apache2),
+    versionControl = VersionControl.github("sake92", "tupson"),
+    description = "Tupson JSON library",
+    developers = Seq(
+      Developer("sake92", "Sakib Hadžiavdić", "https://sake.ba")
+    )
   )
 }
 
