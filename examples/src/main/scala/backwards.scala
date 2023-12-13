@@ -2,19 +2,19 @@ import ba.sake.tupson.*
 
 @main def backwards: Unit = {
 
-  val oldConfig = OldConfig("http://example.com")
+  val oldConfig = ConfigV1("http://example.com")
   val oldConfigJson = oldConfig.toJson
   println(oldConfigJson)
 
-  val newConfig1 = oldConfigJson.parseJson[NewConfig1]
-  println(newConfig1)
+  val newConfig1 = oldConfigJson.parseJson[ConfigV2]
+  println(newConfig1.toJson)
 
-  val newConfig2 = oldConfigJson.parseJson[NewConfig2]
-  println(newConfig2)
+  val newConfig2 = oldConfigJson.parseJson[ConfigV3]
+  println(newConfig2.toJson)
 }
 
-case class OldConfig(url: String) derives JsonRW
+case class ConfigV1(url: String) derives JsonRW
 
-case class NewConfig1(url: String, port: Option[Int]) derives JsonRW
+case class ConfigV2(url: String, port: Option[Int]) derives JsonRW
 
-case class NewConfig2(url: String, port: Int = 1234) derives JsonRW
+case class ConfigV3(url: String, port: Int = 1234) derives JsonRW
