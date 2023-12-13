@@ -20,13 +20,15 @@ object Parsing extends TutorialPage {
       Note that you need to derive the `JsonRW` typeclass to get the ${Consts.ProjectName} features.
       """.md,
       chl.scala(s"""
+      import ba.sake.tupson.{given, *}
+
       case class MyData(
           bln: Boolean,
           int: Int,
           s: String
       ) derives JsonRW
       """),
-      s"Then, you can call `parseJson[T]` function on a `String` to parse the desired type:",
+      s"Then, you can call `parseJson[T]` function on a `String` to parse it to the desired type:".md,
       chl.scala(s"""
       val res = ${tq}{ "bln":true, "int":5, "s":"dsds" }${tq}.parseJson[MyData]
       // MyData(true,5,dsds)
@@ -63,7 +65,7 @@ object Parsing extends TutorialPage {
           s"""
           You can catch `ParsingException` to collect the errors.  
           This exception contains `errors: Seq[ParseError]`, list of errors that happened while parsing.  
-          Every `ParseError` object contains a JSONPath path to the field which has errors in it.  
+          Every `ParseError` object contains a [JSONPath](https://www.ietf.org/archive/id/draft-goessner-dispatch-jsonpath-00.html#name-jsonpath-examples) path to the field which has errors in it.  
           You saw some of it in the error stacktrace above.
           """.md,
           chl.scala(s"""

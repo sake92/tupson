@@ -7,6 +7,7 @@ trait TutorialPage extends DocPage {
 
   override def categoryPosts = List(
     Index,
+    Writing,
     Parsing
   )
 
