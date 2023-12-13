@@ -26,15 +26,18 @@
           padding-left: 3em;
           font-size: .8em;
       }
-    </style></head><body><div class="hidden-print"><nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top"><div class="container-fluid"><a class="navbar-brand" href="../index.html"><span><img src="../images/favicon.ico" alt="logo" width="32" height="32" /></span> Tupson</a><button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#main-navbar"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="main-navbar"><ul class="navbar-nav"></ul><ul class="navbar-nav ms-auto"><li class="nav-item"><a href="index.html" class="active nav-link">Tutorials</a></li><li class="nav-item"><a href="../howtos/index.html" class="nav-link">How-Tos</a></li><li class="nav-item"><a href="../reference/index.html" class="nav-link">Reference</a></li><li class="nav-item"><a href="../philosophy/index.html" class="nav-link">Philosophy</a></li></ul></div></div></nav></div><div class="container-fluid"><div class="row"><div class="col-md-3 d-flex justify-content-end hidden-print"><nav class="affix"><ul class="nav nav-pills flex-column"><li><a href="index.html" class="nav-link ">Tutorials</a></li><li><a href="parsing.html" class="nav-link active">Parsing</a></li></ul></nav></div><div data-bs-spy="scroll" data-bs-target="#tocScrollspy" class="col-md-6"><div class="hidden-print"></div><div><section id="parsing"><h2>Parsing</h2><div><p>Let's start with a simple <code>case class MyData</code>.<br />
+    </style></head><body><div class="hidden-print"><nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top"><div class="container-fluid"><a class="navbar-brand" href="../index.html"><span><img src="../images/favicon.ico" alt="logo" width="32" height="32" /></span> Tupson</a><button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#main-navbar"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="main-navbar"><ul class="navbar-nav"></ul><ul class="navbar-nav ms-auto"><li class="nav-item"><a href="index.html" class="active nav-link">Tutorials</a></li><li class="nav-item"><a href="../howtos/index.html" class="nav-link">How-Tos</a></li><li class="nav-item"><a href="../reference/index.html" class="nav-link">Reference</a></li><li class="nav-item"><a href="../philosophy/index.html" class="nav-link">Philosophy</a></li></ul></div></div></nav></div><div class="container-fluid"><div class="row"><div class="col-md-3 d-flex justify-content-end hidden-print"><nav class="affix"><ul class="nav nav-pills flex-column"><li><a href="index.html" class="nav-link ">Tutorials</a></li><li><a href="writing.html" class="nav-link ">Writing</a></li><li><a href="parsing.html" class="nav-link active">Parsing</a></li></ul></nav></div><div data-bs-spy="scroll" data-bs-target="#tocScrollspy" class="col-md-6"><div class="hidden-print"></div><div><section id="parsing"><h2>Parsing</h2><div><p>Let's start with a simple <code>case class MyData</code>.<br />
 Note that you need to derive the <code>JsonRW</code> typeclass to get the Tupson features.</p>
 <pre class="line-numbers" data-start="1"><code class="language-scala">
+      import ba.sake.tupson.{given, *}
+
       case class MyData(
           bln: Boolean,
           int: Int,
           s: String
       ) derives JsonRW
-      </code></pre>Then, you can call `parseJson[T]` function on a `String` to parse the desired type:<pre class="line-numbers" data-start="1"><code class="language-scala">
+      </code></pre><p>Then, you can call <code>parseJson[T]</code> function on a <code>String</code> to parse it to the desired type:</p>
+<pre class="line-numbers" data-start="1"><code class="language-scala">
       val res = &quot;&quot;&quot;{ &quot;bln&quot;:true, &quot;int&quot;:5, &quot;s&quot;:&quot;dsds&quot; }&quot;&quot;&quot;.parseJson[MyData]
       // MyData(true,5,dsds)
       </code></pre></div><section id="general-errors"><h3>General errors</h3><div><p>If parsing fails you will get a <code>TupsonException</code>:</p>
@@ -47,7 +50,7 @@ Note that you need to derive the <code>JsonRW</code> typeclass to get the Tupson
           // Key '$.bln' with value '123' should be Boolean but it is Number; Key '$.int' is missing; Key '$.s' is missing
           </code></pre></div></section><section id="collecting-errors"><h3>Collecting errors</h3><div><p>You can catch <code>ParsingException</code> to collect the errors.<br />
 This exception contains <code>errors: Seq[ParseError]</code>, list of errors that happened while parsing.<br />
-Every <code>ParseError</code> object contains a JSONPath path to the field which has errors in it.<br />
+Every <code>ParseError</code> object contains a <a href="https://www.ietf.org/archive/id/draft-goessner-dispatch-jsonpath-00.html#name-jsonpath-examples">JSONPath</a> path to the field which has errors in it.<br />
 You saw some of it in the error stacktrace above.</p>
 <pre class="line-numbers" data-start="1"><code class="language-scala">
           try {
