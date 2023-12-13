@@ -5,7 +5,7 @@ import Bundle.*
 
 trait ReferencePage extends DocPage {
 
-  override def categoryPosts = List(Index, Options, Collections, Maps, SimpleEnums, CaseClasses, SumTypes)
+  override def categoryPosts = List(Index, Options, Collections, Maps, SimpleEnums, CaseClasses, SumTypes, DynamicJson)
 
   override def pageCategory = Some(Index.pageSettings.label)
 
