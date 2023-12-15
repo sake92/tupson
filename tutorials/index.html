@@ -29,16 +29,16 @@
     </style></head><body><div class="hidden-print"><nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top"><div class="container-fluid"><a class="navbar-brand" href="../index.html"><span><img src="../images/favicon.ico" alt="logo" width="32" height="32" /></span> Tupson</a><button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#main-navbar"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="main-navbar"><ul class="navbar-nav"></ul><ul class="navbar-nav ms-auto"><li class="nav-item"><a href="index.html" class="active nav-link">Tutorials</a></li><li class="nav-item"><a href="../howtos/index.html" class="nav-link">How-Tos</a></li><li class="nav-item"><a href="../reference/index.html" class="nav-link">Reference</a></li><li class="nav-item"><a href="../philosophy/index.html" class="nav-link">Philosophy</a></li></ul></div></div></nav></div><div class="container-fluid"><div class="row"><div class="col-md-3 d-flex justify-content-end hidden-print"><nav class="affix"><ul class="nav nav-pills flex-column"><li><a href="index.html" class="nav-link active">Tutorials</a></li><li><a href="writing.html" class="nav-link ">Writing</a></li><li><a href="parsing.html" class="nav-link ">Parsing</a></li><li><a href="parsing-config.html" class="nav-link ">Typesafe config</a></li></ul></nav></div><div data-bs-spy="scroll" data-bs-target="#tocScrollspy" class="col-md-6"><div class="hidden-print"></div><div><section id="quickstart"><h2>Quickstart</h2><p>Hello world!</p>
 <section id="mill"><h3>Mill</h3><div><pre class="line-numbers" data-start="1"><code class="language-scala">
           def ivyDeps = super.ivyDeps() ++ Agg(
-            ivy&quot;ba.sake::tupson:0.10.0&quot;
+            ivy&quot;ba.sake::tupson:0.11.0&quot;
           )
           def scalacOptions = super.scalacOptions() ++ Seq(&quot;-Yretain-trees&quot;)
           </code></pre></div></section><section id="sbt"><h3>Sbt</h3><div><pre class="line-numbers" data-start="1"><code class="language-scala">
           libraryDependencies ++= Seq(
-            &quot;ba.sake&quot; %% &quot;tupson&quot; % &quot;0.10.0&quot;
+            &quot;ba.sake&quot; %% &quot;tupson&quot; % &quot;0.11.0&quot;
           )
           scalacOptions ++= Seq(&quot;-Yretain-trees&quot;)
           </code></pre></div></section><section id="scala-cli"><h3>Scala CLI</h3><div><pre class="line-numbers" data-start="1"><code class="language-scala">
-          //&gt; using dep ba.sake::tupson:0.10.0
+          //&gt; using dep ba.sake::tupson:0.11.0
           </code></pre></div></section><section id="scastie"><h3>Scastie</h3><p>You can also use this <a href="https://scastie.scala-lang.org/qTktyoG3QgaUYCQ9ODKHlw">Scastie example</a> to try Tupson online.</p>
 </section><section id="examples"><h3>Examples</h3><div><p><a href="https://github.com/sake92/tupson/tree/main/examples/src/main/scala">Examples</a> are runnable with <a href="https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html">Mill</a>:</p>
 <pre class="command-line" data-user="root" data-host="localhost"><code class="language-bash">
