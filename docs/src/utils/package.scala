@@ -16,5 +16,7 @@ val Bundle = locally {
 
 val chl = PrismCodeHighlightComponents.default
 
+val FA = ba.sake.hepek.fontawesome5.FA
+
 // triple-quote
 val tq = """""""""

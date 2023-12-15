@@ -3,10 +3,11 @@ package utils
 import ba.sake.hepek.html.ComponentSettings
 import ba.sake.hepek.prismjs.PrismDependencies
 import ba.sake.hepek.theme.bootstrap5.*
-import Bundle.*
 import ba.sake.hepek.anchorjs.AnchorjsDependencies
+import ba.sake.hepek.fontawesome5.FADependencies
+import Bundle.*, Tags.*
 
-trait DocStaticPage extends StaticPage with AnchorjsDependencies {
+trait DocStaticPage extends StaticPage with AnchorjsDependencies with FADependencies {
   override def staticSiteSettings = super.staticSiteSettings
     .withIndexPage(files.Index)
     .withMainPages(
@@ -20,6 +21,13 @@ trait DocStaticPage extends StaticPage with AnchorjsDependencies {
     .withName(Consts.ProjectName)
     .withFaviconNormal(files.images.`favicon.ico`.ref)
     .withFaviconInverted(files.images.`favicon.ico`.ref)
+
+  override def bodyContent = frag(
+    super.bodyContent,
+    footer(Classes.txtAlignCenter, Classes.bgInfo, cls := "fixed-bottom")(
+      a(href := Consts.GhUrl, Classes.btnClass)(FA.github())
+    )
+  )
 
   override def styleURLs = super.styleURLs
     .appended(files.styles.`main.css`.ref)

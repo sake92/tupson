@@ -58,7 +58,7 @@ object Index extends TutorialPage {
         "Examples",
         div(
           s"""
-          [Examples](${Consts.GhUrl}/examples/src/main/scala) are runnable with [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html):
+          [Examples](${Consts.GhSourcesUrl}/examples/src/main/scala) are runnable with [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html):
           """.md,
           chl.bash(s"""
           ./mill examples.runMain write
