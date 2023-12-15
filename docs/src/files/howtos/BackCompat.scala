@@ -6,13 +6,13 @@ import Bundle.*, Tags.*
 object BackCompat extends HowToPage {
 
   override def pageSettings =
-    super.pageSettings.withTitle("Backwards compatibility")
+    super.pageSettings.withTitle("Maintain backwards compatibility")
 
   override def blogSettings =
     super.blogSettings.withSections(firstSection)
 
   val firstSection = Section(
-    s"Backwards compatibility",
+    s"How to maintan backwards compatibility?",
     s"""
       Let's say you have a `case class MyConfig(url: String)`.  
       Now you need to add another property: `port: Int`, but **without breaking existing serialized values**.

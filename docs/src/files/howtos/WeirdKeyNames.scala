@@ -6,16 +6,17 @@ import Bundle.*, Tags.*
 object WeirdKeyNames extends HowToPage {
 
   override def pageSettings =
-    super.pageSettings.withTitle("Weird key names")
+    super.pageSettings.withTitle("Use weird key names")
 
   override def blogSettings =
     super.blogSettings.withSections(firstSection)
 
   val firstSection = Section(
-    s"Weird, unusual key names",
+    s"How to use weird key names?",
     div(
       s"""
-      You can use the Scala's "backticks" language feature to use weird names for keys:
+      Sometimes you need spaces or other characters in your JSON keys.  
+      You can use Scala's "backticks" language feature for that:
       """.md,
       chl.scala("""
       case class Address(`street no`: String) derives JsonRW
