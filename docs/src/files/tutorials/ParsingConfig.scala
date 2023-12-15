@@ -22,6 +22,12 @@ object ParsingConfig extends TutorialPage {
       """.md,
     List(
       Section(
+        "Scastie",
+        s"""
+        Quickest way to start playing with Tupson Config is with this [Scastie example](https://scastie.scala-lang.org/PnBbaSDkSHmvDzjlvbXDdA).
+        """.md
+      ),
+      Section(
         "Mill",
         div(
           chl.scala(s"""
@@ -50,12 +56,6 @@ object ParsingConfig extends TutorialPage {
           //> using dep ${Consts.ArtifactOrg}::${Consts.ConfigArtifactName}:${Consts.ArtifactVersion}
           """)
         )
-      ),
-      Section(
-        "Scastie",
-        s"""
-        You can also use this [Scastie example](https://scastie.scala-lang.org/qTktyoG3QgaUYCQ9ODKHlw) to try ${Consts.ProjectName} online.
-        """.md
       ),
       Section(
         "Examples",

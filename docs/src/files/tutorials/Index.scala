@@ -19,6 +19,12 @@ object Index extends TutorialPage {
     """.md,
     List(
       Section(
+        "Scastie",
+        s"""
+        Quickest way to start playing with ${Consts.ProjectName} is with this [Scastie example](https://scastie.scala-lang.org/741xYzNqRNeLxt8qHCmd7g).
+        """.md
+      ),
+      Section(
         "Mill",
         div(
           chl.scala(s"""
@@ -47,12 +53,6 @@ object Index extends TutorialPage {
           //> using dep ${Consts.ArtifactOrg}::${Consts.ArtifactName}:${Consts.ArtifactVersion}
           """)
         )
-      ),
-      Section(
-        "Scastie",
-        s"""
-        You can also use this [Scastie example](https://scastie.scala-lang.org/qTktyoG3QgaUYCQ9ODKHlw) to try ${Consts.ProjectName} online.
-        """.md
       ),
       Section(
         "Examples",
