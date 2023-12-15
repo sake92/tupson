@@ -17,8 +17,6 @@ object ParsingConfig extends TutorialPage {
     s"""
       ${Consts.ProjectName} integrates with the awesome [Typesafe config library](https://github.com/lightbend/config).  
       You can rely on all ${Consts.ProjectName}'s features like ADTs, enums, etc.
-
-      Import it in your build:
       """.md,
     List(
       Section(
