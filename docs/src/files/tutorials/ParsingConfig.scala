@@ -92,7 +92,7 @@ object ParsingConfig extends TutorialPage {
         seq = [a, "b", c]
       ${tq})
 
-      val myConf = rawConfig.parseConfig[MyConf]()
+      val myConf = rawConfig.parseConfig[MyConf]
       // MyConf(7777,http://example.com,str,List(a, b, c))
       """)
     )
