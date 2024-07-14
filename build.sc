@@ -1,7 +1,7 @@
 import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
 import $ivy.`ba.sake::mill-hepek::0.0.2`
 
-import mill._, scalalib._, scalajslib._, publish._, scalafmt._
+import mill._, scalalib._, scalajslib._, scalanativelib._, publish._, scalafmt._
 import io.kipp.mill.ci.release.CiReleaseModule
 import ba.sake.millhepek.MillHepekModule
 
@@ -19,11 +19,16 @@ object tupson extends Module {
     object test extends ScalaJSTests with CommonTestModule
   }
 
+  object native extends TupsonCommonModule with ScalaNativeModule {
+    def scalaNativeVersion = "0.5.4"
+   // object test extends ScalaNativeTests with CommonTestModule
+  }
+
   trait TupsonCommonModule extends CommonScalaModule with CommonPublishModule with PlatformScalaModule {
     def artifactName = "tupson"
 
     def ivyDeps = Agg(
-      ivy"org.typelevel::jawn-ast::1.5.0"
+      ivy"org.typelevel::jawn-ast::1.6.0"
     )
   }
 }
@@ -51,7 +56,7 @@ object docs extends CommonScalaModule with MillHepekModule {
 }
 
 trait CommonScalaModule extends ScalaModule with ScalafmtModule {
-  def scalaVersion = "3.3.1"
+  def scalaVersion = "3.4.2"
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-Yretain-trees", // required for default arguments
     "-deprecation",
@@ -74,6 +79,6 @@ trait CommonPublishModule extends CiReleaseModule {
 
 trait CommonTestModule extends TestModule.Munit {
   def ivyDeps = Agg(
-    ivy"org.scalameta::munit::0.7.29"
+    ivy"org.scalameta::munit::1.0.0"
   )
 }
