@@ -12,7 +12,7 @@ object tupson extends Module {
   }
 
   object js extends TupsonCommonModule with ScalaJSModule {
-    def scalaJSVersion = "1.14.0"
+    def scalaJSVersion = "1.16.0"
     def ivyDeps = super.ivyDeps() ++ Agg(
       ivy"io.github.cquiroz::scala-java-time::2.5.0"
     )
