@@ -14,19 +14,21 @@ object tupson extends Module {
   object js extends TupsonCommonModule with ScalaJSModule {
     def scalaJSVersion = "1.16.0"
     def ivyDeps = super.ivyDeps() ++ Agg(
-      ivy"io.github.cquiroz::scala-java-time::2.5.0"
+      ivy"io.github.cquiroz::scala-java-time::2.6.0"
     )
     object test extends ScalaJSTests with CommonTestModule
   }
 
   object native extends TupsonCommonModule with ScalaNativeModule {
     def scalaNativeVersion = "0.5.4"
-   // object test extends ScalaNativeTests with CommonTestModule
+    def ivyDeps = super.ivyDeps() ++ Agg(
+      ivy"io.github.cquiroz::scala-java-time::2.6.0"
+    )
+    object test extends ScalaNativeTests with CommonTestModule
   }
 
   trait TupsonCommonModule extends CommonScalaModule with CommonPublishModule with PlatformScalaModule {
     def artifactName = "tupson"
-
     def ivyDeps = Agg(
       ivy"org.typelevel::jawn-ast::1.6.0"
     )
