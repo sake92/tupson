@@ -31,16 +31,16 @@ You can rely on all Tupson's features like ADTs, enums, etc.</p>
 <section id="scastie"><h3>Scastie</h3><p>Quickest way to start playing with Tupson Config is with this <a href="https://scastie.scala-lang.org/PnBbaSDkSHmvDzjlvbXDdA">Scastie example</a>.</p>
 </section><section id="mill"><h3>Mill</h3><div><pre class="line-numbers" data-start="1"><code class="language-scala">
           def ivyDeps = super.ivyDeps() ++ Agg(
-            ivy&quot;ba.sake::tupson-config:0.11.0&quot;
+            ivy&quot;ba.sake::tupson-config:0.12.0&quot;
           )
           def scalacOptions = super.scalacOptions() ++ Seq(&quot;-Yretain-trees&quot;)
           </code></pre></div></section><section id="sbt"><h3>Sbt</h3><div><pre class="line-numbers" data-start="1"><code class="language-scala">
           libraryDependencies ++= Seq(
-            &quot;ba.sake&quot; %% &quot;tupson-config&quot; % &quot;0.11.0&quot;
+            &quot;ba.sake&quot; %% &quot;tupson-config&quot; % &quot;0.12.0&quot;
           )
           scalacOptions ++= Seq(&quot;-Yretain-trees&quot;)
           </code></pre></div></section><section id="scala-cli"><h3>Scala CLI</h3><div><pre class="line-numbers" data-start="1"><code class="language-scala">
-          //&gt; using dep ba.sake::tupson-config:0.11.0
+          //&gt; using dep ba.sake::tupson-config:0.12.0
           </code></pre></div></section><section id="examples"><h3>Examples</h3><div><p>Real-world example in <a href="https://github.com/sake92/sharaf-petclinic/blob/main/app/src/ba/sake/sharaf/petclinic/PetclinicConfig.scala">sharaf-petclinic</a></p>
 </div></section></section><section id="usage"><h2>Usage</h2><div><p>Then, you can call <code>.parseConfig[MyConf]</code> function on a <code>Config</code> to parse it to the desired type:</p>
 <pre class="line-numbers" data-start="1"><code class="language-scala">
