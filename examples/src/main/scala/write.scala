@@ -1,4 +1,4 @@
-import ba.sake.tupson.*
+import ba.sake.tupson.{*, given}
 
 @main def write: Unit = {
   val x = WriteData(true, 5, 3.14, "xyz", Seq("a", "b"))

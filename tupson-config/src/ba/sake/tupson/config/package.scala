@@ -2,7 +2,7 @@ package ba.sake.tupson.config
 
 import com.typesafe.config.*
 import org.typelevel.jawn.ast.*
-import ba.sake.tupson.*
+import ba.sake.tupson.{*, given}
 
 extension (config: Config) {
   def parseConfig[T: JsonRW] =

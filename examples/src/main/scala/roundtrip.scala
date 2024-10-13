@@ -1,4 +1,4 @@
-import ba.sake.tupson.*
+import ba.sake.tupson.{*, given}
 
 @main def roundtrip: Unit = {
   val x = RoundtripData(true, 5, 3.14, "xyz", Seq("a", "b"))

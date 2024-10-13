@@ -1,4 +1,4 @@
-import ba.sake.tupson.*
+import ba.sake.tupson.{*, given}
 import org.typelevel.jawn.ast.JValue
 
 @main def parse: Unit = {

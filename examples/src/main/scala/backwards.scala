@@ -1,4 +1,4 @@
-import ba.sake.tupson.*
+import ba.sake.tupson.{*, given}
 
 @main def backwards: Unit = {
 

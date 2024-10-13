@@ -44,6 +44,9 @@ object SumTypes extends ReferencePage {
           chl.scala("""
           @discriminator("myOtherKey")
           enum Color derives JsonRW ...
+
+          println(color.toJson)
+          // {"myOtherKey":"Hex","num":"FFF"}
           """)
         )
       )

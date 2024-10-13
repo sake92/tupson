@@ -2,7 +2,7 @@ package ba.sake.tupson.config
 
 import java.net.URL
 import com.typesafe.config.ConfigFactory
-import ba.sake.tupson.{given, *}
+import ba.sake.tupson.{*, given}
 
 class UtilTest extends munit.FunSuite {
 
