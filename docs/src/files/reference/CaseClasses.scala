@@ -26,7 +26,7 @@ object CaseClasses extends ReferencePage {
       val person = Person("Meho", 33, Address("Sebilj"))
       
       println(person.toJson)
-      // { "age":33, "name":"Meho", "address":{"street":"Sebilj"} }
+      // { "age":33, "name":"Meho", "address": { "street":"Sebilj" } }
       """)
     )
   )

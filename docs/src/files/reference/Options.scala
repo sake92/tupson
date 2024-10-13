@@ -13,11 +13,27 @@ object Options extends ReferencePage {
 
   val firstSection = Section(
     s"Options",
-    s"""        
+    div(
+      s"""        
     `Option[T]` work as you expect.  
     `None` corresponds to JSON's `null`.  
     
     Note that you need a `JsonRW[T]` given instance.
-    """.md
+    """.md,
+      chl.scala(s"""
+        Option.empty[String].toJson
+        // null
+
+        Option("str").toJson
+        // "str"
+        """),
+      chl.scala(s"""
+        ${tq} null ${tq}.parseJson[Option[String]]
+        // None
+
+        ${tq} "str" ${tq}.parseJson[Option[String]]
+        // Some(str)
+        """)
+    )
   )
 }

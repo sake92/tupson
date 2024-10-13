@@ -21,7 +21,7 @@ object Index extends TutorialPage {
       Section(
         "Scastie",
         s"""
-        Quickest way to start playing with ${Consts.ProjectName} is with this [Scastie example](https://scastie.scala-lang.org/741xYzNqRNeLxt8qHCmd7g).
+        Quickest way to start playing with ${Consts.ProjectName} is with this [Scastie example](https://scastie.scala-lang.org/KQfj7lUST0i2Iz4lZOEwOQ).
         """.md
       ),
       Section(

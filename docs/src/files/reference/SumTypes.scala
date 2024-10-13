@@ -33,7 +33,7 @@ object SumTypes extends ReferencePage {
       val color = Color.Hex("FFF")
       
       println(color.toJson)
-      // {"@type":"Hex","num":"FFF"}
+      // { "@type":"Hex", "num":"FFF" }
       """)
     ),
     List(
@@ -46,7 +46,7 @@ object SumTypes extends ReferencePage {
           enum Color derives JsonRW ...
 
           println(color.toJson)
-          // {"myOtherKey":"Hex","num":"FFF"}
+          // { "myOtherKey":"Hex", "num":"FFF" }
           """)
         )
       )

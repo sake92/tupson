@@ -13,10 +13,26 @@ object Collections extends ReferencePage {
 
   val firstSection = Section(
     s"Seqs",
-    s"""        
-    `Seq[T]`, `List[T]`, `Set[T]`, `Array[T]` are supported.  
-    
-    Note that you need a `JsonRW[T]` given instance.
-    """.md
+    div(
+      s"""        
+        `Seq[T]`, `List[T]`, `Set[T]`, `Array[T]` are supported.  
+        
+        Note that you need a `JsonRW[T]` given instance.
+        """.md,
+      chl.scala(s"""
+        Seq.empty[String].toJson
+        // []
+
+        Seq("a", "b").toJson
+        // ["a","b"]
+        """),
+      chl.scala(s"""
+        ${tq} [] ${tq}.parseJson[Seq[String]]
+        // Seq()
+
+        ${tq} ["a","b"] ${tq}.parseJson[Seq[String]]
+        // Seq(a,b)
+        """)
+    )
   )
 }
