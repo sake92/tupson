@@ -23,6 +23,7 @@ class ParseSuite extends munit.FunSuite {
       """5""".parseJson[Float]
     }
 
+    assertEquals("123".parseJson[Double], 123.0)
     assertEquals("1.23456789".parseJson[Double], 1.234_567_89d)
 
     assertEquals("1".parseJson[Int], 1)

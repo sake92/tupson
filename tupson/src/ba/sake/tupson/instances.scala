@@ -40,6 +40,8 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
     override def parse(path: String, jValue: JValue): Float = jValue match
       case DoubleNum(n) => n.toFloat
       case DeferNum(n)  => n.toFloat
+      case LongNum(n)   => n.toFloat
+      case DeferLong(s) => s.toFloat
       case other        => JsonRW.typeMismatchError(path, "Float", other)
   }
 
@@ -48,6 +50,8 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
     override def parse(path: String, jValue: JValue): Double = jValue match
       case DoubleNum(n) => n.toDouble
       case DeferNum(n)  => n.toDouble
+      case LongNum(n)   => n.toDouble
+      case DeferLong(s) => s.toDouble
       case other        => JsonRW.typeMismatchError(path, "Double", other)
   }
 
