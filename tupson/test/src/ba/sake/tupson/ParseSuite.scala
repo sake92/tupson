@@ -19,8 +19,9 @@ class ParseSuite extends munit.FunSuite {
 
     // https://github.com/scala-js/scala-js/blob/v1.7.1/test-suite/shared/src/test/scala/org/scalajs/testsuite/javalib/lang/FloatTest.scala#L81-L85
     assertEquals("1.233".parseJson[Float], 1.233f)
+    assertEquals("1233".parseJson[Float], 1233f)
     intercept[TupsonException] {
-      """5""".parseJson[Float]
+      """true""".parseJson[Float]
     }
 
     assertEquals("123".parseJson[Double], 123.0)

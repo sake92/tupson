@@ -16,7 +16,7 @@ git commit -am "msg"
 
 # powershell..
 
-$VERSION="0.12.0"
+$VERSION="0.12.1"
 git commit --allow-empty -m "Release $VERSION"
 git tag -a $VERSION -m "Release $VERSION"
 git push  --atomic origin main $VERSION
