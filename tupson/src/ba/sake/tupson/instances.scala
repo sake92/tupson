@@ -120,6 +120,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
     override def parse(path: String, jValue: JValue): List[T] = jValue match
       case JArray(list) => rethrowingKeysErrors(path, list).toList
       case other        => JsonRW.typeMismatchError(path, "List", other)
+    override def default: Option[List[T]] = Some(List.empty)
   }
 
   given [T: ClassTag](using trw: JsonRW[T]): JsonRW[Array[T]] with {
@@ -128,6 +129,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
     override def parse(path: String, jValue: JValue): Array[T] = jValue match
       case JArray(arr) => rethrowingKeysErrors(path, arr).toArray
       case other       => JsonRW.typeMismatchError(path, "Array", other)
+    override def default: Option[Array[T]] = Some(Array.empty)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Set[T]] with {
@@ -136,6 +138,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
     override def parse(path: String, jValue: JValue): Set[T] = jValue match
       case JArray(set) => rethrowingKeysErrors(path, set).toSet
       case other       => JsonRW.typeMismatchError(path, "Set", other)
+    override def default: Option[Set[T]] = Some(Set.empty)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Map[String, T]] with {
@@ -147,6 +150,7 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
         case JObject(map) =>
           map.map((k, v) => k -> trw.parse(s"$path.$k", v)).toMap
         case other => JsonRW.typeMismatchError(path, "Map", other)
+    override def default: Option[Map[String, T]] = Some(Map.empty)
   }
 
 }
@@ -160,6 +164,7 @@ private[tupson] trait LowPriorityJsonRWInstances {
     override def parse(path: String, jValue: JValue): Seq[T] = jValue match
       case JArray(seq) => rethrowingKeysErrors(path, seq)
       case other       => JsonRW.typeMismatchError(path, "Seq", other)
+    override def default: Option[Seq[T]] = Some(Seq.empty)
   }
 
   private[tupson] def rethrowingKeysErrors[T](path: String, values: Array[JValue])(using trw: JsonRW[T]): Seq[T] = {

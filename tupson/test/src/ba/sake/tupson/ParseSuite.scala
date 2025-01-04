@@ -244,15 +244,15 @@ class ParseSuite extends munit.FunSuite {
   test("parse missing keys to their global defaults") {
     assertEquals(
       """{}""".parseJson[CaseClassOpt],
-      CaseClassOpt(None)
+      CaseClassOpt(None, Seq.empty, Map.empty)
     )
     assertEquals(
-      """{ "str": null }""".parseJson[CaseClassOpt],
-      CaseClassOpt(None)
+      """{ "str": null, "seq": [], "map": {} }""".parseJson[CaseClassOpt],
+      CaseClassOpt(None, Seq.empty, Map.empty)
     )
     assertEquals(
-      """{ "str": "value" }""".parseJson[CaseClassOpt],
-      CaseClassOpt(Some("value"))
+      """{ "str": "value", "seq": ["abc"], "map": {"a": "aaa"} }""".parseJson[CaseClassOpt],
+      CaseClassOpt(Some("value"), Seq("abc"), Map("a" -> "aaa"))
     )
   }
 

@@ -25,7 +25,7 @@ object Index extends DocStaticPage {
     )
   )
 
-    private def siteMap =
+  private def siteMap =
     Index.staticSiteSettings.mainPages
       .map {
         case mp: BlogPostPage =>
