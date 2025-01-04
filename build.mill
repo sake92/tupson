@@ -1,9 +1,13 @@
-import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
+package build
+
+import $ivy.`com.lihaoyi::mill-contrib-sonatypecentral:`
 import $ivy.`ba.sake::mill-hepek::0.0.2`
 
 import mill._, scalalib._, scalajslib._, scalanativelib._, publish._, scalafmt._
-import io.kipp.mill.ci.release.CiReleaseModule
+import mill.contrib.sonatypecentral.SonatypeCentralPublishModule
 import ba.sake.millhepek.MillHepekModule
+
+val tupsonVersion = "0.12.3-SNAPSHOT"
 
 object tupson extends Module {
 
@@ -12,7 +16,7 @@ object tupson extends Module {
   }
 
   object js extends TupsonCommonModule with ScalaJSModule {
-    def scalaJSVersion = "1.16.0"
+    def scalaJSVersion = "1.17.0"
     def ivyDeps = super.ivyDeps() ++ Agg(
       ivy"io.github.cquiroz::scala-java-time::2.6.0"
     )
@@ -66,7 +70,8 @@ trait CommonScalaModule extends ScalaModule with ScalafmtModule {
   )
 }
 
-trait CommonPublishModule extends CiReleaseModule {
+trait CommonPublishModule extends SonatypeCentralPublishModule {
+  def publishVersion = tupsonVersion
   def pomSettings = PomSettings(
     organization = "ba.sake",
     url = "https://github.com/sake92/tupson",
