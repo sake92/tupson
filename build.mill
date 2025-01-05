@@ -7,7 +7,7 @@ import mill._, scalalib._, scalajslib._, scalanativelib._, publish._, scalafmt._
 import mill.contrib.sonatypecentral.SonatypeCentralPublishModule
 import ba.sake.millhepek.MillHepekModule
 
-val tupsonVersion = "0.13.0"
+val tupsonVersion = "0.13.1-SNAPSHOT"
 
 object tupson extends Module {
 
