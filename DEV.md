@@ -14,12 +14,19 @@
 git diff
 git commit -am "msg"
 
-# powershell..
-
-$VERSION="0.12.2"
-git commit --allow-empty -m "Release $VERSION"
+# RELEASE
+# bump publishVersion to x.y.z !!!
+$VERSION="0.13.0"
+git commit --allow-empty -am "Release $VERSION"
 git tag -a $VERSION -m "Release $VERSION"
-git push  --atomic origin main $VERSION
+git push --atomic origin main --tags
+
+
+# prepare for NEXT version
+# bump publishVersion to x.y.z-SNAPSHOT
+$VERSION="x.y.z-SNAPSHOT"
+git commit -am"Bump version to $VERSION"
+
 
 ```
 
