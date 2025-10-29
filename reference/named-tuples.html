@@ -54,15 +54,6 @@
    <p>In Scala 3 you can use named tuples in the form <code>(a = "mystring", b = 123)</code>.
     <br>
     Tupson has experimental support for it.</p>
-   <p>You need to add an extra dependency and use scala 3.7+:</p>
-   <pre>            <code class="language-scala hljs" data-highlighted="yes">ba.sake::tupson-next:<span class="hljs-number">0.15</span><span class="hljs-number">.0</span> <span class="hljs-comment">// scala-cli</span>
-
-<span class="hljs-string">mvn"ba.sake::tupson-next:0.15.0"</span> <span class="hljs-comment">// mill</span>
-
-<span class="hljs-string">"ba.sake"</span> %% <span class="hljs-string">"tupson-next"</span> % <span class="hljs-string">"0.15.0"</span> <span class="hljs-comment">// sbt</span>
-
-</code>
-          </pre>
    <p>Example:</p>
    <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-class"><span class="hljs-keyword">type</span> <span class="hljs-title">Person</span> </span>= (name: <span class="hljs-type">String</span>, age: <span class="hljs-type">Int</span>)
 
