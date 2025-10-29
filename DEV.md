@@ -11,21 +11,12 @@
 
 ./mill examples.runMain bla
 
-git diff
-git commit -am "msg"
+
 
 # RELEASE
-$VERSION="0.13.0"
-git commit --allow-empty -am "Release $VERSION"
-git tag -a $VERSION -m "Release $VERSION"
-git push --atomic origin main --tags
-
+./scripts/release.sh 0.14.0
 
 ```
-
-
-## TODO
-- scala native
 
 
 
