@@ -20,4 +20,5 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
+      - run: ./mill __.compile
       - run: ./mill __.test
