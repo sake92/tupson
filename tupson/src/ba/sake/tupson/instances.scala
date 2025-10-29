@@ -1,5 +1,7 @@
 package ba.sake.tupson
 
+import scala.compiletime.summonInline
+import scala.quoted.*
 import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayDeque
 import java.net.URI
@@ -155,7 +157,40 @@ private[tupson] trait JsonRWInstances extends LowPriorityJsonRWInstances {
 
 }
 
+private[tupson] object LowPriorityJsonRWInstances {
+  def deriveUnion[T: Type](using Quotes): Expr[JsonRW[T]] = {
+    import quotes.reflect.*
+    TypeRepr.of[T] match {
+      case OrType(left, right) =>
+        left.asType match {
+          case '[l] =>
+            right.asType match {
+              case '[r] =>
+                '{
+                  new JsonRW[T] {
+                    override def write(value: T): JValue = value match {
+                      case a: l => summonInline[JsonRW[l]].write(a)
+                      case b: r => summonInline[JsonRW[r]].write(b)
+                    }
+                    override def parse(path: String, jValue: JValue): T = try {
+                      summonInline[JsonRW[l]].parse(path, jValue).asInstanceOf[T]
+                    } catch {
+                      case _: TupsonException =>
+                        summonInline[JsonRW[r]].parse(path, jValue).asInstanceOf[T]
+                    }
+                  }
+                }
+            }
+        }
+      case _ =>
+        report.errorAndAbort(s"Cannot automatically derive JsonRW for non-union type ${Type.show[T]}")
+    }
+  }
+}
+
 private[tupson] trait LowPriorityJsonRWInstances {
+
+  inline given autoderiveUnion[T]: JsonRW[T] = ${ LowPriorityJsonRWInstances.deriveUnion[T] }
 
   // https://stackoverflow.com/questions/52430996/scala-passing-a-contravariant-type-as-an-implicit-parameter-does-not-choose-the
   given [T](using trw: JsonRW[T]): JsonRW[Seq[T]] with {

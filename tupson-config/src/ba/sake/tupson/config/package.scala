@@ -27,11 +27,11 @@ private[tupson] object ConfigUtils {
     case JString(s) =>
       s.toLongOption match
         case Some(n) => JNum(n)
-        case None =>
+        case None    =>
           s.toDoubleOption match
             case Some(d) => JNum(d)
             case None    => jvalue
-    case JArray(vs) => JArray(vs.map(adapt))
+    case JArray(vs)  => JArray(vs.map(adapt))
     case JObject(vs) =>
       val adaptedMap = vs.map { (k, v) => k -> adapt(v) }
       JObject(adaptedMap)

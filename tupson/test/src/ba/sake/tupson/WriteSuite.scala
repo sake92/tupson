@@ -158,4 +158,24 @@ class WriteSuite extends munit.FunSuite {
     )
   }
 
+  /* union type */
+  test("write union type") {
+    locally {
+      val value: Int | String = 1
+      assertEquals(value.toJson, """1""")
+    }
+    locally {
+      val value: Int | String = "bla"
+      assertEquals(value.toJson, """ "bla" """.trim)
+    }
+    locally {
+      val value: CaseClass1 | CaseClass2 = CaseClass1("str", 123)
+      assertEquals(value.toJson, """{"str":"str","integer":123}""")
+    }
+    locally {
+      val value: CaseClass1 | CaseClass2 | Int = CaseClass2("c2", CaseClass1("str", 123))
+      assertEquals(value.toJson, """{"bla":"c2","c1":{"str":"str","integer":123}}""")
+    }
+  }
+
 }
