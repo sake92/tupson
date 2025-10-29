@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build
         env: 
-          FLATMARK_BASE_URL: https://sake92.github.io/sharaf
+          FLATMARK_BASE_URL: https://sake92.github.io/tupson
         run: |
             FLATMARK_VERSION=0.0.25
             curl -L https://github.com/sake92/flatmark/releases/download/v${FLATMARK_VERSION}/flatmark-1.0.0.pkg -o flatmark.pkg
