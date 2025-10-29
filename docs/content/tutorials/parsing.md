@@ -33,7 +33,7 @@ If parsing fails you will get a `TupsonException`:
 
 ## Specific errors
 
-{{site.data.project.name}} will give you the most specific error(s) as possible:
+Tupson will give you the most specific error(s) as possible:
 ```scala
 """{ "bln":123 }""" .parseJson[MyData]
 // Key '$.bln' with value '123' should be Boolean but it is Number; Key '$.int' is missing; Key '$.s' is missing

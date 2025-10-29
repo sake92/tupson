@@ -7,7 +7,7 @@ description: Tupson Quickstart
 
 ## Scastie
 
-Quickest way to start playing with {{site.data.project.name}} is with this [Scastie example](https://scastie.scala-lang.org/KQfj7lUST0i2Iz4lZOEwOQ).
+Quickest way to start playing with Tupson is with this [Scastie example](https://scastie.scala-lang.org/KQfj7lUST0i2Iz4lZOEwOQ).
 
 ## Mill
 

@@ -8,7 +8,7 @@ pagination:
 # {{ page.title }}
 
 
-Here are some common questions and answers you might have when using {{site.data.project.name}}.
+Here are some common questions and answers you might have when using Tupson.
 
 {%
 

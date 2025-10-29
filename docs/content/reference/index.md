@@ -16,6 +16,7 @@ set references = [
     { label: "Simple Enums", url: "/reference/simple-enums.html" },
     { label: "Case Classes", url: "/reference/case-classes.html" },
     { label: "Sum Types", url: "/reference/sum-types.html" },
+    { label: "Union Types", url: "/reference/union-types.html" },
     { label: "Dynamic Json", url: "/reference/dynamic-json.html" }
 ]
 

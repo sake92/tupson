@@ -7,7 +7,7 @@ pagination:
 
 # {{ page.title }}
 
-Sharaf is a minimalistic Scala 3 web framework.
+Tupson is a minimalistic Scala 3 web framework.
 
 It only does `String` <=> `T` conversions, no streaming.
   

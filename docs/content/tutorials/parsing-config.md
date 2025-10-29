@@ -6,7 +6,7 @@ description: Typesafe config integration
 # {{ page.title }}
 
 
-{{site.data.project.name}} integrates with the awesome [Typesafe config library](https://github.com/lightbend/config).  
+Tupson integrates with the awesome [Typesafe config library](https://github.com/lightbend/config).  
 
 You will need to add this dependency:
 ```scala
