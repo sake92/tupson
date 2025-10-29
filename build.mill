@@ -52,6 +52,7 @@ object `tupson-config` extends CommonScalaModule with CommonPublishModule {
 object `tupson-next` extends CommonScalaModule with CommonPublishModule {
   def scalaVersion = "3.7.3"
   def moduleDeps = Seq(tupson.jvm)
+  object test extends ScalaTests with CommonTestModule
 }
 
 object examples extends CommonScalaModule {
