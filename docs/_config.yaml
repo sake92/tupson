@@ -1,0 +1,16 @@
+
+name: Tupson Documentation
+
+categories:
+  tutorials:
+    label: Tutorials
+    description: Tupson Tutorials
+  howtos:
+    label: How-Tos
+    description: Tupson How-Tos
+  reference:
+    label: Reference
+    description: Tupson Reference Documentation
+  philosophy:
+    label: Philosophy
+    description: Tupson Philosophy
