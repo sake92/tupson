@@ -10,11 +10,11 @@ Tupson integrates with the awesome [Typesafe config library](https://github.com/
 
 You will need to add this dependency:
 ```scala
-{{site.data.project.config_artifact.org}}::{{site.data.project.config_artifact.name}}:{{site.data.project.config_artifact.version}} // scala-cli
+ba.sake::tupson-config:{{site.data.project.artifact.version}} // scala-cli
 
-mvn"{{site.data.project.config_artifact.org}}::{{site.data.project.config_artifact.name}}:{{site.data.project.config_artifact.version}}" // mill
+mvn"ba.sake::tupson-config:{{site.data.project.artifact.version}}" // mill
 
-"{{site.data.project.config_artifact.org}}" %% "{{site.data.project.config_artifact.name}}" % "{{site.data.project.config_artifact.version}}" // sbt
+"ba.sake" %% "tupson-config" % "{{site.data.project.artifact.version}}" // sbt
 
 ```
 

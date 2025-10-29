@@ -9,9 +9,5 @@ gh:
 artifact:
   org: "ba.sake"
   name: "tupson"
-  version: "0.14.0"
+  version: "0.15.0"
 
-config_artifact:
-  org: "ba.sake"
-  name: "tupson-config"
-  version: "0.14.0"

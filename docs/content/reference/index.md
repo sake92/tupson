@@ -17,6 +17,7 @@ set references = [
     { label: "Case Classes", url: "/reference/case-classes.html" },
     { label: "Sum Types", url: "/reference/sum-types.html" },
     { label: "Union Types", url: "/reference/union-types.html" },
+    { label: "Named Tuples", url: "/reference/named-tuples.html" },
     { label: "Dynamic Json", url: "/reference/dynamic-json.html" }
 ]
 

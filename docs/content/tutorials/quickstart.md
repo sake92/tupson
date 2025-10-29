@@ -13,7 +13,7 @@ Quickest way to start playing with Tupson is with this [Scastie example](https:/
 
 ```scala
 def mvnDeps = super.mvnDeps() ++ Seq(
-  mvn"{{site.data.project.artifact.org}}::{{site.data.project.artifact.name}}:{{site.data.project.artifact.version}}"
+  mvn"ba.sake::tupson:{{site.data.project.artifact.version}}"
 )
 def scalacOptions = super.scalacOptions() ++ Seq("-Yretain-trees")
 ```
@@ -22,7 +22,7 @@ def scalacOptions = super.scalacOptions() ++ Seq("-Yretain-trees")
 
 ```scala
 libraryDependencies ++= Seq(
-  "{{site.data.project.artifact.org}}" %% "{{site.data.project.artifact.name}}" % "{{site.data.project.artifact.version}}"
+  "ba.sake" %% "tupson" % "{{site.data.project.artifact.version}}"
 )
 scalacOptions ++= Seq("-Yretain-trees")
 ```
@@ -30,7 +30,7 @@ scalacOptions ++= Seq("-Yretain-trees")
 ## Scala CLI
 
 ```scala
-//> using dep {{site.data.project.artifact.org}}::{{site.data.project.artifact.name}}:{{site.data.project.artifact.version}}
+//> using dep ba.sake::tupson:{{site.data.project.artifact.version}}
 ```
 
 ## Examples
