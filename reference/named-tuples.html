@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="Tupson Reference">
-  <title> Reference | Tupson Documentation </title>
+  <meta name="description" content="Working with Named Tuples in Tupson">
+  <title> Named Tuples | Tupson Documentation </title>
   <link rel="shortcut icon" href="https://sake92.github.io/tupson/images/favicon.png" type="image/png">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-dark.min.css" media="(prefers-color-scheme: dark)" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-light.min.css" media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)" rel="stylesheet">
@@ -41,7 +41,7 @@
       <summary>Table of Contents</summary>
       <div>
        <ul>
-        <li><a href="#reference">Reference</a></li>
+        <li><a href="#named-tuples">Named Tuples</a></li>
        </ul>
       </div>
      </details>
@@ -50,28 +50,29 @@
     <div></div>
     <div></div>
    </div>
-   <h1 id="reference">Reference<a href="#reference" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
-   <ul>
-    <li><a href="https://sake92.github.io/tupson/reference/option.html">Option</a></li>
-    <li><a href="https://sake92.github.io/tupson/reference/collections.html">Collections</a></li>
-    <li><a href="https://sake92.github.io/tupson/reference/maps.html">Maps</a></li>
-    <li><a href="https://sake92.github.io/tupson/reference/simple-enums.html">Simple Enums</a></li>
-    <li><a href="https://sake92.github.io/tupson/reference/case-classes.html">Case Classes</a></li>
-    <li><a href="https://sake92.github.io/tupson/reference/sum-types.html">Sum Types</a></li>
-    <li><a href="https://sake92.github.io/tupson/reference/union-types.html">Union Types</a></li>
-    <li><a href="https://sake92.github.io/tupson/reference/named-tuples.html">Named Tuples</a></li>
-    <li><a href="https://sake92.github.io/tupson/reference/dynamic-json.html">Dynamic Json</a></li>
-   </ul>
-   <p>Simple types: <code>Int</code>, <code>Double</code>, <code>Boolean</code>, <code>String</code> etc work out of the box.</p>
-   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-keyword">import</span> ba.sake.tupson.{<span class="hljs-keyword">given</span>, *}
+   <h1 id="named-tuples">Named Tuples<a href="#named-tuples" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
+   <p>In Scala 3 you can use named tuples in the form <code>(a = "mystring", b = 123)</code>.
+    <br>
+    Tupson has experimental support for it.</p>
+   <p>You need to add an extra dependency and use scala 3.7+:</p>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes">ba.sake::tupson-next:<span class="hljs-number">0.15</span><span class="hljs-number">.0</span> <span class="hljs-comment">// scala-cli</span>
 
-<span class="hljs-comment">// write a value to JSON string</span>
-<span class="hljs-keyword">val</span> myValue = <span class="hljs-number">123</span>
-println(<span class="hljs-number">123.</span>toJson) <span class="hljs-comment">// 123</span>
+<span class="hljs-string">mvn"ba.sake::tupson-next:0.15.0"</span> <span class="hljs-comment">// mill</span>
 
-<span class="hljs-comment">// parse a value from JSON string</span>
-<span class="hljs-keyword">val</span> myParsedValue = ${tq}<span class="hljs-number">123</span>${tq}.parseJson[<span class="hljs-type">Int</span>]
-println(myParsedValue) <span class="hljs-comment">// 123</span>
+<span class="hljs-string">"ba.sake"</span> %% <span class="hljs-string">"tupson-next"</span> % <span class="hljs-string">"0.15.0"</span> <span class="hljs-comment">// sbt</span>
+
+</code>
+          </pre>
+   <p>Example:</p>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-class"><span class="hljs-keyword">type</span> <span class="hljs-title">Person</span> </span>= (name: <span class="hljs-type">String</span>, age: <span class="hljs-type">Int</span>)
+
+<span class="hljs-keyword">val</span> nt1: <span class="hljs-type">Person</span> = (name = <span class="hljs-string">"Mujo"</span>, age = <span class="hljs-number">35</span>)
+println(nt1.toJson)
+<span class="hljs-comment">// {"age":35,"name":"Mujo"}</span>
+
+<span class="hljs-keyword">val</span> str = <span class="hljs-string">""" { "name": "Mujo", "age": 35 } """</span>
+<span class="hljs-keyword">val</span> nt2 = str.parseJson[<span class="hljs-type">Person</span>]
+<span class="hljs-comment">// (name = "Mujo", age = 35)</span>
 </code>
           </pre>
   </main>
