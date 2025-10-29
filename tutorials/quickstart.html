@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Tupson Quickstart">
+  <title> Quickstart | Tupson Documentation </title>
+  <link rel="shortcut icon" href="https://sake92.github.io/sharaf/images/favicon.png" type="image/png">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-dark.min.css" media="(prefers-color-scheme: dark)" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-light.min.css" media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.conditional.min.css">
+  <link rel="stylesheet" href="https://sake92.github.io/sharaf/styles/default.css">
+ </head>
+ <body>
+  <header class="pico container">
+   <nav>
+    <ul>
+     <li><a href="https://sake92.github.io/sharaf/">Home</a></li>
+    </ul>
+    <ul>
+     <li>
+      <form action="https://sake92.github.io/sharaf/search/results.html" method="GET">
+       <input name="q" type="search" placeholder="Search">
+      </form>
+     </li>
+    </ul>
+    <ul>
+     <li><a href="https://sake92.github.io/sharaf/tutorials">Tutorials</a></li>
+     <li><a href="https://sake92.github.io/sharaf/howtos">How-Tos</a></li>
+     <li><a href="https://sake92.github.io/sharaf/reference">Reference</a></li>
+     <li><a href="https://sake92.github.io/sharaf/philosophy">Philosophy</a></li>
+    </ul>
+   </nav>
+  </header>
+  <main class="pico container">
+   <div class="grid">
+    <div>
+     <details>
+      <summary>Table of Contents</summary>
+      <div>
+       <ul>
+        <li><a href="#quickstart">Quickstart</a>
+         <ul>
+          <li><a href="#scastie">Scastie</a></li>
+          <li><a href="#mill">Mill</a></li>
+          <li><a href="#sbt">Sbt</a></li>
+          <li><a href="#scala-cli">Scala CLI</a></li>
+          <li><a href="#examples">Examples</a></li>
+         </ul></li>
+       </ul>
+      </div>
+     </details>
+     <hr>
+    </div>
+    <div></div>
+    <div></div>
+   </div>
+   <h1 id="quickstart">Quickstart<a href="#quickstart" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
+   <h2 id="scastie">Scastie<a href="#scastie" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
+   <p>Quickest way to start playing with Tupson is with this <a href="https://scastie.scala-lang.org/KQfj7lUST0i2Iz4lZOEwOQ">Scastie example</a>.</p>
+   <h2 id="mill">Mill<a href="#mill" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">mvnDeps</span> </span>= <span class="hljs-keyword">super</span>.mvnDeps() ++ <span class="hljs-type">Seq</span>(
+  <span class="hljs-string">mvn"ba.sake::tupson:0.14.0"</span>
+)
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">scalacOptions</span> </span>= <span class="hljs-keyword">super</span>.scalacOptions() ++ <span class="hljs-type">Seq</span>(<span class="hljs-string">"-Yretain-trees"</span>)
+</code>
+          </pre>
+   <h2 id="sbt">Sbt<a href="#sbt" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes">libraryDependencies ++= <span class="hljs-type">Seq</span>(
+  <span class="hljs-string">"ba.sake"</span> %% <span class="hljs-string">"tupson"</span> % <span class="hljs-string">"0.14.0"</span>
+)
+scalacOptions ++= <span class="hljs-type">Seq</span>(<span class="hljs-string">"-Yretain-trees"</span>)
+</code>
+          </pre>
+   <h2 id="scala-cli">Scala CLI<a href="#scala-cli" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-comment">//&gt;</span> <span class="hljs-keyword">using</span> <span class="hljs-type">dep</span> <span class="hljs-string">ba.sake::tupson:0.14.0</span>
+</code>
+          </pre>
+   <h2 id="examples">Examples<a href="#examples" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
+   <p><a href="${Consts.GhSourcesUrl}/examples/src/main/scala">Examples</a> are runnable with <a href="https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html">Mill</a>:</p>
+   <pre>            <code class="language-sh hljs language-bash" data-highlighted="yes">./mill examples.runMain write
+</code>
+          </pre>
+  </main>
+  <footer class="pico container">Tupson Documentation</footer>
+ </body>
+</html>

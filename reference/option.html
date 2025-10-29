@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="Working with Collections in Tupson">
-  <title> Collections | Tupson Documentation </title>
+  <meta name="description" content="Working with Option in Tupson">
+  <title> Option | Tupson Documentation </title>
   <link rel="shortcut icon" href="https://sake92.github.io/sharaf/images/favicon.png" type="image/png">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-dark.min.css" media="(prefers-color-scheme: dark)" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-light.min.css" media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)" rel="stylesheet">
@@ -41,7 +41,7 @@
       <summary>Table of Contents</summary>
       <div>
        <ul>
-        <li><a href="#collections">Collections</a></li>
+        <li><a href="#option">Option</a></li>
        </ul>
       </div>
      </details>
@@ -50,20 +50,22 @@
     <div></div>
     <div></div>
    </div>
-   <h1 id="collections">Collections<a href="#collections" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
-   <p><code>Seq[T]</code>, <code>List[T]</code>, <code>Set[T]</code>, <code>Array[T]</code> are supported.</p>
-   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-type">Seq</span>.empty[<span class="hljs-type">String</span>].toJson
-<span class="hljs-comment">// []</span>
+   <h1 id="option">Option<a href="#option" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
+   <p><code>Option[T]</code> work (probably?) as you expect.
+    <br>
+    <code>None</code> corresponds to JSON's <code>null</code>.</p>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-type">Option</span>.empty[<span class="hljs-type">String</span>].toJson
+<span class="hljs-comment">// null</span>
 
-<span class="hljs-type">Seq</span>(<span class="hljs-string">"a"</span>, <span class="hljs-string">"b"</span>).toJson
-<span class="hljs-comment">// ["a","b"]</span>
+<span class="hljs-type">Option</span>(<span class="hljs-string">"str"</span>).toJson
+<span class="hljs-comment">// "str"</span>
 </code>
           </pre>
-   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-string">""" [] """</span>.parseJson[<span class="hljs-type">Seq</span>[<span class="hljs-type">String</span>]]
-<span class="hljs-comment">// Seq()</span>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-string">""" null """</span>.parseJson[<span class="hljs-type">Option</span>[<span class="hljs-type">String</span>]]
+<span class="hljs-comment">// None</span>
 
-<span class="hljs-string">""" ["a","b"] """</span>.parseJson[<span class="hljs-type">Seq</span>[<span class="hljs-type">String</span>]]
-<span class="hljs-comment">// Seq(a,b)</span>
+<span class="hljs-string">""" "str" """</span>.parseJson[<span class="hljs-type">Option</span>[<span class="hljs-type">String</span>]]
+<span class="hljs-comment">// Some(str)</span>
 </code>
           </pre>
   </main>
