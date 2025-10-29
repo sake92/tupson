@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="Tupson - stupid simple Scala 3 library for writing and reading JSON">
-  <title> Tupson | Tupson Documentation </title>
+  <meta name="description" content="Working with Union Types in Tupson">
+  <title> Union Types | Tupson Documentation </title>
   <link rel="shortcut icon" href="https://sake92.github.io/sharaf/images/favicon.png" type="image/png">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-dark.min.css" media="(prefers-color-scheme: dark)" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-light.min.css" media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)" rel="stylesheet">
@@ -41,7 +41,7 @@
       <summary>Table of Contents</summary>
       <div>
        <ul>
-        <li><a href="#tupson">Tupson</a></li>
+        <li><a href="#union-types">Union Types</a></li>
        </ul>
       </div>
      </details>
@@ -50,19 +50,21 @@
     <div></div>
     <div></div>
    </div>
-   <h1 id="tupson">Tupson<a href="#tupson" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
-   <p>Tupson is a minimalistic Scala 3 web framework.</p>
-   <p>It only does <code>String</code> &lt;=&gt; <code>T</code> conversions, no streaming.</p>
-   <p>Jump right into:</p>
-   <ul>
-    <li><a href="https://sake92.github.io/sharaf/tutorials">Tutorials</a> to get you started</li>
-    <li><a href="https://sake92.github.io/sharaf/howtos">How-Tos</a> to get answers for some common questions</li>
-    <li><a href="https://sake92.github.io/sharaf/reference">Reference</a> to see detailed information</li>
-    <li><a href="https://sake92.github.io/sharaf/philosophy">Philosophy</a> to get insights into design decisions</li>
-   </ul>
-   <hr>
-   <p>Site map:</p>
-   <p>TODO</p>
+   <h1 id="union-types">Union Types<a href="#union-types" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
+   <p>In Scala 3 you can use union types in the form <code>A | B | C</code>.</p>
+   <blockquote>
+    <p>Use case: Some APIs support "expanding objects". E.g. they either return a <code>String</code> which is ID of that object, or full object <code>T</code> when you send a query string <code>expand=myObject</code>. For this you can leverage union types in natural way: <code>someKey: String | MyObject</code>.</p>
+   </blockquote>
+   <p>When parsing, Tupson will try all types (left to right) until it finds one that parses correctly.
+    <br>
+    When writing, Tupson will use its runtime type to determine how to write the value.</p>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-string">"1"</span>.parseJson[<span class="hljs-type">Int</span> | <span class="hljs-type">String</span> | <span class="hljs-type">Boolean</span>]
+<span class="hljs-comment">// 1: Int</span>
+
+<span class="hljs-string">""" "bla" """</span>.parseJson[<span class="hljs-type">Int</span> | <span class="hljs-type">String</span> | <span class="hljs-type">Boolean</span>]
+<span class="hljs-comment">// "bla": String</span>
+</code>
+          </pre>
   </main>
   <footer class="pico container">Tupson Documentation</footer>
  </body>
