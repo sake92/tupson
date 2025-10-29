@@ -313,4 +313,10 @@ class ParseSuite extends munit.FunSuite {
     )
   }
 
+  test("parse named tuple") {
+    val str = """ { "name": "Mujo", "age": 35 } """
+    val nt2 = str.parseJson[Person]
+    assertEquals(nt2, (name = "Mujo", age = 35))
+  }
+
 }

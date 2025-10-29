@@ -178,4 +178,9 @@ class WriteSuite extends munit.FunSuite {
     }
   }
 
+  test("write named tuple") {
+    val nt1: Person = (name = "Mujo", age = 35)
+    assertEquals(nt1.toJson, """{"age":35,"name":"Mujo"}""")
+  }
+
 }

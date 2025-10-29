@@ -21,3 +21,5 @@ package rec {
 package weird_named {
   case class WeirdNamed(`weird named key`: Int) derives JsonRW
 }
+
+type Person = (name: String, age: Int)

@@ -14,7 +14,7 @@ object tupson extends Module {
   }
 
   object js extends TupsonCommonModule with ScalaJSModule {
-    def scalaJSVersion = "1.17.0"
+    def scalaJSVersion = "1.20.1"
     def mvnDeps = super.mvnDeps() ++ Seq(
       mvn"io.github.cquiroz::scala-java-time::2.6.0"
     )
@@ -49,18 +49,12 @@ object `tupson-config` extends CommonScalaModule with CommonPublishModule {
   }
 }
 
-object `tupson-next` extends CommonScalaModule with CommonPublishModule {
-  def scalaVersion = "3.7.3"
-  def moduleDeps = Seq(tupson.jvm)
-  object test extends ScalaTests with CommonTestModule
-}
-
 object examples extends CommonScalaModule {
   def moduleDeps = Seq(tupson.jvm)
 }
 
 trait CommonScalaModule extends ScalaModule {
-  def scalaVersion = "3.3.6"
+  def scalaVersion = "3.7.3"
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-Yretain-trees", // required for default arguments
     "-deprecation",

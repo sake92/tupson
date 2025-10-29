@@ -8,15 +8,6 @@ description: Working with Named Tuples in Tupson
 In Scala 3 you can use named tuples in the form `(a = "mystring", b = 123)`.  
 Tupson has experimental support for it.
 
-You need to add an extra dependency and use scala 3.7+:
-```scala
-ba.sake::tupson-next:{{site.data.project.artifact.version}} // scala-cli
-
-mvn"ba.sake::tupson-next:{{site.data.project.artifact.version}}" // mill
-
-"ba.sake" %% "tupson-next" % "{{site.data.project.artifact.version}}" // sbt
-
-```
 
 Example:
 
