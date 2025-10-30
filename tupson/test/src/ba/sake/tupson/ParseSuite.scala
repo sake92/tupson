@@ -297,6 +297,13 @@ class ParseSuite extends munit.FunSuite {
     )
   }
 
+  /* named tuples */
+  test("parse named tuple") {
+    val str = """ { "name": "Mujo", "age": 35 } """
+    val nt2 = str.parseJson[Person]
+    assertEquals(nt2, (name = "Mujo", age = 35))
+  }
+
   /* union type */
   test("parse union type") {
     assertEquals("1".parseJson[Int | String | Boolean], 1)
@@ -311,12 +318,12 @@ class ParseSuite extends munit.FunSuite {
       """{"bla":"c2","c1":{"str":"str","integer":123}}""".parseJson[CaseClass1 | CaseClass2],
       CaseClass2("c2", CaseClass1("str", 123))
     )
-  }
 
-  test("parse named tuple") {
-    val str = """ { "name": "Mujo", "age": 35 } """
-    val nt2 = str.parseJson[Person]
-    assertEquals(nt2, (name = "Mujo", age = 35))
+    // TODO no cookie
+    /*assertEquals(
+      """{ "x": 5 }""".parseJson[(x: Int) | (y: String)],
+      (x = 5)
+    )*/
   }
 
 }

@@ -194,7 +194,7 @@ private[tupson] object LowPriorityJsonRWInstances {
     }
   }
 
-  private def deriveNamedTupleTC[T](fieldNames: Seq[String], fieldJsonRWs: Seq[JsonRW[Any]]) = 
+  private def deriveNamedTupleTC[T](fieldNames: Seq[String], fieldJsonRWs: Seq[JsonRW[Any]]) =
     new JsonRW[T] {
       override def write(value: T): JValue =
         val fieldValues = value.asInstanceOf[Tuple].productIterator.asInstanceOf[Iterator[Any]]
@@ -209,30 +209,31 @@ private[tupson] object LowPriorityJsonRWInstances {
           val parsedValues = fieldNames.zip(fieldJsonRWs).map { case (name, rw) =>
             fieldMap.get(name) match {
               case Some(jv) => rw.parse(s"$path.$name", jv)
-              case None     => throw TupsonException(s"Missing field '$name' at path '$path'")
+              case None     => throw ParsingException(ParseError(s"$path.$name", "is missing"))
             }
           }
           val tupleValue = Tuple.fromArray(parsedValues.toArray)
           withNames(tupleValue).asInstanceOf[T]
-        case _ =>
-          throw TupsonException(s"Expected JObject at path '$path', found: $jValue")
+        case other =>
+          JsonRW.typeMismatchError(path, "JObject", other)
       }
     }
-  
+
 }
 
 private[tupson] trait LowPriorityJsonRWInstances {
 
-  // cache instances
-  private val namedTupleTCsCache = scala.collection.mutable.Map.empty[ClassTag[?], JsonRW[?]]
+  // TODO cache instances
+  // private val namedTupleTCsCache = scala.collection.mutable.Map.empty[String, JsonRW[?]]
 
   inline given autoderiveUnion[T]: JsonRW[T] = ${ LowPriorityJsonRWInstances.deriveUnionTC[T] }
 
-  inline given autoderiveNamedTuple[T <: AnyNamedTuple](using ct: ClassTag[T]): JsonRW[T] = {
+  inline given autoderiveNamedTuple[T <: AnyNamedTuple]: JsonRW[T] = {
     val fieldNames = compiletime.constValueTuple[Names[T]].productIterator.asInstanceOf[Iterator[String]].toSeq
     val fieldJsonRWs =
       compiletime.summonAll[Tuple.Map[DropNames[T], JsonRW]].productIterator.asInstanceOf[Iterator[JsonRW[Any]]].toSeq
-    namedTupleTCsCache.getOrElseUpdate(ct, LowPriorityJsonRWInstances.deriveNamedTupleTC[T](fieldNames, fieldJsonRWs)).asInstanceOf[JsonRW[T]]
+    LowPriorityJsonRWInstances.deriveNamedTupleTC[T](fieldNames, fieldJsonRWs)
+    // namedTupleTCsCache.getOrElseUpdate(ct, LowPriorityJsonRWInstances.deriveNamedTupleTC[T](fieldNames, fieldJsonRWs)).asInstanceOf[JsonRW[T]]
   }
 
   // https://stackoverflow.com/questions/52430996/scala-passing-a-contravariant-type-as-an-implicit-parameter-does-not-choose-the
