@@ -14,7 +14,7 @@
 
 
 # RELEASE
-./scripts/release.sh 0.16.0
+./scripts/release.sh 0.16.1
 
 ```
 
