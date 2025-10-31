@@ -160,7 +160,6 @@ class WriteSuite extends munit.FunSuite {
 
   /* union type */
   test("write union type") {
-    import unionTypes.given
     locally {
       val value: Int | String = 1
       assertEquals(value.toJson, """1""")
@@ -180,7 +179,6 @@ class WriteSuite extends munit.FunSuite {
   }
 
   test("write named tuple") {
-    import namedTuples.given
     val nt1: Person = (name = "Mujo", age = 35)
     assertEquals(nt1.toJson, """{"age":35,"name":"Mujo"}""")
   }

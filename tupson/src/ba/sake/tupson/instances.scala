@@ -12,16 +12,14 @@ import scala.reflect.ClassTag
 import scala.quoted.*
 import org.typelevel.jawn.ast.*
 
-object namedTuples {
-  // TODO cache instances
-  // private val namedTupleTCsCache = scala.collection.mutable.Map.empty[String, JsonRW[?]]
 
-  inline given autoderiveNamedTuple[T <: AnyNamedTuple]: JsonRW[T] = {
+private[tupson] trait LowPriorityJsonRWInstances {
+
+  inline given autoderiveNamedTuple[T <: AnyNamedTuple](using T <:< AnyNamedTuple): JsonRW[T] = {
     val fieldNames = compiletime.constValueTuple[Names[T]].productIterator.asInstanceOf[Iterator[String]].toSeq
     val fieldJsonRWs =
       compiletime.summonAll[Tuple.Map[DropNames[T], JsonRW]].productIterator.asInstanceOf[Iterator[JsonRW[Any]]].toSeq
     deriveNamedTupleTC[T](fieldNames, fieldJsonRWs)
-    // namedTupleTCsCache.getOrElseUpdate(ct, deriveNamedTupleTC[T](fieldNames, fieldJsonRWs)).asInstanceOf[JsonRW[T]]
   }
 
   private def deriveNamedTupleTC[T](fieldNames: Seq[String], fieldJsonRWs: Seq[JsonRW[Any]]) =
@@ -48,43 +46,6 @@ object namedTuples {
           JsonRW.typeMismatchError(path, "JObject", other)
       }
     }
-}
-
-object unionTypes {
-
-  inline given autoderiveUnion[T]: JsonRW[T] = ${ deriveUnionTC[T] }
-
-  def deriveUnionTC[T: Type](using Quotes): Expr[JsonRW[T]] = {
-    import quotes.reflect.*
-    TypeRepr.of[T] match {
-      case OrType(left, right) =>
-        left.asType match {
-          case '[l] =>
-            right.asType match {
-              case '[r] =>
-                '{
-                  new JsonRW[T] {
-                    override def write(value: T): JValue = value match {
-                      case a: l => summonInline[JsonRW[l]].write(a)
-                      case b: r => summonInline[JsonRW[r]].write(b)
-                    }
-                    override def parse(path: String, jValue: JValue): T = try {
-                      summonInline[JsonRW[l]].parse(path, jValue).asInstanceOf[T]
-                    } catch {
-                      case _: TupsonException =>
-                        summonInline[JsonRW[r]].parse(path, jValue).asInstanceOf[T]
-                    }
-                  }
-                }
-            }
-        }
-      case _ =>
-        report.errorAndAbort(s"Cannot automatically derive JsonRW for non-union type ${Type.show[T]}")
-    }
-  }
-}
-
-private[tupson] trait LowPriorityJsonRWInstances {
 
   // https://stackoverflow.com/questions/52430996/scala-passing-a-contravariant-type-as-an-implicit-parameter-does-not-choose-the
   given [T](using trw: JsonRW[T]): JsonRW[Seq[T]] with {

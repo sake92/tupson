@@ -299,7 +299,6 @@ class ParseSuite extends munit.FunSuite {
 
   /* named tuples */
   test("parse named tuple") {
-    import namedTuples.given
     val str = """ { "name": "Mujo", "age": 35 } """
     val nt2 = str.parseJson[Person]
     assertEquals(nt2, (name = "Mujo", age = 35))
@@ -307,7 +306,7 @@ class ParseSuite extends munit.FunSuite {
 
   /* union type */
   test("parse union type") {
-    import unionTypes.given
+    // import unionTypes.given
     assertEquals("1".parseJson[Int | String | Boolean], 1)
     assertEquals(""" "bla" """.parseJson[Int | String | Boolean], "bla")
 
@@ -321,11 +320,8 @@ class ParseSuite extends munit.FunSuite {
       CaseClass2("c2", CaseClass1("str", 123))
     )
 
-    // TODO no cookie
-    /*assertEquals(
-      """{ "x": 5 }""".parseJson[(x: Int) | (y: String)],
-      (x = 5)
-    )*/
+    assertEquals("""{ "x": 5 }""".parseJson[(x: Int) | (y: String)], (x = 5))
+    assertEquals("""{ "y": "str" }""".parseJson[(x: Int) | (y: String)], (y = "str"))
   }
 
   // just testing the implicits work

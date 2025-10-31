@@ -4,6 +4,11 @@ import scala.collection.mutable.ArrayDeque
 import scala.compiletime.*
 import scala.deriving.*
 import scala.quoted.*
+import NamedTuple.AnyNamedTuple
+import NamedTuple.Names
+import NamedTuple.DropNames
+import NamedTuple.NamedTuple
+import NamedTuple.withNames
 import scala.reflect.ClassTag
 import java.net.URI
 import java.net.URL
@@ -321,6 +326,39 @@ object JsonRW extends LowPriorityJsonRWInstances:
                 else typeMismatchError(path, "Object", other)
           }
         }
+  }
+
+  
+
+  inline given autoderiveUnion[T: IsUnion]: JsonRW[T] = ${ deriveUnionTC[T] }
+
+  def deriveUnionTC[T: Type](using Quotes): Expr[JsonRW[T]] = {
+    import quotes.reflect.*
+    TypeRepr.of[T] match {
+      case OrType(left, right) =>
+        left.asType match {
+          case '[l] =>
+            right.asType match {
+              case '[r] =>
+                '{
+                  new JsonRW[T] {
+                    override def write(value: T): JValue = value match {
+                      case a: l => summonInline[JsonRW[l]].write(a)
+                      case b: r => summonInline[JsonRW[r]].write(b)
+                    }
+                    override def parse(path: String, jValue: JValue): T = try {
+                      summonInline[JsonRW[l]].parse(path, jValue).asInstanceOf[T]
+                    } catch {
+                      case _: TupsonException =>
+                        summonInline[JsonRW[r]].parse(path, jValue).asInstanceOf[T]
+                    }
+                  }
+                }
+            }
+        }
+      case _ =>
+        report.errorAndAbort(s"Cannot automatically derive JsonRW for non-union type ${Type.show[T]}")
+    }
   }
 
   private def summonInstances[T: Type, Elems: Type](using Quotes): List[Expr[JsonRW[?]]] =
