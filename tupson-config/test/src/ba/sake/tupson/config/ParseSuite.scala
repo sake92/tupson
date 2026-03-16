@@ -38,7 +38,8 @@ class UtilTest extends munit.FunSuite {
       )
     )
   }
-  test("parseConfig overriden by env var") {
+  // enable once Deder supports forked tests with env vars
+  test("parseConfig overriden by env var".ignore) {
     val config = ConfigFactory.load("test_env_var").parseConfig[TestEnvVarConf]
     assertEquals(
       config,

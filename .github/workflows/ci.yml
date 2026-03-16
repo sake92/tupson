@@ -9,17 +9,24 @@ on:
 
 jobs:
   test:
-    name: test ${{ matrix.java }}
+    name: test
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        java: [11, 21]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v3
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: coursier/cache-action@v7
+        with:
+          extraFiles: deder.pkl
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: ${{ matrix.java }}
-      - run: ./mill __.compile
-      - run: ./mill __.test
+          java-version: '21'
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@main
+      - name: Install deder
+        run: brew install sake92/tap/deder
+      - name: Compile
+        run: deder exec -t compile
+      - name: Test
+        run: deder exec -t test

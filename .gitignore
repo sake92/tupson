@@ -7,8 +7,13 @@ target/
 .metals/
 .bsp/
 .vscode/
+.idea/
 
 out/
 
 _site/
 .flatmark-cache
+
+
+**/.deder/**
+!**/.deder/server.properties

@@ -1,0 +1,117 @@
+amends "https://sake92.github.io/deder/config/DederProject.pkl"
+
+local const baseTemplate: ScalaModule = new {
+  scalaVersion = "3.7.3"
+  publish = false
+  scalacOptions {
+    "-Yretain-trees" // required for default arguments
+    "-deprecation"
+    "-Xcheck-macros"
+  }
+}
+
+local const basePomSettings: PomSettings = new {
+  groupId = "ba.sake"
+  url = "https://github.com/sake92/tupson"
+  licenses {
+    new PomLicense {
+      name = "Apache 2.0 License"
+      url = "https://opensource.org/license/apache-2.0"
+    }
+  }
+  developers {
+    new PomDeveloper {
+      id = "sake92"
+      name = "Sakib Hadžiavdić"
+      email = "sake92@sake.ba"
+    }
+  }
+  scm {
+    url = "git@github.com:sake92/tupson.git"
+  }
+}
+
+local const tupsonModules =
+  new CreateCrossModules {
+    root = "tupson"
+    template = (baseTemplate) {
+      publish = true
+      deps {
+        "org.typelevel::jawn-ast::1.6.0"
+      }
+      pomSettings = (basePomSettings) {
+        artifactId = "tupson"
+        name = "Tupson JSON library"
+        description = "Tupson JSON library"
+      }
+    }
+    testTemplate = (template.asTest()) {
+      deps {
+        "org.scalameta::munit::1.0.0"
+      }
+    }
+    jsTemplate = (template.asJs()) {
+      scalaJsVersion = "1.20.1"
+      deps {
+        "io.github.cquiroz::scala-java-time::2.6.0"
+      }
+    }
+    jsTestTemplate = (jsTemplate.asTest()) {
+      deps {
+        "org.scalameta::munit::1.0.0"
+      }
+    }
+    nativeTemplate = (template.asNative()) {
+      scalaNativeVersion = "0.5.9"
+      deps {
+        "io.github.cquiroz::scala-java-time::2.6.0"
+      }
+    }
+    nativeTestTemplate = (nativeTemplate.asTest()) {
+      deps {
+        "org.scalameta::munit::1.0.0"
+      }
+    }
+  }.get
+
+local const tupsonConfigModules =
+  new CreateScalaModules {
+    root = "tupson-config"
+    template = (baseTemplate) {
+      publish = true
+      moduleDeps {
+        tupsonModules.jvm
+      }
+      deps {
+        "com.typesafe:config:1.4.3"
+      }
+      pomSettings = (basePomSettings) {
+        artifactId = "tupson-config"
+        name = "Tupson Config module"
+        description = "Tupson Config module"
+      }
+    }
+    testTemplate = (template.asTest()) {
+      deps {
+        "org.scalameta::munit::1.0.0"
+      }
+      jvmOptions {
+        "-Dconfig.override_with_env_vars=true"
+      }
+      //def forkEnv = Map("CONFIG_FORCE_envvar_port" -> "1234")
+    }
+  }.get
+
+local const examples = (baseTemplate) {
+  id = "examples"
+  root = "examples"
+  moduleDeps {
+    tupsonModules.jvm
+  }
+}
+
+modules {
+  ...tupsonModules.all
+  ...tupsonConfigModules.all
+  examples
+}
