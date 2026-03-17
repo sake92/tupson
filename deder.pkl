@@ -98,7 +98,9 @@ local const tupsonConfigModules =
       jvmOptions {
         "-Dconfig.override_with_env_vars=true"
       }
-      //def forkEnv = Map("CONFIG_FORCE_envvar_port" -> "1234")
+      forkEnv {
+        ["CONFIG_FORCE_envvar_port"] = "1234"
+      }
     }
   }.get
 
