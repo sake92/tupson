@@ -67,7 +67,36 @@
 <span class="hljs-keyword">val</span> data = <span class="hljs-type">WriteData</span>(<span class="hljs-literal">true</span>, <span class="hljs-number">5</span>, <span class="hljs-number">3.14</span>, <span class="hljs-string">"xyz"</span>, <span class="hljs-type">Seq</span>(<span class="hljs-string">"a"</span>, <span class="hljs-string">"b"</span>))
 
 data.toJson
-<span class="hljs-comment">// {"str":"xyz","bln":true,"list":["a","b"],"int":5,"dbl":3.14}</span>
+<span class="hljs-comment">// {</span>
+<span class="hljs-comment">//   "bln": true,</span>
+<span class="hljs-comment">//   "dbl": 3.14,</span>
+<span class="hljs-comment">//   "int": 5,</span>
+<span class="hljs-comment">//   "list": [</span>
+<span class="hljs-comment">//     "a",</span>
+<span class="hljs-comment">//     "b"</span>
+<span class="hljs-comment">//   ],</span>
+<span class="hljs-comment">//   "str": "xyz"</span>
+<span class="hljs-comment">// }</span>
+</code>
+          </pre>
+   <p>By default the output is sorted and pretty-printed. You can still opt into dense or unsorted output:</p>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes">data.toJson(spaces = <span class="hljs-number">0</span>)
+<span class="hljs-comment">// {"bln":true,"dbl":3.14,"int":5,"list":["a","b"],"str":"xyz"}</span>
+
+data.toJson(sort = <span class="hljs-literal">false</span>)
+<span class="hljs-comment">// {</span>
+<span class="hljs-comment">//   "str": "xyz",</span>
+<span class="hljs-comment">//   "bln": true,</span>
+<span class="hljs-comment">//   "list": [</span>
+<span class="hljs-comment">//     "a",</span>
+<span class="hljs-comment">//     "b"</span>
+<span class="hljs-comment">//   ],</span>
+<span class="hljs-comment">//   "int": 5,</span>
+<span class="hljs-comment">//   "dbl": 3.14</span>
+<span class="hljs-comment">// }</span>
+
+data.toJson(spaces = <span class="hljs-number">4</span>)
+<span class="hljs-comment">// same data, with 4-space indentation and sorted keys</span>
 </code>
           </pre>
   </main>
