@@ -5,7 +5,7 @@ import ba.sake.tupson.{*, given}
   println(s"Writing data: $x")
   println(x.toJson)
   println(x.toJson(spaces = 0))
-  println(x.toJson(sort = true))
+  println(x.toJson(sort = false))
 }
 
 case class WriteData(

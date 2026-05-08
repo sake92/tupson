@@ -54,13 +54,13 @@ class WriteSuite extends munit.FunSuite {
   /* case class */
   test("write case class") {
     assertEquals(
-      CaseClass1("str", 123).toJson(spaces = 0),
-      """{"str":"str","integer":123}"""
+      CaseClass1("str", 123).toJson(spaces = 0).parseJson[JValue],
+      """{"str":"str","integer":123}""".parseJson[JValue]
     )
 
     assertEquals(
-      CaseClass2("c2", CaseClass1("str", 123)).toJson(spaces = 0),
-      """{"bla":"c2","c1":{"str":"str","integer":123}}"""
+      CaseClass2("c2", CaseClass1("str", 123)).toJson(spaces = 0).parseJson[JValue],
+      """{"bla":"c2","c1":{"str":"str","integer":123}}""".parseJson[JValue]
     )
   }
 
@@ -69,8 +69,8 @@ class WriteSuite extends munit.FunSuite {
     import seal.*
     val s1: SealedBase = SealedCase1("str", 123)
     assertEquals(
-      s1.toJson(spaces = 0),
-      """{"str":"str","@type":"SealedCase1","integer":123}"""
+      s1.toJson(spaces = 0).parseJson[JValue],
+      """{"str":"str","@type":"SealedCase1","integer":123}""".parseJson[JValue]
     )
     val s2: SealedBase = SealedCase2
     assertEquals(
@@ -101,12 +101,12 @@ class WriteSuite extends munit.FunSuite {
     val s2: Enum1 = Enum1.Enum1Case("str", None)
     val s3: Enum1 = Enum1.`eNum CaseD`
     assertEquals(
-      s1.toJson(spaces = 0),
-      """{"str":"str","@type":"Enum1Case","integer":123}"""
+      s1.toJson(spaces = 0).parseJson[JValue],
+      """{"str":"str","@type":"Enum1Case","integer":123}""".parseJson[JValue]
     )
     assertEquals(
-      s2.toJson(spaces = 0),
-      """{"str":"str","@type":"Enum1Case","integer":null}"""
+      s2.toJson(spaces = 0).parseJson[JValue],
+      """{"str":"str","@type":"Enum1Case","integer":null}""".parseJson[JValue]
     )
     assertEquals(
       s3.toJson(spaces = 0),
@@ -119,7 +119,10 @@ class WriteSuite extends munit.FunSuite {
     val a1 = Annot1.A
     val a2 = Annot1.B("abc")
     assertEquals(a1.toJson(spaces = 0), """{"tip":"A"}""")
-    assertEquals(a2.toJson(spaces = 0), """{"x":"abc","tip":"B"}""")
+    assertEquals(
+      a2.toJson(spaces = 0).parseJson[JValue],
+      """{"x":"abc","tip":"B"}""".parseJson[JValue]
+    )
   }
 
   test("write nested hierarchy like flat type name") {
@@ -172,29 +175,39 @@ class WriteSuite extends munit.FunSuite {
     }
     locally {
       val value: CaseClass1 | CaseClass2 = CaseClass1("str", 123)
-      assertEquals(value.toJson(spaces = 0), """{"str":"str","integer":123}""")
+      assertEquals(
+        value.toJson(spaces = 0).parseJson[JValue],
+        """{"str":"str","integer":123}""".parseJson[JValue]
+      )
     }
     locally {
       val value: CaseClass1 | CaseClass2 | Int = CaseClass2("c2", CaseClass1("str", 123))
-      assertEquals(value.toJson(spaces = 0), """{"bla":"c2","c1":{"str":"str","integer":123}}""")
+      assertEquals(
+        value.toJson(spaces = 0).parseJson[JValue],
+        """{"bla":"c2","c1":{"str":"str","integer":123}}""".parseJson[JValue]
+      )
     }
   }
 
   test("write named tuple") {
     val nt1: Person = (name = "Mujo", age = 35)
-    assertEquals(nt1.toJson(spaces = 0), """{"age":35,"name":"Mujo"}""")
+    assertEquals(
+      nt1.toJson(spaces = 0).parseJson[JValue],
+      """{"age":35,"name":"Mujo"}""".parseJson[JValue]
+    )
   }
 
   test("write default spaced output") {
     assertEquals(
-      CaseClass2("c2", CaseClass1("str", 123)).toJson,
+      CaseClass1("str", 123).toJson,
       """{
-        |  "bla": "c2",
-        |  "c1": {
-        |    "str": "str",
-        |    "integer": 123
-        |  }
+        |  "integer": 123,
+        |  "str": "str"
         |}""".stripMargin
+    )
+    assertEquals(
+      CaseClass1("str", 123).toJson(spaces = 0),
+      """{"integer":123,"str":"str"}"""
     )
   }
 
@@ -203,14 +216,28 @@ class WriteSuite extends munit.FunSuite {
       Seq(CaseClass1("str", 123), CaseClass1("x", 456)).toJson(spaces = 4),
       """[
         |    {
-        |        "str": "str",
-        |        "integer": 123
+        |        "integer": 123,
+        |        "str": "str"
         |    },
         |    {
-        |        "str": "x",
-        |        "integer": 456
+        |        "integer": 456,
+        |        "str": "x"
         |    }
         |]""".stripMargin
+    )
+  }
+
+  test("write explicit unsorted output") {
+    assertEquals(
+      CaseClass1("str", 123).toJson(sort = false),
+      """{
+        |  "str": "str",
+        |  "integer": 123
+        |}""".stripMargin
+    )
+    assertEquals(
+      CaseClass1("str", 123).toJson(spaces = 0, sort = false),
+      """{"str":"str","integer":123}"""
     )
   }
 
@@ -245,7 +272,7 @@ class WriteSuite extends munit.FunSuite {
   test("normalize negative spaces to dense output") {
     assertEquals(
       CaseClass2("c2", CaseClass1("str", 123)).toJson(spaces = -5),
-      """{"bla":"c2","c1":{"str":"str","integer":123}}"""
+      CaseClass2("c2", CaseClass1("str", 123)).toJson(spaces = 0)
     )
   }
 

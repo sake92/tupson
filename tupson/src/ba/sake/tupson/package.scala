@@ -8,10 +8,10 @@ import org.typelevel.jawn.ast.JParser
 extension [T](value: T)(using rw: JsonRW[T]) {
   @targetName("toJsonDefault")
   def toJson: String =
-    TupsonRenderer.render(rw.write(value), spaces = 2, sort = false)
+    TupsonRenderer.render(rw.write(value), spaces = 2, sort = true)
 
   @targetName("toJsonWithOptions")
-  def toJson(spaces: Int = 2, sort: Boolean = false): String =
+  def toJson(spaces: Int = 2, sort: Boolean = true): String =
     TupsonRenderer.render(rw.write(value), spaces, sort)
 }
 
