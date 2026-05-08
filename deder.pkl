@@ -8,6 +8,9 @@ local const baseTemplate: ScalaModule = new {
     "-deprecation"
     "-Xcheck-macros"
   }
+  publishTo = new SonatypeCentralRepo {
+    id = "sonatype"
+  }
 }
 
 local const basePomSettings: PomSettings = new {
