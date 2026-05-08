@@ -1,5 +1,7 @@
 package ba.sake.tupson
 
+import org.typelevel.jawn.ast.JValue
+
 class WriteSuite extends munit.FunSuite {
 
   test("write primitives") {
@@ -181,6 +183,72 @@ class WriteSuite extends munit.FunSuite {
   test("write named tuple") {
     val nt1: Person = (name = "Mujo", age = 35)
     assertEquals(nt1.toJson, """{"age":35,"name":"Mujo"}""")
+  }
+
+  test("write pretty output") {
+    assertEquals(
+      CaseClass2("c2", CaseClass1("str", 123)).toJson(pretty = true),
+      """{
+        |  "bla": "c2",
+        |  "c1": {
+        |    "str": "str",
+        |    "integer": 123
+        |  }
+        |}""".stripMargin
+    )
+
+    assertEquals(
+      Seq(CaseClass1("str", 123), CaseClass1("x", 456)).toJson(pretty = true, prettySpaces = 4),
+      """[
+        |    {
+        |        "str": "str",
+        |        "integer": 123
+        |    },
+        |    {
+        |        "str": "x",
+        |        "integer": 456
+        |    }
+        |]""".stripMargin
+    )
+  }
+
+  test("write sorted output") {
+    val value = """{"b":1,"a":{"d":4,"c":3},"arr":[{"f":6,"e":5}]}""".parseJson[JValue]
+    assertEquals(
+      value.toJson(sort = true),
+      """{"a":{"c":3,"d":4},"arr":[{"e":5,"f":6}],"b":1}"""
+    )
+    assertEquals(
+      value.toJson(sort = true, prettySpaces = 0),
+      """{"a":{"c":3,"d":4},"arr":[{"e":5,"f":6}],"b":1}"""
+    )
+  }
+
+  test("write pretty sorted output") {
+    val value = """{"b":1,"a":{"d":4,"c":3},"arr":[{"f":6,"e":5}]}""".parseJson[JValue]
+    assertEquals(
+      value.toJson(pretty = true, sort = true),
+      """{
+        |  "a": {
+        |    "c": 3,
+        |    "d": 4
+        |  },
+        |  "arr": [
+        |    {
+        |      "e": 5,
+        |      "f": 6
+        |    }
+        |  ],
+        |  "b": 1
+        |}""".stripMargin
+    )
+  }
+
+  test("reject invalid prettySpaces") {
+    val err = intercept[IllegalArgumentException] {
+      1.toJson(pretty = true, prettySpaces = 0)
+    }
+    assert(err.getMessage.endsWith("prettySpaces must be positive"))
   }
 
 }

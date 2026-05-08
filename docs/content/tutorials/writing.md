@@ -24,3 +24,22 @@ val data = WriteData(true, 5, 3.14, "xyz", Seq("a", "b"))
 data.toJson
 // {"str":"xyz","bln":true,"list":["a","b"],"int":5,"dbl":3.14}
 ```
+
+Compact output stays the default, and you can opt into pretty-printing or sorted keys when needed:
+
+```scala
+data.toJson(pretty = true)
+// {
+//   "str": "xyz",
+//   "bln": true,
+//   "list": [
+//     "a",
+//     "b"
+//   ],
+//   "int": 5,
+//   "dbl": 3.14
+// }
+
+data.toJson(sort = true)
+// {"bln":true,"dbl":3.14,"int":5,"list":["a","b"],"str":"xyz"}
+```
