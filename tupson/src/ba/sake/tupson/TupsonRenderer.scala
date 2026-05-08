@@ -4,18 +4,15 @@ import org.typelevel.jawn.ast.*
 
 private[tupson] object TupsonRenderer {
 
-  def render(jValue: JValue): String =
-    FastRenderer.render(jValue)
-
-  def render(jValue: JValue, pretty: Boolean, prettySpaces: Int, sort: Boolean): String = {
-    if !pretty then
+  def render(jValue: JValue, spaces: Int, sort: Boolean): String = {
+    val normalizedSpaces =
+      if spaces <= 0 then 0 else spaces
+    if normalizedSpaces == 0 then
       if sort then CanonicalRenderer.render(jValue)
       else FastRenderer.render(jValue)
     else {
-      if prettySpaces <= 0 then
-        throw IllegalArgumentException("prettySpaces must be positive")
       val sb = new StringBuilder
-      renderPretty(jValue, sb, 0, prettySpaces, sort)
+      renderPretty(jValue, sb, 0, normalizedSpaces, sort)
       sb.toString
     }
   }
@@ -24,7 +21,7 @@ private[tupson] object TupsonRenderer {
       jValue: JValue,
       sb: StringBuilder,
       depth: Int,
-      prettySpaces: Int,
+      spaces: Int,
       sort: Boolean
   ): Unit = jValue match {
     case JObject(fields) =>
@@ -35,14 +32,14 @@ private[tupson] object TupsonRenderer {
       else {
         sb.append("{\n")
         orderedFields.zipWithIndex.foreach { case ((key, value), index) =>
-          indent(sb, depth + 1, prettySpaces)
+          indent(sb, depth + 1, spaces)
           sb.append(FastRenderer.render(JString(key)))
           sb.append(": ")
-          renderPretty(value, sb, depth + 1, prettySpaces, sort)
+          renderPretty(value, sb, depth + 1, spaces, sort)
           if index < orderedFields.size - 1 then sb.append(',')
           sb.append('\n')
         }
-        indent(sb, depth, prettySpaces)
+        indent(sb, depth, spaces)
         sb.append('}')
       }
     case JArray(values) =>
@@ -50,18 +47,18 @@ private[tupson] object TupsonRenderer {
       else {
         sb.append("[\n")
         values.zipWithIndex.foreach { case (value, index) =>
-          indent(sb, depth + 1, prettySpaces)
-          renderPretty(value, sb, depth + 1, prettySpaces, sort)
+          indent(sb, depth + 1, spaces)
+          renderPretty(value, sb, depth + 1, spaces, sort)
           if index < values.length - 1 then sb.append(',')
           sb.append('\n')
         }
-        indent(sb, depth, prettySpaces)
+        indent(sb, depth, spaces)
         sb.append(']')
       }
     case other =>
       sb.append(FastRenderer.render(other))
   }
 
-  private def indent(sb: StringBuilder, depth: Int, prettySpaces: Int): Unit =
-    sb.append(" " * (depth * prettySpaces))
+  private def indent(sb: StringBuilder, depth: Int, spaces: Int): Unit =
+    sb.append(" " * (depth * spaces))
 }

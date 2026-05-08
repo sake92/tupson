@@ -22,13 +22,6 @@ case class WriteData(
 val data = WriteData(true, 5, 3.14, "xyz", Seq("a", "b"))
 
 data.toJson
-// {"str":"xyz","bln":true,"list":["a","b"],"int":5,"dbl":3.14}
-```
-
-Compact output stays the default, and you can opt into pretty-printing or sorted keys when needed:
-
-```scala
-data.toJson(pretty = true)
 // {
 //   "str": "xyz",
 //   "bln": true,
@@ -39,7 +32,26 @@ data.toJson(pretty = true)
 //   "int": 5,
 //   "dbl": 3.14
 // }
+```
+
+Spacing and sorting are configurable:
+
+```scala
+data.toJson(spaces = 0)
+// {"str":"xyz","bln":true,"list":["a","b"],"int":5,"dbl":3.14}
 
 data.toJson(sort = true)
-// {"bln":true,"dbl":3.14,"int":5,"list":["a","b"],"str":"xyz"}
+// {
+//   "bln": true,
+//   "dbl": 3.14,
+//   "int": 5,
+//   "list": [
+//     "a",
+//     "b"
+//   ],
+//   "str": "xyz"
+// }
+
+data.toJson(spaces = 4, sort = true)
+// same data, with 4-space indentation and sorted keys
 ```
