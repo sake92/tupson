@@ -11,6 +11,9 @@ jobs:
   test:
     name: test
     runs-on: ubuntu-latest
+    env:
+      CONFIG_FORCE_envvar_port: 1234
+      JAVA_TOOL_OPTIONS: -Dconfig.override_with_env_vars=true
     steps:
       - uses: actions/checkout@v5
         with:
@@ -29,4 +32,8 @@ jobs:
       - name: Compile
         run: deder exec -t compile
       - name: Test
-        run: deder exec -t test
+        run: |
+          deder exec -m tupson-jvm-test-3.7.3 -t testInMemory
+          deder exec -m tupson-config-test -t testInMemory
+          deder exec -m tupson-js-test-3.7.3 -t test
+          deder exec -m tupson-native-test-3.7.3 -t test

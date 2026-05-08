@@ -1,14 +1,18 @@
 package ba.sake.tupson
 
 import scala.annotation.StaticAnnotation
+import scala.annotation.targetName
 import org.typelevel.jawn
-import org.typelevel.jawn.ast.FastRenderer
 import org.typelevel.jawn.ast.JParser
 
 extension [T](value: T)(using rw: JsonRW[T]) {
+  @targetName("toJsonDefault")
   def toJson: String =
-    val jValue = rw.write(value)
-    FastRenderer.render(jValue)
+    TupsonRenderer.render(rw.write(value), spaces = 2, sort = true)
+
+  @targetName("toJsonWithOptions")
+  def toJson(spaces: Int = 2, sort: Boolean = true): String =
+    TupsonRenderer.render(rw.write(value), spaces, sort)
 }
 
 extension (strValue: String) {
