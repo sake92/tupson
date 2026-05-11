@@ -276,4 +276,22 @@ class WriteSuite extends munit.FunSuite {
     )
   }
 
+  test("write generic product and sum") {
+    assertEquals(Gen(1).toJson(spaces = 0).parseJson[JValue], """{"value":1}""".parseJson[JValue])
+    assertEquals(Box(Gen(1)).toJson(spaces = 0).parseJson[JValue], """{"gen":{"value":1}}""".parseJson[JValue])
+    val e: Expr[Int] = Add(Const(1), Const(2))
+    assertEquals(
+      e.toJson(spaces = 0).parseJson[JValue],
+      """{"@type":"Add","left":{"@type":"Const","value":1},"right":{"@type":"Const","value":2}}""".parseJson[JValue]
+    )
+  }
+
+  test("write generic sum with generic payload") {
+    val e: Expr[Gen[Int]] = Add(Const(Gen(1)), Const(Gen(2)))
+    assertEquals(
+      e.toJson(spaces = 0).parseJson[JValue],
+      """{"@type":"Add","left":{"@type":"Const","value":{"value":1}},"right":{"@type":"Const","value":{"value":2}}}""".parseJson[JValue]
+    )
+  }
+
 }

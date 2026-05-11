@@ -182,12 +182,15 @@ object JsonRW extends LowPriorityJsonRWInstances:
   }
 
   /* macro derived instances */
-  inline def derived[T]: JsonRW[T] = ${ derivedMacro[T] }
+  inline def derived[T](using m: Mirror.Of[T]): JsonRW[T] = ${ derivedUsingMirrorMacro[T]('m) }
 
-  private def derivedMacro[T: Type](using Quotes): Expr[JsonRW[T]] = {
+  private def derivedUsingMirrorMacro[T: Type](mirror: Expr[Mirror.Of[T]])(using Quotes): Expr[JsonRW[T]] =
+    derivedMacro[T](Some(mirror))
+
+  private def derivedMacro[T: Type](mirrorOpt: Option[Expr[Mirror.Of[T]]] = None)(using Quotes): Expr[JsonRW[T]] = {
     import quotes.reflect.*
 
-    val mirror: Expr[Mirror.Of[T]] = Expr.summon[Mirror.Of[T]].getOrElse {
+    val mirror: Expr[Mirror.Of[T]] = mirrorOpt.orElse(Expr.summon[Mirror.Of[T]]).getOrElse {
       report.errorAndAbort(
         s"Cannot derive JsonRW[${Type.show[T]}] automatically because it is not a product or sum type"
       )
@@ -328,8 +331,6 @@ object JsonRW extends LowPriorityJsonRWInstances:
         }
   }
 
-  
-
   inline given autoderiveUnion[T: IsUnion]: JsonRW[T] = ${ deriveUnionTC[T] }
 
   def deriveUnionTC[T: Type](using Quotes): Expr[JsonRW[T]] = {
@@ -367,14 +368,14 @@ object JsonRW extends LowPriorityJsonRWInstances:
       case '[EmptyTuple]    => Nil
 
   private def deriveOrSummon[T: Type, Elem: Type](using Quotes): Expr[JsonRW[Elem]] =
-    Type.of[Elem] match
-      case '[T] => deriveRec[T, Elem]
-      case _    => '{ summonInline[JsonRW[Elem]] }
+    Expr.summon[JsonRW[Elem]].getOrElse(deriveRec[T, Elem])
 
   private def deriveRec[T: Type, Elem: Type](using Quotes): Expr[JsonRW[Elem]] =
-    Type.of[T] match
-      case '[Elem] => '{ error("infinite recursive derivation") }
-      case _       => derivedMacro[Elem] // recursive derivation
+    import quotes.reflect.*
+    val tRepr = TypeRepr.of[T].dealias
+    val elemRepr = TypeRepr.of[Elem].dealias
+    if tRepr =:= elemRepr then '{ error("infinite recursive derivation") }
+    else derivedMacro[Elem]() // recursive derivation (also handles parameterized self types)
 
   /* macro utils */
   private def isSingletonCasesEnum[T: Type](using Quotes): Expr[Boolean] =
