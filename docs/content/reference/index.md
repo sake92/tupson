@@ -11,6 +11,7 @@ pagination:
 
 set references = [
     { label: "Option", url: "/reference/option.html" },
+    { label: "Literal Types", url: "/reference/literal-types.html" },
     { label: "Collections", url: "/reference/collections.html" },
     { label: "Maps", url: "/reference/maps.html" },
     { label: "Simple Enums", url: "/reference/simple-enums.html" },
@@ -37,7 +38,7 @@ val myValue = 123
 println(123.toJson) // 123
 
 // parse a value from JSON string
-val myParsedValue = ${tq}123${tq}.parseJson[Int]
+val myParsedValue = """123""".parseJson[Int]
 println(myParsedValue) // 123
 ```
 
