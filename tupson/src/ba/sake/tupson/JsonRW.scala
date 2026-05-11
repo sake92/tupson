@@ -391,6 +391,25 @@ object JsonRW extends LowPriorityJsonRWInstances:
       Quotes
   ): Expr[List[(String, Option[() => Any])]] =
     import quotes.reflect._
+    def defaultGetterExpr(tpe: Symbol, defaultMethod: Symbol): Option[Expr[Any]] =
+      Option.when(defaultMethod.paramSymss.flatten.isEmpty) {
+        Select(Ref(tpe.companionModule), defaultMethod).asExprOf[Any]
+      }
+
+    def defaultValueExpr(tpe: Symbol, idx: Int): Option[Expr[Any]] =
+      val defaultMethodName = s"$$lessinit$$greater$$default$$${idx + 1}"
+      tpe.companionClass
+        .declaredMethod(defaultMethodName)
+        .headOption
+        .flatMap { defaultMethod =>
+          defaultMethod.tree match
+            case defDef: DefDef =>
+              defDef.rhs
+                .map(_.asExprOf[Any])
+                .orElse(defaultGetterExpr(tpe, defaultMethod))
+            case _ => defaultGetterExpr(tpe, defaultMethod)
+        }
+
     def exprOfOption(
         oet: (Expr[String], Option[Expr[Any]])
     ): Expr[(String, Option[() => Any])] = oet match {
@@ -403,11 +422,7 @@ object JsonRW extends LowPriorityJsonRWInstances:
       .zipWithIndex
       .map { case (field, i) =>
         exprOfOption {
-          Expr(field.name) -> tpe.companionClass
-            .declaredMethod(s"$$lessinit$$greater$$default$$${i + 1}")
-            .headOption
-            .flatMap(_.tree.asInstanceOf[DefDef].rhs)
-            .map(_.asExprOf[Any])
+          Expr(field.name) -> defaultValueExpr(tpe, i)
         }
       }
     Expr.ofList(terms)

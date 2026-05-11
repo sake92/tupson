@@ -258,6 +258,12 @@ class ParseSuite extends munit.FunSuite {
 
   /* missing key -> default "local" value */
   test("parse missing keys to their local defaults") {
+    case class Bla(x: String = "deflt") derives JsonRW
+
+    assertEquals(
+      """{}""".parseJson[Bla],
+      Bla("deflt")
+    )
     assertEquals(
       """{}""".parseJson[CaseClassDefault],
       CaseClassDefault(Seq.empty, Some("default"))
