@@ -23,3 +23,13 @@ val str = """ { "name": "Mujo", "age": 35 } """
 val nt2 = str.parseJson[Person]
 // (name = "Mujo", age = 35)
 ```
+
+Singleton literal members are supported too:
+
+```scala
+type Marker = (kind: "abc")
+
+val marker: Marker = (kind = "abc")
+assert(marker.toJson(spaces = 0) == """{"kind":"abc"}""")
+assert("""{"kind":"abc"}""".parseJson[Marker] == marker)
+```
