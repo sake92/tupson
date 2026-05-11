@@ -66,6 +66,14 @@ println(nt1.toJson)
 <span class="hljs-comment">// (name = "Mujo", age = 35)</span>
 </code>
           </pre>
+   <p>Singleton literal members are supported too:</p>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-class"><span class="hljs-keyword">type</span> <span class="hljs-title">Marker</span> </span>= (kind: <span class="hljs-string">"abc"</span>)
+
+<span class="hljs-keyword">val</span> marker: <span class="hljs-type">Marker</span> = (kind = <span class="hljs-string">"abc"</span>)
+assert(marker.toJson(spaces = <span class="hljs-number">0</span>) == <span class="hljs-string">"""{"kind":"abc"}"""</span>)
+assert(<span class="hljs-string">"""{"kind":"abc"}"""</span>.parseJson[<span class="hljs-type">Marker</span>] == marker)
+</code>
+          </pre>
   </main>
   <footer class="pico container">Tupson Documentation</footer>
  </body>
