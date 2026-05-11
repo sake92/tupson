@@ -13,6 +13,10 @@ case class CaseClassDefault(
     // parsed as Some("default") IF THEY KEY IS MISSING (not failing)
     str: Option[String] = Some("default")
 ) derives JsonRW
+case class LiteralStringCaseClass(x: "abc") derives JsonRW
+case class LiteralIntCaseClass(x: 123) derives JsonRW
+case class LiteralBooleanCaseClass(x: true) derives JsonRW
+case class LiteralCharCaseClass(x: 'a') derives JsonRW
 
 package rec {
   case class Node(children: Seq[Node]) derives JsonRW
@@ -23,3 +27,5 @@ package weird_named {
 }
 
 type Person = (name: String, age: Int)
+type LiteralPerson = (x: "abc")
+type LiteralUnion = "abc" | 123 | true

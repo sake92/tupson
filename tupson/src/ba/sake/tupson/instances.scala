@@ -2,6 +2,7 @@ package ba.sake.tupson
 
 import scala.collection.mutable.ArrayDeque
 import scala.compiletime.summonInline
+import scala.compiletime.summonFrom
 import NamedTuple.AnyNamedTuple
 import NamedTuple.Names
 import NamedTuple.DropNames
@@ -14,6 +15,58 @@ import org.typelevel.jawn.ast.*
 
 
 private[tupson] trait LowPriorityJsonRWInstances {
+
+  inline given autoderiveLiteral[
+      T <: String | Char | Boolean | Int | Long | Float | Double
+  ](using valueOf: ValueOf[T]): JsonRW[T] =
+    summonFrom {
+      case ev: (T <:< String)  => literalRW[T, String](using valueOf, ev, summonInline[JsonRW[String]])
+      case ev: (T <:< Char)    => literalCharRW[T](using valueOf, ev)
+      case ev: (T <:< Boolean) => literalRW[T, Boolean](using valueOf, ev, summonInline[JsonRW[Boolean]])
+      case ev: (T <:< Int)     => literalRW[T, Int](using valueOf, ev, summonInline[JsonRW[Int]])
+      case ev: (T <:< Long)    => literalRW[T, Long](using valueOf, ev, summonInline[JsonRW[Long]])
+      case ev: (T <:< Float)   => literalRW[T, Float](using valueOf, ev, summonInline[JsonRW[Float]])
+      case ev: (T <:< Double)  => literalRW[T, Double](using valueOf, ev, summonInline[JsonRW[Double]])
+    }
+
+  private inline def literalRW[T, Wide](using
+      valueOf: ValueOf[T],
+      ev: T <:< Wide,
+      rw: JsonRW[Wide]
+  ): JsonRW[T] =
+    new JsonRW[T] {
+      private val expectedValue = valueOf.value
+      private val expectedMsg = s"should be literal value '$expectedValue'"
+
+      override def write(value: T): JValue = rw.write(ev(value))
+
+      override def parse(path: String, jValue: JValue): T =
+        val parsed = rw.parse(path, jValue)
+        if parsed == expectedValue then expectedValue
+        else throw ParsingException(ParseError(path, expectedMsg, Some(parsed)))
+    }
+
+  private inline def literalCharRW[T](using
+      valueOf: ValueOf[T],
+      ev: T <:< Char
+  ): JsonRW[T] =
+    new JsonRW[T] {
+      private val expectedValue = valueOf.value
+      private val expectedChar = ev(expectedValue)
+      private val expectedMsg = s"should be literal value '$expectedValue'"
+
+      override def write(value: T): JValue = JsonRW[Char].write(ev(value))
+
+      override def parse(path: String, jValue: JValue): T =
+        jValue match
+          case JString(s) if s.length == 1 =>
+            if s.head == expectedChar then expectedValue
+            else throw ParsingException(ParseError(path, expectedMsg, Some(s.head)))
+          case JString(s) =>
+            throw ParsingException(ParseError(path, expectedMsg, Some(s)))
+          case other =>
+            JsonRW.typeMismatchError(path, "Char", other)
+    }
 
   inline given autoderiveNamedTuple[T <: AnyNamedTuple](using T <:< AnyNamedTuple): JsonRW[T] = {
     val fieldNames = compiletime.constValueTuple[Names[T]].productIterator.asInstanceOf[Iterator[String]].toSeq
