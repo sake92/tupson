@@ -48,6 +48,7 @@
           <li><a href="#sbt">Sbt</a></li>
           <li><a href="#scala-cli">Scala CLI</a></li>
           <li><a href="#examples">Examples</a></li>
+          <li><a href="#generic-derives">Generic derives</a></li>
          </ul></li>
        </ul>
       </div>
@@ -83,6 +84,19 @@ scalacOptions ++= <span class="hljs-type">Seq</span>(<span class="hljs-string">"
    <pre>            <code class="language-sh hljs language-bash" data-highlighted="yes">./mill examples.runMain write
 </code>
           </pre>
+   <h2 id="generic-derives">Generic derives<a href="#generic-derives" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
+   <p>Parameterized products and sums can derive <code>JsonRW</code> too:</p>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-keyword">import</span> ba.sake.tupson.{*, <span class="hljs-keyword">given</span>}
+
+<span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Gen</span>[<span class="hljs-type">T</span>](<span class="hljs-params">value: <span class="hljs-type">T</span></span>) <span class="hljs-title">derives</span> <span class="hljs-title">JsonRW</span></span>
+<span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Box</span>[<span class="hljs-type">T</span>](<span class="hljs-params">gen: <span class="hljs-type">Gen</span>[<span class="hljs-type">T</span>]</span>) <span class="hljs-title">derives</span> <span class="hljs-title">JsonRW</span></span>
+
+<span class="hljs-keyword">sealed</span> <span class="hljs-class"><span class="hljs-keyword">trait</span> <span class="hljs-title">Expr</span>[<span class="hljs-type">T</span>] <span class="hljs-title">derives</span> <span class="hljs-title">JsonRW</span></span>
+<span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Const</span>[<span class="hljs-type">T</span>](<span class="hljs-params">value: <span class="hljs-type">T</span></span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">Expr</span>[<span class="hljs-type">T</span>]</span>
+<span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Add</span>[<span class="hljs-type">T</span>](<span class="hljs-params">left: <span class="hljs-type">Expr</span>[<span class="hljs-type">T</span>], right: <span class="hljs-type">Expr</span>[<span class="hljs-type">T</span>]</span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">Expr</span>[<span class="hljs-type">T</span>]</span>
+</code>
+          </pre>
+   <p>Note: this covers parameterized ADTs. Full true-GADT case refinements still require manual codecs.</p>
   </main>
   <footer class="pico container">Tupson Documentation</footer>
  </body>
