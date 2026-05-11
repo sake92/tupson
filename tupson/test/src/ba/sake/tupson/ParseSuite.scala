@@ -304,6 +304,64 @@ class ParseSuite extends munit.FunSuite {
     assertEquals(nt2, (name = "Mujo", age = 35))
   }
 
+  test("parse literal types") {
+    assertEquals("""{"x":"abc"}""".parseJson[LiteralPerson], (x = "abc"))
+    assertEquals(
+      """{"x":"abc"}""".parseJson[LiteralStringCaseClass],
+      LiteralStringCaseClass("abc")
+    )
+    assertEquals("""{"x":123}""".parseJson[LiteralIntCaseClass], LiteralIntCaseClass(123))
+    assertEquals(
+      """{"x":true}""".parseJson[LiteralBooleanCaseClass],
+      LiteralBooleanCaseClass(true)
+    )
+    assertEquals("""{"x":"a"}""".parseJson[LiteralCharCaseClass], LiteralCharCaseClass('a'))
+
+    assertEquals(""" "abc" """.parseJson[LiteralUnion], "abc")
+    assertEquals(""" 123 """.parseJson[LiteralUnion], 123)
+    assertEquals(""" true """.parseJson[LiteralUnion], true)
+
+    val ex = intercept[ParsingException] {
+      """{"x":"def"}""".parseJson[LiteralStringCaseClass]
+    }
+    assertEquals(
+      ex.errors,
+      Seq(
+        ParseError("$.x", "should be literal value 'abc'", Some("def"))
+      )
+    )
+
+    val tupleEx = intercept[ParsingException] {
+      """{"x":"def"}""".parseJson[LiteralPerson]
+    }
+    assertEquals(
+      tupleEx.errors,
+      Seq(
+        ParseError("$.x", "should be literal value 'abc'", Some("def"))
+      )
+    )
+
+    val charEx = intercept[ParsingException] {
+      """{"x":"ab"}""".parseJson[LiteralCharCaseClass]
+    }
+    assertEquals(
+      charEx.errors,
+      Seq(
+        ParseError("$.x", "should be literal value 'a'", Some("ab"))
+      )
+    )
+
+    val unionEx = intercept[ParsingException] {
+      """ false """.parseJson[LiteralUnion]
+    }
+    assertEquals(
+      unionEx.errors,
+      Seq(
+        ParseError("$", "should be literal value 'true'", Some(false))
+      )
+    )
+  }
+
   /* union type */
   test("parse union type") {
     // import unionTypes.given

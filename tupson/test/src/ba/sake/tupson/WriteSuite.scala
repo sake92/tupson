@@ -197,6 +197,29 @@ class WriteSuite extends munit.FunSuite {
     )
   }
 
+  test("write literal types") {
+    val nt: LiteralPerson = (x = "abc")
+    assertEquals(nt.toJson(spaces = 0, sort = true), """{"x":"abc"}""")
+
+    assertEquals(
+      LiteralStringCaseClass("abc").toJson(spaces = 0, sort = true),
+      """{"x":"abc"}"""
+    )
+    assertEquals(LiteralIntCaseClass(123).toJson(spaces = 0, sort = true), """{"x":123}""")
+    assertEquals(
+      LiteralBooleanCaseClass(true).toJson(spaces = 0, sort = true),
+      """{"x":true}"""
+    )
+    assertEquals(LiteralCharCaseClass('a').toJson(spaces = 0, sort = true), """{"x":"a"}""")
+
+    val unionString: LiteralUnion = "abc"
+    assertEquals(unionString.toJson(spaces = 0, sort = true), """"abc"""")
+    val unionInt: LiteralUnion = 123
+    assertEquals(unionInt.toJson(spaces = 0, sort = true), "123")
+    val unionBool: LiteralUnion = true
+    assertEquals(unionBool.toJson(spaces = 0, sort = true), "true")
+  }
+
   test("write default spaced output") {
     assertEquals(
       CaseClass1("str", 123).toJson,
