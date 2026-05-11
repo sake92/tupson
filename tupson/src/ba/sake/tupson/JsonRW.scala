@@ -368,7 +368,11 @@ object JsonRW extends LowPriorityJsonRWInstances:
       case '[EmptyTuple]    => Nil
 
   private def deriveOrSummon[T: Type, Elem: Type](using Quotes): Expr[JsonRW[Elem]] =
-    Expr.summon[JsonRW[Elem]].getOrElse(deriveRec[T, Elem])
+    import quotes.reflect.*
+    val elemRepr = TypeRepr.of[Elem].dealias
+    elemRepr match
+      case ConstantType(_) => '{ summonInline[JsonRW[Elem]] }
+      case _               => Expr.summon[JsonRW[Elem]].getOrElse(deriveRec[T, Elem])
 
   private def deriveRec[T: Type, Elem: Type](using Quotes): Expr[JsonRW[Elem]] =
     import quotes.reflect.*

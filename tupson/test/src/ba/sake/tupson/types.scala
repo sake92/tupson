@@ -7,10 +7,10 @@ case class CaseClass2(bla: String, c1: CaseClass1) derives JsonRW
 
 case class CaseClassOpt(str: Option[String], seq: Seq[String], map: Map[String, String]) derives JsonRW
 case class CaseClassDefault(
-    // parsed as Seq.empty IF THEY KEY IS MISSING (not failing)
+    // parsed as Seq.empty IF THE KEY IS MISSING (not failing)
     lst: Seq[String] = Seq.empty,
 
-    // parsed as Some("default") IF THEY KEY IS MISSING (not failing)
+    // parsed as Some("default") IF THE KEY IS MISSING (not failing)
     str: Option[String] = Some("default")
 ) derives JsonRW
 case class LiteralStringCaseClass(x: "abc") derives JsonRW
