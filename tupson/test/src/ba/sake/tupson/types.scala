@@ -7,10 +7,10 @@ case class CaseClass2(bla: String, c1: CaseClass1) derives JsonRW
 
 case class CaseClassOpt(str: Option[String], seq: Seq[String], map: Map[String, String]) derives JsonRW
 case class CaseClassDefault(
-    // parsed as Seq.empty IF THEY KEY IS MISSING (not failing)
+    // parsed as Seq.empty IF THE KEY IS MISSING (not failing)
     lst: Seq[String] = Seq.empty,
 
-    // parsed as Some("default") IF THEY KEY IS MISSING (not failing)
+    // parsed as Some("default") IF THE KEY IS MISSING (not failing)
     str: Option[String] = Some("default")
 ) derives JsonRW
 case class LiteralStringCaseClass(x: "abc") derives JsonRW
@@ -27,5 +27,13 @@ package weird_named {
 }
 
 type Person = (name: String, age: Int)
+
+case class Gen[T](value: T) derives JsonRW
+case class Box[T](gen: Gen[T]) derives JsonRW
+
+sealed trait Expr[T] derives JsonRW
+case class Const[T](value: T) extends Expr[T]
+case class Add[T](left: Expr[T], right: Expr[T]) extends Expr[T]
+
 type LiteralPerson = (x: "abc")
 type LiteralUnion = "abc" | 123 | true

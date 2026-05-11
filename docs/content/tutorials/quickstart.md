@@ -40,3 +40,20 @@ scalacOptions ++= Seq("-Yretain-trees")
 ```sh
 ./mill examples.runMain write
 ```
+
+## Generic derives
+
+Parameterized products and sums can derive `JsonRW` too:
+
+```scala
+import ba.sake.tupson.{*, given}
+
+case class Gen[T](value: T) derives JsonRW
+case class Box[T](gen: Gen[T]) derives JsonRW
+
+sealed trait Expr[T] derives JsonRW
+case class Const[T](value: T) extends Expr[T]
+case class Add[T](left: Expr[T], right: Expr[T]) extends Expr[T]
+```
+
+Note: this covers parameterized ADTs. Full true-GADT case refinements still require manual codecs.

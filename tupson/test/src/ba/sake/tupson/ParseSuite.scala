@@ -13,8 +13,8 @@ class ParseSuite extends munit.FunSuite {
       """5""".parseJson[Boolean]
     }
     assertEquals(
-      ex.errors.head,
-      ParseError("$", "should be Boolean but it is Number", Some("5"))
+      ex.errors,
+      Seq(ParseError("$", "should be Boolean but it is Number", Some("5")))
     )
 
     // https://github.com/scala-js/scala-js/blob/v1.7.1/test-suite/shared/src/test/scala/org/scalajs/testsuite/javalib/lang/FloatTest.scala#L81-L85
@@ -92,8 +92,8 @@ class ParseSuite extends munit.FunSuite {
       """5""".parseJson[Seq[Int]]
     }
     assertEquals(
-      ex1.errors.head,
-      ParseError("$", "should be Seq but it is Number", Some("5"))
+      ex1.errors,
+      Seq(ParseError("$", "should be Seq but it is Number", Some("5")))
     )
 
     val ex2 = intercept[ParsingException] {
@@ -144,8 +144,8 @@ class ParseSuite extends munit.FunSuite {
       """{"str":"str"}""".parseJson[CaseClass1]
     }
     assertEquals(
-      ex1.errors.head,
-      ParseError("$.integer", "is missing", None)
+      ex1.errors,
+      Seq(ParseError("$.integer", "is missing", None))
     )
 
     intercept[TupsonException] {
@@ -384,5 +384,59 @@ class ParseSuite extends munit.FunSuite {
 
   // just testing the implicits work
   def bla: CaseClass1 = "".parseJson
+
+  test("parse generic product and sum") {
+    assertEquals("""{"value":1}""".parseJson[Gen[Int]], Gen(1))
+    assertEquals("""{"gen":{"value":1}}""".parseJson[Box[Int]], Box(Gen(1)))
+    assertEquals(
+      """{"@type":"Const","value":1}""".parseJson[Expr[Int]],
+      Const(1)
+    )
+    assertEquals(
+      """{"@type":"Add","left":{"@type":"Const","value":1},"right":{"@type":"Const","value":2}}""".parseJson[Expr[Int]],
+      Add(Const(1), Const(2))
+    )
+
+    // negative cases for discriminator
+    val exMissing = intercept[ParsingException] {
+      """{"value":1}""".parseJson[Expr[Int]]
+    }
+    assertEquals(
+      exMissing.errors,
+      Seq(ParseError("@type", "is missing", None))
+    )
+
+    interceptMessage[TupsonException](
+      "Subtype not found: 'the-what'. Possible values: 'Const', 'Add'"
+    ) {
+      """ {"@type":"the-what"} """.parseJson[Expr[Int]]
+    }
+  }
+
+  test("parse generic nested path-aware errors") {
+    val ex = intercept[ParsingException] {
+      """{"gen":{"value":"x"}}""".parseJson[Box[Int]]
+    }
+    assertEquals(
+      ex.errors,
+      Seq(ParseError("$.gen.value", "should be Int but it is String", Some("\"x\"")))
+    )
+
+    val ex2 = intercept[ParsingException] {
+      """{"@type":"Add","left":{"@type":"Const"},"right":{"@type":"Const","value":2}}""".parseJson[Expr[Int]]
+    }
+    assertEquals(
+      ex2.errors,
+      Seq(ParseError("$.left.value", "is missing", None))
+    )
+
+    val ex3 = intercept[ParsingException] {
+      """{"@type":"Add","left":{"@type":"Const","value":"x"},"right":{"@type":"Const","value":2}}""".parseJson[Expr[Int]]
+    }
+    assertEquals(
+      ex3.errors,
+      Seq(ParseError("$.left.value", "should be Int but it is String", Some("\"x\"")))
+    )
+  }
 
 }
