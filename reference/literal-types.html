@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Working with Literal Types in Tupson">
+  <title> Literal Types | Tupson Documentation </title>
+  <link rel="shortcut icon" href="https://sake92.github.io/tupson/images/favicon.png" type="image/png">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-dark.min.css" media="(prefers-color-scheme: dark)" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-light.min.css" media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.conditional.min.css">
+  <link rel="stylesheet" href="https://sake92.github.io/tupson/styles/default.css">
+ </head>
+ <body>
+  <header class="pico container">
+   <nav>
+    <ul>
+     <li><a href="https://sake92.github.io/tupson/">Home</a></li>
+    </ul>
+    <ul>
+     <li>
+      <form action="https://sake92.github.io/tupson/search/results.html" method="GET">
+       <input name="q" type="search" placeholder="Search">
+      </form>
+     </li>
+    </ul>
+    <ul>
+     <li><a href="https://sake92.github.io/tupson/tutorials">Tutorials</a></li>
+     <li><a href="https://sake92.github.io/tupson/howtos">How-Tos</a></li>
+     <li><a href="https://sake92.github.io/tupson/reference">Reference</a></li>
+     <li><a href="https://sake92.github.io/tupson/philosophy">Philosophy</a></li>
+    </ul>
+   </nav>
+  </header>
+  <main class="pico container">
+   <div class="grid">
+    <div>
+     <details>
+      <summary>Table of Contents</summary>
+      <div>
+       <ul>
+        <li><a href="#literal-types">Literal Types</a></li>
+       </ul>
+      </div>
+     </details>
+     <hr>
+    </div>
+    <div></div>
+    <div></div>
+   </div>
+   <h1 id="literal-types">Literal Types<a href="#literal-types" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-class"><span class="hljs-keyword">type</span> <span class="hljs-title">Marker</span> </span>= (kind: <span class="hljs-string">"abc"</span>)
+
+<span class="hljs-keyword">val</span> marker: <span class="hljs-type">Marker</span> = (kind = <span class="hljs-string">"abc"</span>)
+assert(marker.toJson(spaces = <span class="hljs-number">0</span>) == <span class="hljs-string">"""{"kind":"abc"}"""</span>)
+assert(<span class="hljs-string">"""{"kind":"abc"}"""</span>.parseJson[<span class="hljs-type">Marker</span>] == marker)
+</code>
+          </pre>
+  </main>
+  <footer class="pico container">Tupson Documentation</footer>
+ </body>
+</html>
