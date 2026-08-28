@@ -4,11 +4,10 @@ import java.net.*
 
 class JvmParseSuite extends munit.FunSuite {
 
-  test("parse URI") {
+  test("parse URI strictness (JVM)") {
     intercept[URISyntaxException] {
       """ "/?cmd=200&json={port:1,state:1}" """.parseJson[URI]
     }
-    assertEquals(""" "file:/sdfdsfsdf" """.parseJson[URI], URI.create("file:/sdfdsfsdf"))
   }
 
   test("parse URL") {

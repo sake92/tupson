@@ -1,6 +1,7 @@
 package ba.sake.tupson
 
 import java.math.*
+import java.net.*
 import java.time.*
 import java.time.format.DateTimeParseException
 import java.util.*
@@ -106,5 +107,21 @@ class JdkTypesSuite extends munit.FunSuite {
     assertEquals(Locale.US.toJson(spaces = 0), "\"en-US\"")
     assertEquals("\"en-US\"".parseJson[Locale], Locale.US)
     assertEquals("\"sr-BA\"".parseJson[Locale], Locale.forLanguageTag("sr-BA"))
+  }
+
+  test("URI roundtrip") {
+    assertEquals(URI.create("file:/sdfdsfsdf").toJson(spaces = 0), "\"file:/sdfdsfsdf\"")
+    assertEquals("\"file:/sdfdsfsdf\"".parseJson[URI], URI.create("file:/sdfdsfsdf"))
+    assertEquals(
+      "\"https://example.com/a?b=c\"".parseJson[URI],
+      URI.create("https://example.com/a?b=c")
+    )
+  }
+
+  test("URI type mismatch") {
+    val ex = intercept[ParsingException] {
+      "123".parseJson[URI]
+    }
+    assertEquals(ex.errors, Seq(ParseError("$", "should be URI but it is Number", Some("123"))))
   }
 }

@@ -269,6 +269,14 @@ object JsonRW extends LowPriorityJsonRWInstances:
       case other      => JsonRW.typeMismatchError(path, "Locale", other)
   }
 
+  // java.net
+  given JsonRW[URI] with {
+    override def write(value: URI): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): URI = jValue match
+      case JString(s) => new URI(s)
+      case other      => JsonRW.typeMismatchError(path, "URI", other)
+  }
+
   given [T](using trw: JsonRW[T]): JsonRW[Option[T]] with {
     override def write(value: Option[T]): JValue = value match
       case None    => JNull
