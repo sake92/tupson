@@ -1,5 +1,9 @@
 # Copilot instructions for `tupson`
 
+## Working agreements
+
+- **Never commit specs, plans, or design docs to the repo.** They live in `docs/superpowers/plans/` (gitignored) and stay out of git. Only code, tests, and published docs (`docs/content/`) get committed.
+
 ## Build, test, and lint commands
 
 This repository uses **Deder** (`deder.pkl`) for contributor workflows.
