@@ -57,6 +57,8 @@ local const tupsonModules =
       scalaJsVersion = "1.20.1"
       deps {
         "io.github.cquiroz::scala-java-time::2.6.0"
+        // needed for ZoneId region lookups on JS (tzdb data is code-generated at link time)
+        "io.github.cquiroz::scala-java-time-tzdb::2.6.0"
       }
     }
     jsTestTemplate = (jsTemplate.asTest()) {
@@ -68,6 +70,8 @@ local const tupsonModules =
       scalaNativeVersion = "0.5.9"
       deps {
         "io.github.cquiroz::scala-java-time::2.6.0"
+        // needed for ZoneId region lookups on Native
+        "io.github.cquiroz::scala-java-time-tzdb::2.6.0"
       }
     }
     nativeTestTemplate = (nativeTemplate.asTest()) {
