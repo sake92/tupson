@@ -120,4 +120,4 @@ import org.typelevel.jawn.ast.JValue
 case class Event(kind: String, data: JValue) derives JsonRW
 ```
 
-**Platform support** covers JVM, Scala.js, and Scala Native, and the JVM-only `tupson-config` module adds `parseConfig[T]` for Typesafe Config. See [quickstart](https://sake92.github.io/tupson/tutorials/quickstart.html) and [Typesafe Config](https://sake92.github.io/tupson/tutorials/parsing-config.html).
+**Platform support** covers JVM, Scala.js, and Scala Native. The JVM-only `tupson-config` module adds `parseConfig[T]` for Typesafe Config, and the cross-built `tupson-sttp` module integrates with [sttp client4](https://sttp.softwaremill.com/en/latest/) so `JsonRW` values can be sent and received over HTTP. See [quickstart](https://sake92.github.io/tupson/tutorials/quickstart.html), [Typesafe Config](https://sake92.github.io/tupson/tutorials/parsing-config.html) and [sttp client4](https://sake92.github.io/tupson/tutorials/sttp.html).

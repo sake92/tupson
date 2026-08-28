@@ -67,11 +67,66 @@ local const tupsonModules =
       }
     }
     nativeTemplate = (template.asNative()) {
-      scalaNativeVersion = "0.5.9"
+      // 0.5.10 to match Deder's embedded SN tools and sttp's published Native artifacts
+      scalaNativeVersion = "0.5.10"
       deps {
         "io.github.cquiroz::scala-java-time::2.6.0"
         // needed for ZoneId region lookups on Native
         "io.github.cquiroz::scala-java-time-tzdb::2.6.0"
+      }
+    }
+    nativeTestTemplate = (nativeTemplate.asTest()) {
+      deps {
+        "org.scalameta::munit::1.0.0"
+      }
+    }
+  }.get
+
+local const sttpVersion = "4.0.21" // newest sttp compatible with Deder 0.7.7 toolchain (Scala.js 1.20.2, Scala Native 0.5.10)
+
+local const tupsonSttpBase = (baseTemplate) {
+  publish = true
+  deps {
+    "com.softwaremill.sttp.client4::core::\(sttpVersion)"
+    "com.softwaremill.sttp.client4::json-common::\(sttpVersion)"
+  }
+  pomSettings = (basePomSettings) {
+    artifactId = "tupson-sttp"
+    name = "Tupson sttp client module"
+    description = "Tupson sttp client integration"
+  }
+}
+
+local const tupsonSttpModules =
+  new CreateCrossModules {
+    root = "tupson-sttp"
+    template = (tupsonSttpBase) {
+      moduleDeps {
+        tupsonModules.jvm
+      }
+    }
+    testTemplate = (template.asTest()) {
+      deps {
+        "org.scalameta::munit::1.0.0"
+      }
+    }
+    jsTemplate = (tupsonSttpBase.asJs()) {
+      // keep in sync with the tupson core module (sttp 4.0.21 JS artifacts are IR 1.20-compatible)
+      scalaJsVersion = "1.20.1"
+      moduleDeps {
+        tupsonModules.js
+      }
+    }
+    jsTestTemplate = (jsTemplate.asTest()) {
+      deps {
+        "org.scalameta::munit::1.0.0"
+      }
+    }
+    nativeTemplate = (tupsonSttpBase.asNative()) {
+      // keep in sync with the tupson core module and sttp 4.0.21 Native artifacts (all 0.5.10)
+      scalaNativeVersion = "0.5.10"
+      moduleDeps {
+        tupsonModules.native
       }
     }
     nativeTestTemplate = (nativeTemplate.asTest()) {
@@ -116,11 +171,16 @@ local const examples = (baseTemplate) {
   root = "examples"
   moduleDeps {
     tupsonModules.jvm
+    tupsonSttpModules.jvm
+  }
+  deps {
+    "com.softwaremill.sttp.client4::core::\(sttpVersion)"
   }
 }
 
 modules {
   ...tupsonModules.all
   ...tupsonConfigModules.all
+  ...tupsonSttpModules.all
   examples
 }

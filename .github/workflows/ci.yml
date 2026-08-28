@@ -29,6 +29,9 @@ jobs:
         uses: Homebrew/actions/setup-homebrew@main
       - name: Install deder
         run: brew install sake92/tap/deder
+      - name: Install system libraries
+        # sttp native artifacts link against libidn2 at native link time
+        run: sudo apt-get update && sudo apt-get install -y libidn2-dev
       - name: Compile
         run: deder exec -t compile
       - name: Test
@@ -37,3 +40,6 @@ jobs:
           deder exec -m tupson-config-test -t testInMemory
           deder exec -m tupson-js-test-3.7.3 -t test
           deder exec -m tupson-native-test-3.7.3 -t test
+          deder exec -m tupson-sttp-jvm-test-3.7.3 -t testInMemory
+          deder exec -m tupson-sttp-js-test-3.7.3 -t test
+          deder exec -m tupson-sttp-native-test-3.7.3 -t test

@@ -10,7 +10,7 @@ This repository uses **Deder** (`deder.pkl`) for contributor workflows.
 
 - Install Deder: `brew install sake92/tap/deder`
 - Compile everything: `deder exec -t compile`
-- Run the full test matrix (JVM, Scala.js, Scala Native, and `tupson-config`): `deder exec -t test`
+- Run the full test matrix (JVM, Scala.js, Scala Native, `tupson-config`, and `tupson-sttp`): `deder exec -t test`
 - Run one JVM suite: `deder exec -m tupson-jvm-test-3.7.3 -t test ba.sake.tupson.ParseSuite`
 - Run one JVM test: `deder exec -m tupson-jvm-test-3.7.3 -t test 'ba.sake.tupson.ParseSuite#parse primitives'`
 - Fast JVM-only loop: `deder exec -m tupson-jvm-test-3.7.3 -t testInMemory`
@@ -18,18 +18,19 @@ This repository uses **Deder** (`deder.pkl`) for contributor workflows.
 - Apply rewrites: `deder exec -t fix`
 - Format sources: `deder exec -t runMvnApp fmt`
 - Publish locally for downstream testing: `deder exec -t publishLocal`
-- Run examples: `deder exec -m examples -t runMain parse` (swap `parse` for `write`, `roundtrip`, or `backwards`)
+- Run examples: `deder exec -m examples -t runMain parse` (swap `parse` for `write`, `roundtrip`, `backwards`, or `sttpExample`)
 - Release: `./scripts/release.sh <version>`
 - If you change docs, the site is built with Flatmark: `flatmark build -i docs`
 
 ## High-level architecture
 
-- `deder.pkl` is the build/source-of-truth for module structure. The main `tupson` library is cross-built to **JVM**, **Scala.js**, and **Scala Native**, with matching generated test modules per platform. `tupson-config` is a separate JVM-only module that depends on the JVM build of `tupson`.
+- `deder.pkl` is the build/source-of-truth for module structure. The main `tupson` library is cross-built to **JVM**, **Scala.js**, and **Scala Native**, with matching generated test modules per platform. `tupson-config` is a separate JVM-only module that depends on the JVM build of `tupson`, and `tupson-sttp` is cross-built the same way as `tupson` (JVM/JS/Native), depending on the corresponding platform build of `tupson` plus the sttp client4 `core`/`json-common` artifacts.
 - `tupson/src/ba/sake/tupson/package.scala` is the public entry point. It exposes the `toJson` / `parseJson` extension methods, exception types, and the `@discriminator` annotation used for sum-type encoding.
 - `tupson/src/ba/sake/tupson/JsonRW.scala` is the core of the library. `JsonRW[T]` is a combined writer/parser typeclass, and its companion owns the built-in givens plus macro derivation for product types, sum types, enums, and union types.
 - Derived parsing is not just field decoding: it also handles missing-key behavior. The generated parser first looks for the JSON field, then constructor default arguments, then `JsonRW.default`, and otherwise accumulates `ParseError`s into a `ParsingException`.
 - `tupson/src/ba/sake/tupson/instances.scala` contains lower-priority/shared instances and helpers that should not outrank the main givens in `JsonRW.scala` during implicit search. That file also owns path-preserving error aggregation for sequences.
 - `tupson-config/src/ba/sake/tupson/config/package.scala` adapts Typesafe Config by rendering `Config` to JSON, normalizing numeric-looking strings, then delegating back into Tupson parsing with `parseJson[T]`.
+- `tupson-sttp/src/ba/sake/sttp/tupson/package.scala` exposes the sttp client4 integration: a `SttpTupsonApi` trait (extended by the `ba.sake.sttp.tupson` package object) providing `asJson` request bodies plus the `asJson`/`asJsonOrFail`/`asJsonAlways`/`asJsonEither`/`asJsonEitherOrFail` response handlers, backed by `JsonRW`. The module pins sttp client4 `4.0.21` and Scala.js `1.20.1` / Scala Native `0.5.10` (both must stay in sync with tupson core and the Deder-embedded toolchain). sttp Native artifacts link against the system `libidn2` library, so CI installs `libidn2-dev` before native tests. The integration lives in the `ba.sake.sttp.tupson` package (mirroring sttp's own `sttp.client4.<format>` layout, but in our own namespace) so that a future sibling integration, e.g. `ba.sake.sttp.yaml`, can coexist. Because the leaf package sits inside the `ba.sake.sttp` tree, internal sources there must reference sttp types via the `_root_.` prefix (e.g. `_root_.sttp.client4.*`); consumers are unaffected: `import ba.sake.tupson.*`, `import ba.sake.sttp.tupson.*` and `import sttp.client4.*` coexist.
 - `examples/` shows the intended public API shape. `docs/` is the published documentation site and the quickstart source of truth for consumer setup.
 
 ## Key conventions
