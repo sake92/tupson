@@ -30,8 +30,6 @@ import java.time.Month
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Period
-import java.util.Currency
-import java.util.Locale
 import java.util.UUID
 import org.typelevel.jawn.ast.*
 
@@ -252,21 +250,6 @@ object JsonRW extends LowPriorityJsonRWInstances:
     override def parse(path: String, jValue: JValue): BigInteger = jValue match
       case n: JNum => BigInteger(n.render())
       case other   => JsonRW.typeMismatchError(path, "BigInteger", other)
-  }
-
-  // java.util
-  given JsonRW[Currency] with {
-    override def write(value: Currency): JValue = JString(value.getCurrencyCode)
-    override def parse(path: String, jValue: JValue): Currency = jValue match
-      case JString(s) => Currency.getInstance(s)
-      case other      => JsonRW.typeMismatchError(path, "Currency", other)
-  }
-
-  given JsonRW[Locale] with {
-    override def write(value: Locale): JValue = JString(value.toLanguageTag)
-    override def parse(path: String, jValue: JValue): Locale = jValue match
-      case JString(s) => Locale.forLanguageTag(s)
-      case other      => JsonRW.typeMismatchError(path, "Locale", other)
   }
 
   // java.net
