@@ -12,6 +12,8 @@ import NamedTuple.withNames
 import scala.reflect.ClassTag
 import java.net.URI
 import java.net.URL
+import java.math.BigDecimal
+import java.math.BigInteger
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -232,6 +234,22 @@ object JsonRW extends LowPriorityJsonRWInstances:
     override def parse(path: String, jValue: JValue): DayOfWeek = jValue match
       case JString(s) => DayOfWeek.valueOf(s)
       case other      => JsonRW.typeMismatchError(path, "DayOfWeek", other)
+  }
+
+  // java.math
+  // stored via raw string (DeferNum) to preserve exact precision
+  given JsonRW[BigDecimal] with {
+    override def write(value: BigDecimal): JValue = DeferNum(value.toString)
+    override def parse(path: String, jValue: JValue): BigDecimal = jValue match
+      case n: JNum => BigDecimal(n.render())
+      case other   => JsonRW.typeMismatchError(path, "BigDecimal", other)
+  }
+
+  given JsonRW[BigInteger] with {
+    override def write(value: BigInteger): JValue = DeferNum(value.toString)
+    override def parse(path: String, jValue: JValue): BigInteger = jValue match
+      case n: JNum => BigInteger(n.render())
+      case other   => JsonRW.typeMismatchError(path, "BigInteger", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Option[T]] with {

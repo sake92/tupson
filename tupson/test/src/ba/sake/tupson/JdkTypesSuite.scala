@@ -1,5 +1,6 @@
 package ba.sake.tupson
 
+import java.math.*
 import java.time.*
 import java.time.format.DateTimeParseException
 
@@ -57,6 +58,35 @@ class JdkTypesSuite extends munit.FunSuite {
   test("Month unknown name propagates IllegalArgumentException") {
     intercept[IllegalArgumentException] {
       "\"SMARCH\"".parseJson[Month]
+    }
+  }
+
+  test("BigDecimal roundtrip exact") {
+    val value = BigDecimal("1234567890.12345678901234567890")
+    assertEquals(value.toJson(spaces = 0), "1234567890.12345678901234567890")
+    assertEquals("1234567890.12345678901234567890".parseJson[BigDecimal], value)
+  }
+
+  test("BigDecimal parses exponent form") {
+    assertEquals("1e3".parseJson[BigDecimal], BigDecimal("1e3"))
+  }
+
+  test("BigDecimal type mismatch") {
+    val ex = intercept[ParsingException] {
+      "\"abc\"".parseJson[BigDecimal]
+    }
+    assertEquals(ex.errors, Seq(ParseError("$", "should be BigDecimal but it is String", Some("\"abc\""))))
+  }
+
+  test("BigInteger roundtrip exact") {
+    val value = new BigInteger("123456789012345678901234567890")
+    assertEquals(value.toJson(spaces = 0), "123456789012345678901234567890")
+    assertEquals("123456789012345678901234567890".parseJson[BigInteger], value)
+  }
+
+  test("BigInteger rejects fractional JSON numbers with NumberFormatException") {
+    intercept[NumberFormatException] {
+      "1.5".parseJson[BigInteger]
     }
   }
 }
