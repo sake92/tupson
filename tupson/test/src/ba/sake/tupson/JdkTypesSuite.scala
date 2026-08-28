@@ -3,6 +3,7 @@ package ba.sake.tupson
 import java.math.*
 import java.time.*
 import java.time.format.DateTimeParseException
+import java.util.*
 
 class JdkTypesSuite extends munit.FunSuite {
 
@@ -88,5 +89,22 @@ class JdkTypesSuite extends munit.FunSuite {
     intercept[NumberFormatException] {
       "1.5".parseJson[BigInteger]
     }
+  }
+
+  test("Currency roundtrip") {
+    assertEquals(Currency.getInstance("EUR").toJson(spaces = 0), "\"EUR\"")
+    assertEquals("\"EUR\"".parseJson[Currency], Currency.getInstance("EUR"))
+  }
+
+  test("Currency unknown code propagates IllegalArgumentException") {
+    intercept[IllegalArgumentException] {
+      "\"XXXZZZ\"".parseJson[Currency]
+    }
+  }
+
+  test("Locale roundtrip") {
+    assertEquals(Locale.US.toJson(spaces = 0), "\"en-US\"")
+    assertEquals("\"en-US\"".parseJson[Locale], Locale.US)
+    assertEquals("\"sr-BA\"".parseJson[Locale], Locale.forLanguageTag("sr-BA"))
   }
 }
