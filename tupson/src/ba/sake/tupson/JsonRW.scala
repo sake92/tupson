@@ -14,6 +14,18 @@ import java.net.URI
 import java.net.URL
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.OffsetTime
+import java.time.ZonedDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.YearMonth
+import java.time.MonthDay
+import java.time.Year
+import java.time.Month
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Period
 import java.util.UUID
@@ -129,6 +141,97 @@ object JsonRW extends LowPriorityJsonRWInstances:
     override def parse(path: String, jValue: JValue): Period = jValue match
       case JString(s) => Period.parse(s)
       case other      => JsonRW.typeMismatchError(path, "Period", other)
+  }
+
+  given JsonRW[LocalDate] with {
+    override def write(value: LocalDate): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): LocalDate = jValue match
+      case JString(s) => LocalDate.parse(s)
+      case other      => JsonRW.typeMismatchError(path, "LocalDate", other)
+  }
+
+  given JsonRW[LocalTime] with {
+    override def write(value: LocalTime): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): LocalTime = jValue match
+      case JString(s) => LocalTime.parse(s)
+      case other      => JsonRW.typeMismatchError(path, "LocalTime", other)
+  }
+
+  given JsonRW[LocalDateTime] with {
+    override def write(value: LocalDateTime): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): LocalDateTime = jValue match
+      case JString(s) => LocalDateTime.parse(s)
+      case other      => JsonRW.typeMismatchError(path, "LocalDateTime", other)
+  }
+
+  given JsonRW[OffsetDateTime] with {
+    override def write(value: OffsetDateTime): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): OffsetDateTime = jValue match
+      case JString(s) => OffsetDateTime.parse(s)
+      case other      => JsonRW.typeMismatchError(path, "OffsetDateTime", other)
+  }
+
+  given JsonRW[OffsetTime] with {
+    override def write(value: OffsetTime): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): OffsetTime = jValue match
+      case JString(s) => OffsetTime.parse(s)
+      case other      => JsonRW.typeMismatchError(path, "OffsetTime", other)
+  }
+
+  given JsonRW[ZonedDateTime] with {
+    override def write(value: ZonedDateTime): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): ZonedDateTime = jValue match
+      case JString(s) => ZonedDateTime.parse(s)
+      case other      => JsonRW.typeMismatchError(path, "ZonedDateTime", other)
+  }
+
+  given JsonRW[ZoneId] with {
+    override def write(value: ZoneId): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): ZoneId = jValue match
+      case JString(s) => ZoneId.of(s)
+      case other      => JsonRW.typeMismatchError(path, "ZoneId", other)
+  }
+
+  given JsonRW[ZoneOffset] with {
+    override def write(value: ZoneOffset): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): ZoneOffset = jValue match
+      case JString(s) => ZoneOffset.of(s)
+      case other      => JsonRW.typeMismatchError(path, "ZoneOffset", other)
+  }
+
+  given JsonRW[YearMonth] with {
+    override def write(value: YearMonth): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): YearMonth = jValue match
+      case JString(s) => YearMonth.parse(s)
+      case other      => JsonRW.typeMismatchError(path, "YearMonth", other)
+  }
+
+  given JsonRW[MonthDay] with {
+    override def write(value: MonthDay): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): MonthDay = jValue match
+      case JString(s) => MonthDay.parse(s)
+      case other      => JsonRW.typeMismatchError(path, "MonthDay", other)
+  }
+
+  given JsonRW[Year] with {
+    override def write(value: Year): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): Year = jValue match
+      case JString(s) => Year.parse(s)
+      case other      => JsonRW.typeMismatchError(path, "Year", other)
+  }
+
+  given JsonRW[Month] with {
+    override def write(value: Month): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): Month = jValue match
+      case JString(s) => Month.valueOf(s)
+      case other      => JsonRW.typeMismatchError(path, "Month", other)
+  }
+
+  given JsonRW[DayOfWeek] with {
+    override def write(value: DayOfWeek): JValue = JString(value.toString)
+    override def parse(path: String, jValue: JValue): DayOfWeek = jValue match
+      case JString(s) => DayOfWeek.valueOf(s)
+      case other      => JsonRW.typeMismatchError(path, "DayOfWeek", other)
   }
 
   given [T](using trw: JsonRW[T]): JsonRW[Option[T]] with {
