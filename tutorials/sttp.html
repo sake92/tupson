@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="sttp client4 integration">
+  <title> sttp client4 | Tupson Documentation </title>
+  <link rel="shortcut icon" href="https://sake92.github.io/tupson/images/favicon.png" type="image/png">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-dark.min.css" media="(prefers-color-scheme: dark)" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-light.min.css" media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.conditional.min.css">
+  <link rel="stylesheet" href="https://sake92.github.io/tupson/styles/default.css">
+ </head>
+ <body>
+  <header class="pico container">
+   <nav>
+    <ul>
+     <li><a href="https://sake92.github.io/tupson/">Home</a></li>
+    </ul>
+    <ul>
+     <li>
+      <form action="https://sake92.github.io/tupson/search/results.html" method="GET">
+       <input name="q" type="search" placeholder="Search">
+      </form>
+     </li>
+    </ul>
+    <ul>
+     <li><a href="https://sake92.github.io/tupson/tutorials">Tutorials</a></li>
+     <li><a href="https://sake92.github.io/tupson/howtos">How-Tos</a></li>
+     <li><a href="https://sake92.github.io/tupson/reference">Reference</a></li>
+     <li><a href="https://sake92.github.io/tupson/philosophy">Philosophy</a></li>
+    </ul>
+   </nav>
+  </header>
+  <main class="pico container">
+   <div class="grid">
+    <div>
+     <details>
+      <summary>Table of Contents</summary>
+      <div>
+       <ul>
+        <li><a href="#sttp-client4">sttp client4</a>
+         <ul>
+          <li><a href="#usage">Usage</a>
+           <ul>
+            <li><a href="#request-body">Request body</a></li>
+            <li><a href="#response-body">Response body</a></li>
+            <li><a href="#convenience-handlers">Convenience handlers</a></li>
+           </ul></li>
+         </ul></li>
+       </ul>
+      </div>
+     </details>
+     <hr>
+    </div>
+    <div></div>
+    <div></div>
+   </div>
+   <h1 id="sttp-client4">sttp client4<a href="#sttp-client4" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
+   <p>Tupson integrates with the awesome <a href="https://sttp.softwaremill.com/en/latest/">sttp client4</a> library.</p>
+   <p>You will need to add these dependencies:</p>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes">ba.sake::tupson-sttp:<span class="hljs-number">0.20</span><span class="hljs-number">.0</span> <span class="hljs-comment">// in addition to ba.sake::tupson:...</span>
+
+<span class="hljs-string">"com.softwaremill.sttp.client4"</span> %% <span class="hljs-string">"core"</span> % <span class="hljs-string">"4.0.21"</span> <span class="hljs-comment">// or e.g. "zio", "cats", ...</span>
+</code>
+          </pre>
+   <blockquote>
+    <p>Real-world example in <a href="https://github.com/sake92/sharaf">sharaf</a></p>
+   </blockquote>
+   <h2 id="usage">Usage<a href="#usage" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
+   <p><code>tupson-sttp</code> hooks into <code>JsonRW</code>, so any value that can be written/parsed by Tupson can be sent or received via sttp.
+    <br>
+    Start by importing both sttp and Tupson:</p>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-keyword">import</span> ba.sake.tupson.{<span class="hljs-keyword">given</span>, *}
+<span class="hljs-keyword">import</span> ba.sake.sttp.tupson.*
+<span class="hljs-keyword">import</span> sttp.client4.*
+</code>
+          </pre>
+   <h3 id="request-body">Request body<a href="#request-body" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h3>
+   <p>Use <code>asJson</code> on any <code>JsonRW</code> value as the request body:</p>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CreateUser</span>(<span class="hljs-params">name: <span class="hljs-type">String</span>, age: <span class="hljs-type">Int</span></span>) <span class="hljs-title">derives</span> <span class="hljs-title">JsonRW</span></span>
+
+<span class="hljs-keyword">val</span> request = basicRequest
+  .post(<span class="hljs-string">uri"http://example.com/api/users"</span>)
+  .body(asJson(<span class="hljs-type">CreateUser</span>(<span class="hljs-string">"Sake"</span>, <span class="hljs-number">30</span>)))
+</code>
+          </pre>
+   <h3 id="response-body">Response body<a href="#response-body" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h3>
+   <p>Use the <code>.response(asJson[B])</code> handler to parse the response body into a <code>JsonRW</code> value:</p>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">User</span>(<span class="hljs-params">id: <span class="hljs-type">Int</span>, name: <span class="hljs-type">String</span>, age: <span class="hljs-type">Int</span></span>) <span class="hljs-title">derives</span> <span class="hljs-title">JsonRW</span></span>
+
+<span class="hljs-keyword">val</span> user = basicRequest
+  .get(<span class="hljs-string">uri"http://example.com/api/users/1"</span>)
+  .response(asJson[<span class="hljs-type">User</span>])
+  .send(backend)
+<span class="hljs-comment">// Right(User(1, Sake, 30))</span>
+</code>
+          </pre>
+   <p>Tupson's parsing rules apply, including optional fields, defaults and sum types:</p>
+   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-keyword">sealed</span> <span class="hljs-class"><span class="hljs-keyword">trait</span> <span class="hljs-title">Shape</span> <span class="hljs-title">derives</span> <span class="hljs-title">JsonRW</span></span>
+<span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Circle</span>(<span class="hljs-params">radius: <span class="hljs-type">Double</span></span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">Shape</span> <span class="hljs-title">derives</span> <span class="hljs-title">JsonRW</span></span>
+<span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Square</span>(<span class="hljs-params">side: <span class="hljs-type">Double</span></span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">Shape</span> <span class="hljs-title">derives</span> <span class="hljs-title">JsonRW</span></span>
+
+<span class="hljs-keyword">val</span> shape = basicRequest
+  .get(<span class="hljs-string">uri"http://example.com/api/shapes/1"</span>)
+  .response(asJson[<span class="hljs-type">Shape</span>])
+  .send(backend)
+</code>
+          </pre>
+   <h3 id="convenience-handlers">Convenience handlers<a href="#convenience-handlers" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h3>
+   <p>Several handlers are provided, mirroring the ones found in other sttp json libraries:</p>
+   <ul>
+    <li><code>asJson[B]</code> — <code>Either[ResponseException[String], B]</code></li>
+    <li><code>asJsonOrFail[B]</code> — like <code>asJson</code>, but throws on non-2xx / parse errors</li>
+    <li><code>asJsonAlways[B]</code> — tries to parse regardless of the status code</li>
+    <li><code>asJsonEither[E, B]</code> — parses the error body into <code>E</code> on non-2xx</li>
+    <li><code>asJsonEitherOrFail[E, B]</code> — like <code>asJsonEither</code>, but throws on parse errors</li>
+   </ul>
+  </main>
+  <footer class="pico container">Tupson Documentation</footer>
+ </body>
+</html>
