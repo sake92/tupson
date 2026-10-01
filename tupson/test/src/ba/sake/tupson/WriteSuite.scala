@@ -43,6 +43,11 @@ class WriteSuite extends munit.FunSuite {
     assertEquals(Option.empty[Int].toJson, "null")
   }
 
+  test("write PATCH-style fields") {
+    assertEquals(UserPatch(Patch.Keep, Patch.Keep).toJson(spaces = 0), "{}")
+    assertEquals(UserPatch(Patch.Set("Ada"), Patch.Clear).toJson(spaces = 0), """{"address":null,"name":"Ada"}""")
+  }
+
   test("write Map") {
     assertEquals(Map("a" -> "abc").toJson(spaces = 0), """{"a":"abc"}""")
     assertEquals(

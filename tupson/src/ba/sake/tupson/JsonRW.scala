@@ -37,6 +37,12 @@ trait JsonRW[T]:
 
   def write(value: T): JValue
 
+  /** Whether `T` should be written when it is a field of an object.
+    *
+    * Values are written by [[write]] when this returns `true`.
+    */
+  def shouldWriteField(value: T): Boolean = true
+
   def parse(path: String, jValue: JValue): T
 
   /** Global default for `T` when key is missing in JSON.
@@ -346,7 +352,10 @@ object JsonRW extends LowPriorityJsonRWInstances:
               val members = scala.collection.mutable.Map[String, JValue]()
               val valueAsProd = ${ 'value.asExprOf[Product] }
               $labels.zip(valueAsProd.productIterator).zip($rwInstances).foreach { case ((k, v), rw) =>
-                members(k) = rw.asInstanceOf[JsonRW[Any]].write(v)
+                val fieldRW = rw.asInstanceOf[JsonRW[Any]]
+                if fieldRW.shouldWriteField(v) then {
+                  members(k) = fieldRW.write(v)
+                }
               }
               JObject(members)
             }
