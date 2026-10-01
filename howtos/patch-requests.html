@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Model partial updates in Tupson">
+  <title>Handling PATCH requests | Tupson Documentation</title>
+  <link rel="shortcut icon" href="https://sake92.github.io/tupson/images/favicon.png" type="image/png">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-dark.min.css" media="(prefers-color-scheme: dark)" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-light.min.css" media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.conditional.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://sake92.github.io/tupson/styles/default.css">
+ </head>
+ <body>
+  <header class="pico container">
+   <nav aria-label="Main navigation">
+    <a href="https://sake92.github.io/tupson/">Tupson Documentation</a>
+    <div>
+     <a href="https://sake92.github.io/tupson/tutorials">Tutorials</a> <a href="https://sake92.github.io/tupson/howtos">How-Tos</a> <a href="https://sake92.github.io/tupson/reference">Reference</a> <a href="https://sake92.github.io/tupson/philosophy">Philosophy</a>
+    </div>
+    <form action="https://sake92.github.io/tupson/search/results.html" method="get" role="search">
+     <input name="q" type="search" placeholder="Search" aria-label="Search this site">
+    </form>
+   </nav>
+  </header>
+  <script>
+for (const link of document.querySelectorAll('body > header > nav > div > a')) {
+    const path = new URL(link.href).pathname.replace(/\/$/, '');
+    const current = window.location.pathname;
+    if (current === path || current.startsWith(path + '/')) link.setAttribute('aria-current', 'page');
+}
+</script>
+  <main class="pico container">
+   <div>
+    <div class="content">
+     <h1 id="handling-patch-requests">Handling PATCH requests<a href="#handling-patch-requests" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
+     <p>Use a three-state <code>Patch[T]</code> when an API field may be set, cleared, or left unchanged.</p>
+     <p>This is awkward in many Scala JSON libraries: a field codec is often only asked to produce a JSON value, so it cannot say “omit my enclosing key” without a custom product encoder. Tupson lets a codec opt out of writing an object field with <code>shouldWriteField</code>.</p>
+     <p>Define the patch type and its codec:</p>
+     <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-keyword">import</span> ba.sake.tupson.{*, <span class="hljs-keyword">given</span>}
+<span class="hljs-keyword">import</span> org.typelevel.jawn.ast.*
+
+<span class="hljs-keyword">enum</span> <span class="hljs-type">Patch</span>[+<span class="hljs-type">T</span>]:
+  <span class="hljs-keyword">case</span> <span class="hljs-type">Set</span>(value: <span class="hljs-type">T</span>)
+  <span class="hljs-keyword">case</span> <span class="hljs-type">Clear</span>
+  <span class="hljs-keyword">case</span> <span class="hljs-type">Keep</span>
+
+<span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">Patch</span></span>:
+  <span class="hljs-keyword">given</span> [<span class="hljs-type">T</span>](<span class="hljs-keyword">using</span> valueRW: <span class="hljs-type">JsonRW</span>[<span class="hljs-type">T</span>]): <span class="hljs-type">JsonRW</span>[<span class="hljs-type">Patch</span>[<span class="hljs-type">T</span>]] <span class="hljs-keyword">with</span>
+    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">write</span></span>(value: <span class="hljs-type">Patch</span>[<span class="hljs-type">T</span>]): <span class="hljs-type">JValue</span> = value <span class="hljs-keyword">match</span>
+      <span class="hljs-keyword">case</span> <span class="hljs-type">Set</span>(value) =&gt; valueRW.write(value)
+      <span class="hljs-keyword">case</span> <span class="hljs-type">Clear</span>      =&gt; <span class="hljs-type">JNull</span>
+      <span class="hljs-keyword">case</span> <span class="hljs-type">Keep</span> =&gt;
+        <span class="hljs-keyword">throw</span> <span class="hljs-type">TupsonException</span>(<span class="hljs-string">"Patch.Keep can only be written as an object field"</span>)
+
+    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">shouldWriteField</span></span>(value: <span class="hljs-type">Patch</span>[<span class="hljs-type">T</span>]): <span class="hljs-type">Boolean</span> = value != <span class="hljs-type">Keep</span>
+
+    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">parse</span></span>(path: <span class="hljs-type">String</span>, jValue: <span class="hljs-type">JValue</span>): <span class="hljs-type">Patch</span>[<span class="hljs-type">T</span>] = jValue <span class="hljs-keyword">match</span>
+      <span class="hljs-keyword">case</span> <span class="hljs-type">JNull</span> =&gt; <span class="hljs-type">Clear</span>
+      <span class="hljs-keyword">case</span> other =&gt; <span class="hljs-type">Set</span>(valueRW.parse(path, other))
+
+    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">default</span></span>: <span class="hljs-type">Option</span>[<span class="hljs-type">Patch</span>[<span class="hljs-type">T</span>]] = <span class="hljs-type">Some</span>(<span class="hljs-type">Keep</span>)
+
+<span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserPatch</span>(<span class="hljs-params">name: <span class="hljs-type">Patch</span>[<span class="hljs-type">String</span>], address: <span class="hljs-type">Patch</span>[<span class="hljs-type">String</span>]</span>) <span class="hljs-title">derives</span> <span class="hljs-title">JsonRW</span></span>
+</code>
+          </pre>
+     <p>Parse a request body. A missing key becomes <code>Keep</code>, <code>null</code> becomes <code>Clear</code>, and any other value becomes <code>Set</code>:</p>
+     <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-keyword">val</span> patch = <span class="hljs-string">"""{ "name": "Ada", "address": null }"""</span>.parseJson[<span class="hljs-type">UserPatch</span>]
+<span class="hljs-comment">// UserPatch(Patch.Set("Ada"), Patch.Clear)</span>
+</code>
+          </pre>
+     <p>When writing a <code>UserPatch</code>, <code>Keep</code> fields are omitted:</p>
+     <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-type">UserPatch</span>(<span class="hljs-type">Patch</span>.<span class="hljs-type">Set</span>(<span class="hljs-string">"Ada"</span>), <span class="hljs-type">Patch</span>.<span class="hljs-type">Keep</span>).toJson(spaces = <span class="hljs-number">0</span>)
+<span class="hljs-comment">// {"name":"Ada"}</span>
+</code>
+          </pre>
+     <p>Use <code>Patch</code> only as an object field. A top-level <code>Patch.Keep</code> has no JSON representation and fails to write.</p>
+    </div>
+    <aside aria-label="On this page">
+     <details open>
+      <summary>On this page</summary>
+      <nav aria-label="Table of contents">
+       <ul>
+        <li><a href="#handling-patch-requests">Handling PATCH requests</a></li>
+       </ul>
+      </nav>
+     </details>
+    </aside>
+   </div>
+  </main>
+  <footer class="pico container">Tupson Documentation</footer>
+  <script>
+if (window.matchMedia('(max-width: 850px)').matches) {
+    document.querySelectorAll('body > main > div > aside > details').forEach(details => { details.open = false; });
+}
+</script>
+  <script src="https://sake92.github.io/tupson/scripts/code-copy.js"></script>
+ </body>
+</html>
