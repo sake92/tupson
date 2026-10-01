@@ -34,6 +34,7 @@ local const basePomSettings: PomSettings = new {
   }
   scm {
     url = "git@github.com:sake92/tupson.git"
+    connection = "scm:git:git@github.com:sake92/tupson.git"
   }
 }
 
