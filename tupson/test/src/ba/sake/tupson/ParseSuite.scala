@@ -113,6 +113,20 @@ class ParseSuite extends munit.FunSuite {
     assertEquals("null".parseJson[Option[Int]], Option.empty[Int])
   }
 
+  test("parse Patch") {
+    case class CaseClassPatch(value: Patch[String]) derives JsonRW
+
+    assertEquals("""{}""".parseJson[CaseClassPatch], CaseClassPatch(Patch.Keep))
+    assertEquals(
+      """{"value":null}""".parseJson[CaseClassPatch],
+      CaseClassPatch(Patch.Clear)
+    )
+    assertEquals(
+      """{"value":"abc"}""".parseJson[CaseClassPatch],
+      CaseClassPatch(Patch.Set("abc"))
+    )
+  }
+
   test("parse Map") {
     assertEquals(
       """{"a":"abc"}""".parseJson[Map[String, String]],
