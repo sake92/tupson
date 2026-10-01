@@ -256,6 +256,17 @@ class ParseSuite extends munit.FunSuite {
     )
   }
 
+  test("parse PATCH-style fields") {
+    assertEquals(
+      """{ "name": "Ada", "address": null }""".parseJson[UserPatch],
+      UserPatch(Patch.Set("Ada"), Patch.Clear)
+    )
+    assertEquals(
+      """{}""".parseJson[UserPatch],
+      UserPatch(Patch.Keep, Patch.Keep)
+    )
+  }
+
   /* missing key -> default "local" value */
   test("parse missing keys to their local defaults") {
     case class Bla(x: String = "deflt") derives JsonRW
