@@ -14,12 +14,12 @@ Here are some common questions and answers you might have when using Tupson.
 
 set howtos = [
     { label: "Weird Key Names", url: "/howtos/weird-key-names.html" },
-    { label: "Backwards Compatibility", url: "/howtos/back-compat.html" }
+    { label: "Backwards Compatibility", url: "/howtos/back-compat.html" },
+    { label: "PATCH Requests", url: "/howtos/patch-requests.html" }
 ]
 
 %}
 
 {% for howto in howtos %}- [{{ howto.label }}]({{ howto.url}})
 {% endfor %}
-
 
