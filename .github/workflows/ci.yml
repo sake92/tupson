@@ -11,6 +11,8 @@ jobs:
   test:
     name: test
     runs-on: ubuntu-latest
+    outputs:
+      snapshot: ${{ steps.version.outputs.snapshot }}
     env:
       CONFIG_FORCE_envvar_port: 1234
       JAVA_TOOL_OPTIONS: -Dconfig.override_with_env_vars=true
@@ -29,6 +31,22 @@ jobs:
         uses: Homebrew/actions/setup-homebrew@main
       - name: Install deder
         run: brew install sake92/tap/deder
+      - name: Check versions
+        id: version
+        shell: bash
+        run: |
+          versions=$(deder exec -t version)
+          echo "$versions"
+          version=$(sed -nE 's/^[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+(-SNAPSHOT)?)$/\1/p' <<< "$versions" | sort -u)
+          if [[ -z "$version" || "$version" == *$'\n'* ]]; then
+            echo "Expected one version across all modules"
+            exit 1
+          fi
+          if [[ "$version" == *-SNAPSHOT ]]; then
+            echo "snapshot=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "snapshot=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install system libraries
         # sttp native artifacts link against libidn2 at native link time
         run: sudo apt-get update && sudo apt-get install -y libidn2-dev
@@ -43,3 +61,30 @@ jobs:
           deder exec -m tupson-sttp-jvm-test-3.7.3 -t testInMemory
           deder exec -m tupson-sttp-js-test-3.7.3 -t test
           deder exec -m tupson-sttp-native-test-3.7.3 -t test
+
+  publish-snapshots:
+    name: publish snapshots
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.test.outputs.snapshot == 'true'
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      DEDER_PUBLISH_SNAPSHOT: ${{ needs.test.outputs.snapshot }}
+      DEDER_SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      DEDER_SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: coursier/cache-action@v7
+        with:
+          extraFiles: deder.pkl
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@main
+      - name: Install deder
+        run: brew install sake92/tap/deder
+      - name: Publish snapshots
+        run: deder exec -t publish
