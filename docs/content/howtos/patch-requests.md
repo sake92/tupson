@@ -5,9 +5,19 @@ description: Model partial updates in Tupson
 
 # {{ page.title }}
 
-Use a three-state `Patch[T]` when an API field may be set, cleared, or left unchanged.
+For an existing user, a frontend expects these PATCH request bodies to mean:
 
-This is awkward in many Scala JSON libraries: a field codec is often only asked to produce a JSON value, so it cannot say “omit my enclosing key” without a custom product encoder. Tupson lets a codec opt out of writing an object field with `shouldWriteField`.
+```json
+{}                  // keep every field unchanged
+{ "name": null }    // clear the name
+{ "name": "Ada" }   // replace the name
+```
+
+When a frontend sends a PATCH request without a field, it expects the existing value to remain unchanged. Your request model therefore needs to distinguish all three cases: set, clear, and keep.
+
+That distinction is awkward in many Scala JSON libraries. A field codec is often only asked to produce a JSON value, so it cannot say “omit my enclosing key” when the field should be left unchanged; doing so requires a custom product encoder.
+
+Use a three-state `Patch[T]` with Tupson. Its `shouldWriteField` hook lets the codec omit a `Keep` field when serializing an object.
 
 Define the patch type and its codec:
 
