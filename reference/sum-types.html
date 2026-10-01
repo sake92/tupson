@@ -5,65 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
   <meta name="description" content="Working with Sum Types in Tupson">
-  <title> Sum Types | Tupson Documentation </title>
+  <title>Sum Types | Tupson Documentation</title>
   <link rel="shortcut icon" href="https://sake92.github.io/tupson/images/favicon.png" type="image/png">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-dark.min.css" media="(prefers-color-scheme: dark)" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-light.min.css" media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.conditional.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://sake92.github.io/tupson/styles/default.css">
  </head>
  <body>
   <header class="pico container">
-   <nav>
-    <ul>
-     <li><a href="https://sake92.github.io/tupson/">Home</a></li>
-    </ul>
-    <ul>
-     <li>
-      <form action="https://sake92.github.io/tupson/search/results.html" method="GET">
-       <input name="q" type="search" placeholder="Search">
-      </form>
-     </li>
-    </ul>
-    <ul>
-     <li><a href="https://sake92.github.io/tupson/tutorials">Tutorials</a></li>
-     <li><a href="https://sake92.github.io/tupson/howtos">How-Tos</a></li>
-     <li><a href="https://sake92.github.io/tupson/reference">Reference</a></li>
-     <li><a href="https://sake92.github.io/tupson/philosophy">Philosophy</a></li>
-    </ul>
+   <nav aria-label="Main navigation">
+    <a href="https://sake92.github.io/tupson/">Tupson Documentation</a>
+    <div>
+     <a href="https://sake92.github.io/tupson/tutorials">Tutorials</a> <a href="https://sake92.github.io/tupson/howtos">How-Tos</a> <a href="https://sake92.github.io/tupson/reference">Reference</a> <a href="https://sake92.github.io/tupson/philosophy">Philosophy</a>
+    </div>
+    <form action="https://sake92.github.io/tupson/search/results.html" method="get" role="search">
+     <input name="q" type="search" placeholder="Search" aria-label="Search this site">
+    </form>
    </nav>
   </header>
+  <script>
+for (const link of document.querySelectorAll('body > header > nav > div > a')) {
+    const path = new URL(link.href).pathname.replace(/\/$/, '');
+    const current = window.location.pathname;
+    if (current === path || current.startsWith(path + '/')) link.setAttribute('aria-current', 'page');
+}
+</script>
   <main class="pico container">
-   <div class="grid">
-    <div>
-     <details>
-      <summary>Table of Contents</summary>
-      <div>
-       <ul>
-        <li><a href="#sum-types">Sum Types</a>
-         <ul>
-          <li><a href="#custom-discriminator-key">Custom discriminator key</a></li>
-         </ul></li>
-       </ul>
-      </div>
-     </details>
-     <hr>
-    </div>
-    <div></div>
-    <div></div>
-   </div>
-   <h1 id="sum-types">Sum Types<a href="#sum-types" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
-   <p>Here we mean <code>sealed trait</code>s, <code>sealed class</code>es and <a href="https://docs.scala-lang.org/scala3/reference/enums/desugarEnums.html">non-singleton</a> <code>enum</code>s.
-    <br>
-    Since they have one or more subtypes, we need to disambiguate between them somehow.</p>
-   <p>The default discriminator Tupson uses is the <code>@type</code> key.
-    <br>
-    Its value is the <em>simple type name</em> of class or enum case.
-    <br>
-    This makes JSON independent of scala/java package and it is more readable.</p>
-   <p>Example:</p>
-   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-keyword">enum</span> <span class="hljs-type">Color</span> derives <span class="hljs-type">JsonRW</span>:
+   <div>
+    <div class="content">
+     <h1 id="sum-types">Sum Types<a href="#sum-types" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
+     <p>Here we mean <code>sealed trait</code>s, <code>sealed class</code>es and <a href="https://docs.scala-lang.org/scala3/reference/enums/desugarEnums.html">non-singleton</a> <code>enum</code>s.
+      <br>
+      Since they have one or more subtypes, we need to disambiguate between them somehow.</p>
+     <p>The default discriminator Tupson uses is the <code>@type</code> key.
+      <br>
+      Its value is the <em>simple type name</em> of class or enum case.
+      <br>
+      This makes JSON independent of scala/java package and it is more readable.</p>
+     <p>Example:</p>
+     <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-keyword">enum</span> <span class="hljs-type">Color</span> derives <span class="hljs-type">JsonRW</span>:
   <span class="hljs-keyword">case</span> <span class="hljs-type">Hex</span>(num: <span class="hljs-type">String</span>)
   <span class="hljs-keyword">case</span> <span class="hljs-type">Yellow</span>
 
@@ -73,16 +58,37 @@ println(color.toJson)
 <span class="hljs-comment">// { "@type":"Hex", "num":"FFF" }</span>
 </code>
           </pre>
-   <h2 id="custom-discriminator-key">Custom discriminator key<a href="#custom-discriminator-key" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
-   <p>You can use some other key by annotating the sum type with <code>@discriminator</code>:".md,</p>
-   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-meta">@discriminator</span>(<span class="hljs-string">"myOtherKey"</span>)
+     <h2 id="custom-discriminator-key">Custom discriminator key<a href="#custom-discriminator-key" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
+     <p>You can use some other key by annotating the sum type with <code>@discriminator</code>:".md,</p>
+     <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-meta">@discriminator</span>(<span class="hljs-string">"myOtherKey"</span>)
 <span class="hljs-keyword">enum</span> <span class="hljs-type">Color</span> derives <span class="hljs-type">JsonRW</span> ...
 
 println(color.toJson)
 <span class="hljs-comment">// { "myOtherKey":"Hex", "num":"FFF" }</span>
 </code>
           </pre>
+    </div>
+    <aside aria-label="On this page">
+     <details open>
+      <summary>On this page</summary>
+      <nav aria-label="Table of contents">
+       <ul>
+        <li><a href="#sum-types">Sum Types</a>
+         <ul>
+          <li><a href="#custom-discriminator-key">Custom discriminator key</a></li>
+         </ul></li>
+       </ul>
+      </nav>
+     </details>
+    </aside>
+   </div>
   </main>
   <footer class="pico container">Tupson Documentation</footer>
+  <script>
+if (window.matchMedia('(max-width: 850px)').matches) {
+    document.querySelectorAll('body > main > div > aside > details').forEach(details => { details.open = false; });
+}
+</script>
+  <script src="https://sake92.github.io/tupson/scripts/code-copy.js"></script>
  </body>
 </html>

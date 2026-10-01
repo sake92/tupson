@@ -5,67 +5,73 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
   <meta name="description" content="Working with Union Types in Tupson">
-  <title> Union Types | Tupson Documentation </title>
+  <title>Union Types | Tupson Documentation</title>
   <link rel="shortcut icon" href="https://sake92.github.io/tupson/images/favicon.png" type="image/png">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-dark.min.css" media="(prefers-color-scheme: dark)" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-light.min.css" media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.conditional.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://sake92.github.io/tupson/styles/default.css">
  </head>
  <body>
   <header class="pico container">
-   <nav>
-    <ul>
-     <li><a href="https://sake92.github.io/tupson/">Home</a></li>
-    </ul>
-    <ul>
-     <li>
-      <form action="https://sake92.github.io/tupson/search/results.html" method="GET">
-       <input name="q" type="search" placeholder="Search">
-      </form>
-     </li>
-    </ul>
-    <ul>
-     <li><a href="https://sake92.github.io/tupson/tutorials">Tutorials</a></li>
-     <li><a href="https://sake92.github.io/tupson/howtos">How-Tos</a></li>
-     <li><a href="https://sake92.github.io/tupson/reference">Reference</a></li>
-     <li><a href="https://sake92.github.io/tupson/philosophy">Philosophy</a></li>
-    </ul>
+   <nav aria-label="Main navigation">
+    <a href="https://sake92.github.io/tupson/">Tupson Documentation</a>
+    <div>
+     <a href="https://sake92.github.io/tupson/tutorials">Tutorials</a> <a href="https://sake92.github.io/tupson/howtos">How-Tos</a> <a href="https://sake92.github.io/tupson/reference">Reference</a> <a href="https://sake92.github.io/tupson/philosophy">Philosophy</a>
+    </div>
+    <form action="https://sake92.github.io/tupson/search/results.html" method="get" role="search">
+     <input name="q" type="search" placeholder="Search" aria-label="Search this site">
+    </form>
    </nav>
   </header>
+  <script>
+for (const link of document.querySelectorAll('body > header > nav > div > a')) {
+    const path = new URL(link.href).pathname.replace(/\/$/, '');
+    const current = window.location.pathname;
+    if (current === path || current.startsWith(path + '/')) link.setAttribute('aria-current', 'page');
+}
+</script>
   <main class="pico container">
-   <div class="grid">
-    <div>
-     <details>
-      <summary>Table of Contents</summary>
-      <div>
-       <ul>
-        <li><a href="#union-types">Union Types</a></li>
-       </ul>
-      </div>
-     </details>
-     <hr>
-    </div>
-    <div></div>
-    <div></div>
-   </div>
-   <h1 id="union-types">Union Types<a href="#union-types" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
-   <p>In Scala 3 you can use union types in the form <code>A | B | C</code>.</p>
-   <blockquote>
-    <p>Use case: Some APIs support "expanding objects". E.g. they either return a <code>String</code> which is ID of that object, or full object <code>T</code> when you send a query string <code>expand=myObject</code>. For this you can leverage union types in natural way: <code>someKey: String | MyObject</code>.</p>
-   </blockquote>
-   <p>When parsing, Tupson will try all types (left to right) until it finds one that parses correctly.
-    <br>
-    When writing, Tupson will use its runtime type to determine how to write the value.</p>
-   <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-string">"1"</span>.parseJson[<span class="hljs-type">Int</span> | <span class="hljs-type">String</span> | <span class="hljs-type">Boolean</span>]
+   <div>
+    <div class="content">
+     <h1 id="union-types">Union Types<a href="#union-types" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
+     <p>In Scala 3 you can use union types in the form <code>A | B | C</code>.</p>
+     <blockquote>
+      <p>Use case: Some APIs support "expanding objects". E.g. they either return a <code>String</code> which is ID of that object, or full object <code>T</code> when you send a query string <code>expand=myObject</code>. For this you can leverage union types in natural way: <code>someKey: String | MyObject</code>.</p>
+     </blockquote>
+     <p>When parsing, Tupson will try all types (left to right) until it finds one that parses correctly.
+      <br>
+      When writing, Tupson will use its runtime type to determine how to write the value.</p>
+     <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-string">"1"</span>.parseJson[<span class="hljs-type">Int</span> | <span class="hljs-type">String</span> | <span class="hljs-type">Boolean</span>]
 <span class="hljs-comment">// 1: Int</span>
 
 <span class="hljs-string">""" "bla" """</span>.parseJson[<span class="hljs-type">Int</span> | <span class="hljs-type">String</span> | <span class="hljs-type">Boolean</span>]
 <span class="hljs-comment">// "bla": String</span>
 </code>
           </pre>
+    </div>
+    <aside aria-label="On this page">
+     <details open>
+      <summary>On this page</summary>
+      <nav aria-label="Table of contents">
+       <ul>
+        <li><a href="#union-types">Union Types</a></li>
+       </ul>
+      </nav>
+     </details>
+    </aside>
+   </div>
   </main>
   <footer class="pico container">Tupson Documentation</footer>
+  <script>
+if (window.matchMedia('(max-width: 850px)').matches) {
+    document.querySelectorAll('body > main > div > aside > details').forEach(details => { details.open = false; });
+}
+</script>
+  <script src="https://sake92.github.io/tupson/scripts/code-copy.js"></script>
  </body>
 </html>
