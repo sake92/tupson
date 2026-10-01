@@ -44,10 +44,14 @@ class WriteSuite extends munit.FunSuite {
   }
 
   test("write Patch") {
-    assertEquals(Patch.Set("abc").toJson, """"abc"""")
-    assertEquals(Patch.Clear.toJson, "null")
+    val set: Patch[String] = Patch.Set("abc")
+    val clear: Patch[String] = Patch.Clear
+    val keep: Patch[String] = Patch.Keep
+
+    assertEquals(set.toJson, """"abc"""")
+    assertEquals(clear.toJson, "null")
     interceptMessage[TupsonException]("Cannot write Patch.Keep as JSON") {
-      Patch.Keep.toJson
+      keep.toJson
     }
   }
 
