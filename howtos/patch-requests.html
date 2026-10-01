@@ -39,8 +39,15 @@ for (const link of document.querySelectorAll('body > header > nav > div > a')) {
    <div>
     <div class="content">
      <h1 id="handling-patch-requests">Handling PATCH requests<a href="#handling-patch-requests" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h1>
-     <p>Use a three-state <code>Patch[T]</code> when an API field may be set, cleared, or left unchanged.</p>
-     <p>This is awkward in many Scala JSON libraries: a field codec is often only asked to produce a JSON value, so it cannot say “omit my enclosing key” without a custom product encoder. Tupson lets a codec opt out of writing an object field with <code>shouldWriteField</code>.</p>
+     <p>For an existing user, a frontend expects these PATCH request bodies to mean:</p>
+     <pre>            <code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>                  <span class="hljs-comment">// keep every field unchanged</span>
+<span class="hljs-punctuation">{</span> <span class="hljs-attr">"name"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">null</span></span> <span class="hljs-punctuation">}</span>    <span class="hljs-comment">// clear the name</span>
+<span class="hljs-punctuation">{</span> <span class="hljs-attr">"name"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Ada"</span> <span class="hljs-punctuation">}</span>   <span class="hljs-comment">// replace the name</span>
+</code>
+          </pre>
+     <p>When a frontend sends a PATCH request without a field, it expects the existing value to remain unchanged. Your request model therefore needs to distinguish all three cases: set, clear, and keep.</p>
+     <p>That distinction is awkward in many Scala JSON libraries. A field codec is often only asked to produce a JSON value, so it cannot say “omit my enclosing key” when the field should be left unchanged; doing so requires a custom product encoder.</p>
+     <p>Use a three-state <code>Patch[T]</code> with Tupson. Its <code>shouldWriteField</code> hook lets the codec omit a <code>Keep</code> field when serializing an object.</p>
      <p>Define the patch type and its codec:</p>
      <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-keyword">import</span> ba.sake.tupson.{*, <span class="hljs-keyword">given</span>}
 <span class="hljs-keyword">import</span> org.typelevel.jawn.ast.*
