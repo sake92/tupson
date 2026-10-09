@@ -41,3 +41,5 @@ This repository uses **Deder** (`deder.pkl`) for contributor workflows.
 - Preserve Tupson's path-aware error style: parsing starts at `$`, nested keys append to that path, and multi-field failures are reported as aggregated `ParseError`s inside `ParsingException`.
 - Examples and tests use `import ba.sake.tupson.{*, given}` so extension methods and givens are both in scope. Follow that style in new examples/tests unless there is a reason not to.
 - `tupson-config` tests depend on build-time JVM/test environment setup from `deder.pkl` (`-Dconfig.override_with_env_vars=true` and `CONFIG_FORCE_envvar_port`). Keep those assumptions in mind when changing config parsing behavior or tests.
+- `Option.None` serializes as JSON `null`, and parsing JSON `null` produces `None`; this differs from an absent object field, which follows the derived missing-field default rules.
+- Union alternatives are parsed left to right, while writing uses the runtime type. Generic ADTs derive, but true GADT case refinements require manual codecs.

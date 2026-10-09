@@ -1,0 +1,16 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "Tupson",
+  "description": "A minimal Scala 3 library for reading and writing JSON, cross-built for JVM, Scala.js, and Scala Native.",
+  "rules": [
+    "Prefer `derives JsonRW` for case classes and enums; import `ba.sake.tupson.{*, given}` for extensions and givens.",
+    "Enable `-Yretain-trees` in consumer builds because derived parsing needs retained trees to read constructor default arguments.",
+    "For missing fields, Tupson checks constructor defaults before `JsonRW.default`; `Option`, `Seq`, and `Map` have built-in defaults.",
+    "`None` serializes as JSON `null`, and JSON `null` parses as `None`; a missing object field follows the missing-field default rules instead.",
+    "Sum types use `@type` by default with the subtype's simple name; use `@discriminator(\"key\")` to select a different field.",
+    "Union alternatives are tried left to right when parsing, while writing selects by runtime type; order alternatives carefully when parsing is ambiguous.",
+    "Generic products and ADTs can derive `JsonRW`, but true GADT case refinements require manually written codecs.",
+    "Catch `ParsingException` to inspect all path-aware `ParseError`s accumulated during derived parsing.",
+    "`tupson-config` is a separate JVM-only integration; use the separate `tupson-sttp` artifact for sttp client4."
+  ]
+}
