@@ -11,9 +11,9 @@ This repository uses **Deder** (`deder.pkl`) for contributor workflows.
 - Install Deder: `brew install sake92/tap/deder`
 - Compile everything: `deder exec -t compile`
 - Run the full test matrix (JVM, Scala.js, Scala Native, `tupson-config`, and `tupson-sttp`): `deder exec -t test`
-- Run one JVM suite: `deder exec -m tupson-jvm-test-3.7.3 -t test ba.sake.tupson.ParseSuite`
-- Run one JVM test: `deder exec -m tupson-jvm-test-3.7.3 -t test 'ba.sake.tupson.ParseSuite#parse primitives'`
-- Fast JVM-only loop: `deder exec -m tupson-jvm-test-3.7.3 -t testInMemory`
+- Run one JVM suite: `deder exec -m tupson-jvm-test-3.9.0 -t test ba.sake.tupson.ParseSuite`
+- Run one JVM test: `deder exec -m tupson-jvm-test-3.9.0 -t test 'ba.sake.tupson.ParseSuite#parse primitives'`
+- Fast JVM-only loop: `deder exec -m tupson-jvm-test-3.9.0 -t testInMemory`
 - Check rewrite/lint rules: `deder exec -t fixCheck`
 - Apply rewrites: `deder exec -t fix`
 - Format sources: `deder exec -t runMvnApp fmt`
@@ -30,7 +30,7 @@ This repository uses **Deder** (`deder.pkl`) for contributor workflows.
 - Derived parsing is not just field decoding: it also handles missing-key behavior. The generated parser first looks for the JSON field, then constructor default arguments, then `JsonRW.default`, and otherwise accumulates `ParseError`s into a `ParsingException`.
 - `tupson/src/ba/sake/tupson/instances.scala` contains lower-priority/shared instances and helpers that should not outrank the main givens in `JsonRW.scala` during implicit search. That file also owns path-preserving error aggregation for sequences.
 - `tupson-config/src/ba/sake/tupson/config/package.scala` adapts Typesafe Config by rendering `Config` to JSON, normalizing numeric-looking strings, then delegating back into Tupson parsing with `parseJson[T]`.
-- `tupson-sttp/src/ba/sake/sttp/tupson/package.scala` exposes the sttp client4 integration: a `SttpTupsonApi` trait (extended by the `ba.sake.sttp.tupson` package object) providing `asJson` request bodies plus the `asJson`/`asJsonOrFail`/`asJsonAlways`/`asJsonEither`/`asJsonEitherOrFail` response handlers, backed by `JsonRW`. The module pins sttp client4 `4.0.21` and Scala.js `1.20.1` / Scala Native `0.5.10` (both must stay in sync with tupson core and the Deder-embedded toolchain). sttp Native artifacts link against the system `libidn2` library, so CI installs `libidn2-dev` before native tests. The integration lives in the `ba.sake.sttp.tupson` package (mirroring sttp's own `sttp.client4.<format>` layout, but in our own namespace) so that a future sibling integration, e.g. `ba.sake.sttp.yaml`, can coexist. Because the leaf package sits inside the `ba.sake.sttp` tree, internal sources there must reference sttp types via the `_root_.` prefix (e.g. `_root_.sttp.client4.*`); consumers are unaffected: `import ba.sake.tupson.*`, `import ba.sake.sttp.tupson.*` and `import sttp.client4.*` coexist.
+- `tupson-sttp/src/ba/sake/sttp/tupson/package.scala` exposes the sttp client4 integration: a `SttpTupsonApi` trait (extended by the `ba.sake.sttp.tupson` package object) providing `asJson` request bodies plus the `asJson`/`asJsonOrFail`/`asJsonAlways`/`asJsonEither`/`asJsonEitherOrFail` response handlers, backed by `JsonRW`. The module pins sttp client4 `4.0.21` and Scala.js `1.20.1`; its Scala Native version shares the `nativeVersion` pin with core in `deder.pkl`. Keep core and sttp platform versions aligned. Native 0.5.12 has a concurrent allocation bug; use the pinned fixed snapshot and matching linker tools. sttp Native artifacts link against the system `libidn2` library, so CI installs `libidn2-dev` before native tests. The integration lives in the `ba.sake.sttp.tupson` package (mirroring sttp's own `sttp.client4.<format>` layout, but in our own namespace) so that a future sibling integration, e.g. `ba.sake.sttp.yaml`, can coexist. Because the leaf package sits inside the `ba.sake.sttp` tree, internal sources there must reference sttp types via the `_root_.` prefix (e.g. `_root_.sttp.client4.*`); consumers are unaffected: `import ba.sake.tupson.*`, `import ba.sake.sttp.tupson.*` and `import sttp.client4.*` coexist.
 - `examples/` shows the intended public API shape. `docs/` is the published documentation site and the quickstart source of truth for consumer setup.
 
 ## Key conventions

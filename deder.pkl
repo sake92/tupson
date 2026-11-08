@@ -1,12 +1,19 @@
 amends "https://sake92.github.io/deder/config/v0.21.0/DederProject.pkl"
 
+repositories {
+  new MavenRepository { url = "https://central.sonatype.com/repository/maven-snapshots/" }
+}
+
+// 0.5.12 can return null from concurrent large allocations; fixed after that release.
+local const nativeVersion = "0.5.13-20261107-69432d9-SNAPSHOT"
+
 local const publishRepo = if (read?("env:DEDER_PUBLISH_SNAPSHOT") == "true")
   new SonatypeSnapshotRepo { id = "sonatype" }
 else
   new SonatypeCentralRepo { id = "sonatype" }
 
 local const baseTemplate: ScalaModule = new {
-  scalaVersion = "3.7.3"
+  scalaVersion = "3.9.0"
   publish = false
   scalacOptions {
     "-Yretain-trees" // required for default arguments
@@ -71,8 +78,8 @@ local const tupsonModules =
       }
     }
     nativeTemplate = (template.asNative()) {
-      // 0.5.10 to match Deder's embedded SN tools and sttp's published Native artifacts
-      scalaNativeVersion = "0.5.10"
+      scalaNativeVersion = nativeVersion
+      multithreading = true
       deps {
         "io.github.cquiroz::scala-java-time::2.6.0"
         // needed for ZoneId region lookups on Native
@@ -86,7 +93,7 @@ local const tupsonModules =
     }
   }.get
 
-local const sttpVersion = "4.0.21" // newest sttp compatible with Deder 0.7.7 toolchain (Scala.js 1.20.2, Scala Native 0.5.10)
+local const sttpVersion = "4.0.21"
 
 local const tupsonSttpBase = (baseTemplate) {
   publish = true
@@ -127,8 +134,8 @@ local const tupsonSttpModules =
       }
     }
     nativeTemplate = (tupsonSttpBase.asNative()) {
-      // keep in sync with the tupson core module and sttp 4.0.21 Native artifacts (all 0.5.10)
-      scalaNativeVersion = "0.5.10"
+      scalaNativeVersion = nativeVersion
+      multithreading = true
       moduleDeps {
         tupsonModules.native
       }
