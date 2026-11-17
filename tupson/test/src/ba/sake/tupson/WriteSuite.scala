@@ -34,6 +34,12 @@ class WriteSuite extends munit.FunSuite {
 
     assertEquals(-9007199254740991L.toJson, "-9007199254740991")
     assertEquals(-9007199254740992L.toJson, "-9007199254740992")
+
+    Seq(Long.MinValue, Long.MaxValue).foreach { value =>
+      val output = new ByteArrayOutputStream()
+      value.writeJsonTo(output, spaces = 0, sort = false)
+      assertEquals(new String(output.toByteArray, UTF_8), value.toString)
+    }
   }
 
   test("write Seq") {

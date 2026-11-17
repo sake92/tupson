@@ -42,7 +42,7 @@ private[tupson] object TupsonRenderer {
       case JNull          => writer.writeAscii("null")
       case JTrue          => writer.writeAscii("true")
       case JFalse         => writer.writeAscii("false")
-      case LongNum(n)     => writer.writeAscii(n.toString)
+      case LongNum(n)     => writer.writeLong(n)
       case DoubleNum(n)   => writer.writeAscii(n.toString)
       case DeferNum(s)    => writer.writeAscii(s)
       case DeferLong(s)   => writer.writeAscii(s)
@@ -129,7 +129,7 @@ private[tupson] object TupsonRenderer {
   }
 
   private final class Utf8Output(output: OutputStream) {
-    private val buffer = new Array[Byte](8 * 1024)
+    private val buffer = new Array[Byte](4 * 1024)
     private var size = 0
 
     def writeByte(value: Int): Unit = {
@@ -143,6 +143,23 @@ private[tupson] object TupsonRenderer {
       while index < value.length do {
         writeByte(value.charAt(index))
         index += 1
+      }
+    }
+
+    def writeLong(value: Long): Unit = {
+      if value == Long.MinValue then writeAscii("-9223372036854775808")
+      else {
+        var remaining = value
+        if remaining < 0 then {
+          writeByte('-')
+          remaining = -remaining
+        }
+        var divisor = 1L
+        while remaining / 10 >= divisor do divisor *= 10
+        while divisor > 0 do {
+          writeByte('0' + ((remaining / divisor) % 10).toInt)
+          divisor /= 10
+        }
       }
     }
 

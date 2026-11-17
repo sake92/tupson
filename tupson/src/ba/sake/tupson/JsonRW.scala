@@ -328,8 +328,14 @@ object JsonRW extends LowPriorityJsonRWInstances:
 
   given [T](using trw: JsonRW[T]): JsonRW[Map[String, T]] with {
     override def write(value: Map[String, T]): JValue =
-      val members = value.map((k, v) => k -> trw.write(v))
-      JObject(members.to(scala.collection.mutable.Map))
+      val initialCapacity = math.max(4, value.size * 2)
+      val members = new scala.collection.mutable.HashMap[String, JValue](initialCapacity, 0.75)
+      val entries = value.iterator
+      while entries.hasNext do {
+        val (key, entryValue) = entries.next()
+        members.put(key, trw.write(entryValue))
+      }
+      JObject(members)
     override def parse(path: String, jValue: JValue): Map[String, T] =
       jValue match
         case JObject(map) =>
