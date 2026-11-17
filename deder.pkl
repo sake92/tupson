@@ -1,11 +1,7 @@
 amends "https://sake92.github.io/deder/config/v0.21.0/DederProject.pkl"
 
-repositories {
-  new MavenRepository { url = "https://central.sonatype.com/repository/maven-snapshots/" }
-}
-
-// 0.5.12 can return null from concurrent large allocations; fixed after that release.
-local const nativeVersion = "0.5.13-20261107-69432d9-SNAPSHOT"
+// Latest stable release; 0.5.12 has a known concurrent large-allocation bug upstream in #4935.
+local const nativeVersion = "0.5.12"
 
 local const publishRepo = if (read?("env:DEDER_PUBLISH_SNAPSHOT") == "true")
   new SonatypeSnapshotRepo { id = "sonatype" }
