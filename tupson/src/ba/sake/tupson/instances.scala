@@ -103,7 +103,7 @@ private[tupson] trait LowPriorityJsonRWInstances {
   // https://stackoverflow.com/questions/52430996/scala-passing-a-contravariant-type-as-an-implicit-parameter-does-not-choose-the
   given [T](using trw: JsonRW[T]): JsonRW[Seq[T]] with {
     override def write(value: Seq[T]): JValue =
-      JArray(value.map(trw.write).toArray)
+      JsonRW.writeArray(value, trw)
     override def parse(path: String, jValue: JValue): Seq[T] = jValue match
       case JArray(seq) => rethrowingKeysErrors(path, seq)
       case other       => JsonRW.typeMismatchError(path, "Seq", other)

@@ -1,5 +1,8 @@
 package ba.sake.tupson
 
+import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets.UTF_8
+
 import org.typelevel.jawn.ast.JValue
 
 class WriteSuite extends munit.FunSuite {
@@ -267,6 +270,22 @@ class WriteSuite extends munit.FunSuite {
       CaseClass1("str", 123).toJson(spaces = 0, sort = false),
       """{"str":"str","integer":123}"""
     )
+  }
+
+  test("write JSON stream matches the rendered string") {
+    val value = CaseClass2("č😀\"", CaseClass1("str", 123))
+
+    val compactOutput = new ByteArrayOutputStream()
+    value.writeJsonTo(compactOutput, spaces = 0, sort = false)
+    assertEquals(new String(compactOutput.toByteArray, UTF_8), value.toJson(spaces = 0, sort = false))
+
+    val prettyOutput = new ByteArrayOutputStream()
+    value.writeJsonTo(prettyOutput)
+    assertEquals(new String(prettyOutput.toByteArray, UTF_8), value.toJson)
+
+    val canonicalOutput = new ByteArrayOutputStream()
+    value.writeJsonTo(canonicalOutput, spaces = 0, sort = true)
+    assertEquals(new String(canonicalOutput.toByteArray, UTF_8), value.toJson(spaces = 0, sort = true))
   }
 
   test("write sorted output") {

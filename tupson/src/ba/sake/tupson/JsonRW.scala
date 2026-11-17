@@ -53,6 +53,28 @@ object JsonRW extends LowPriorityJsonRWInstances:
 
   def apply[T](using rw: JsonRW[T]) = rw
 
+  private[tupson] def writeArray[T](values: IterableOnce[T], rw: JsonRW[T]): JArray = {
+    val iterator = values.iterator
+    val knownSize = values.knownSize
+    val elements =
+      if knownSize >= 0 then {
+        val result = new Array[JValue](knownSize)
+        var index = 0
+        while iterator.hasNext do {
+          result(index) = rw.write(iterator.next())
+          index += 1
+        }
+        result
+      } else {
+        val builder = Array.newBuilder[JValue]
+        while iterator.hasNext do {
+          builder += rw.write(iterator.next())
+        }
+        builder.result()
+      }
+    JArray(elements)
+  }
+
   // needed for enums macro
   given JsonRW[String] with {
     override def write(value: String): JValue = JString(value)
@@ -279,7 +301,7 @@ object JsonRW extends LowPriorityJsonRWInstances:
   /* collections */
   given [T](using trw: JsonRW[T]): JsonRW[List[T]] with {
     override def write(value: List[T]): JValue =
-      JArray(value.map(trw.write).toArray)
+      JsonRW.writeArray(value, trw)
     override def parse(path: String, jValue: JValue): List[T] = jValue match
       case JArray(list) => rethrowingKeysErrors(path, list).toList
       case other        => JsonRW.typeMismatchError(path, "List", other)
@@ -288,7 +310,7 @@ object JsonRW extends LowPriorityJsonRWInstances:
 
   given [T: ClassTag](using trw: JsonRW[T]): JsonRW[Array[T]] with {
     override def write(value: Array[T]): JValue =
-      JArray(value.map(trw.write))
+      JsonRW.writeArray(value, trw)
     override def parse(path: String, jValue: JValue): Array[T] = jValue match
       case JArray(arr) => rethrowingKeysErrors(path, arr).toArray
       case other       => JsonRW.typeMismatchError(path, "Array", other)
@@ -297,7 +319,7 @@ object JsonRW extends LowPriorityJsonRWInstances:
 
   given [T](using trw: JsonRW[T]): JsonRW[Set[T]] with {
     override def write(value: Set[T]): JValue =
-      JArray(value.map(trw.write).toArray)
+      JsonRW.writeArray(value, trw)
     override def parse(path: String, jValue: JValue): Set[T] = jValue match
       case JArray(set) => rethrowingKeysErrors(path, set).toSet
       case other       => JsonRW.typeMismatchError(path, "Set", other)
@@ -342,21 +364,41 @@ object JsonRW extends LowPriorityJsonRWInstances:
           } =>
         val rwInstancesExpr = summonInstances[T, elementTypes]
         val rwInstances = Expr.ofList(rwInstancesExpr)
-        val labels = Expr(Type.valueOfTuple[label].map(_.toList.map(_.toString)).getOrElse(List.empty))
+        val labelNames = Type.valueOfTuple[label].map(_.toList.map(_.toString)).getOrElse(List.empty)
+        val labels = Expr(labelNames)
         val defaultValues = defaultValuesExpr[T]
+        val initialCapacity = math.max(4, labelNames.size * 2)
+        val initialCapacityExpr = Expr(initialCapacity)
+
+        def writeFields(
+            valueExpr: Expr[T],
+            membersExpr: Expr[scala.collection.mutable.Map[String, JValue]]
+        )(using Quotes): Expr[Unit] = {
+          val statements = labelNames.zip(rwInstancesExpr).zipWithIndex.map { case ((label, rw), index) =>
+            val fieldLabel = Expr(label)
+            val fieldIndex = Expr(index)
+            '{
+              val fieldValue = $valueExpr.asInstanceOf[Product].productElement($fieldIndex)
+              val fieldRW = $rw.asInstanceOf[JsonRW[Any]]
+              if fieldRW.shouldWriteField(fieldValue) then {
+                $membersExpr($fieldLabel) = fieldRW.write(fieldValue)
+              }
+            }
+          }
+          Expr.block(statements, '{ () })
+        }
+
+        val writeMembers: Expr[(T, scala.collection.mutable.Map[String, JValue]) => Unit] =
+          '{ (value: T, members: scala.collection.mutable.Map[String, JValue]) =>
+            ${ writeFields('value, 'members) }
+          }
 
         '{
 
           new JsonRW[T] {
             override def write(value: T): JValue = {
-              val members = scala.collection.mutable.Map[String, JValue]()
-              val valueAsProd = ${ 'value.asExprOf[Product] }
-              $labels.zip(valueAsProd.productIterator).zip($rwInstances).foreach { case ((k, v), rw) =>
-                val fieldRW = rw.asInstanceOf[JsonRW[Any]]
-                if fieldRW.shouldWriteField(v) then {
-                  members(k) = fieldRW.write(v)
-                }
-              }
+              val members = new scala.collection.mutable.HashMap[String, JValue]($initialCapacityExpr, 0.75)
+              $writeMembers(value, members)
               JObject(members)
             }
 

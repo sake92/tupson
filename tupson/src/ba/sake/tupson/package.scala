@@ -1,5 +1,6 @@
 package ba.sake.tupson
 
+import java.io.OutputStream
 import scala.annotation.StaticAnnotation
 import scala.annotation.targetName
 import org.typelevel.jawn
@@ -13,6 +14,13 @@ extension [T](value: T)(using rw: JsonRW[T]) {
   @targetName("toJsonWithOptions")
   def toJson(spaces: Int = 2, sort: Boolean = true): String =
     TupsonRenderer.render(rw.write(value), spaces, sort)
+
+  /** Writes compact or pretty JSON as UTF-8 without materializing the JSON as a String.
+    *
+    * The output stream is flushed but remains open.
+    */
+  def writeJsonTo(outputStream: OutputStream, spaces: Int = 2, sort: Boolean = true): Unit =
+    TupsonRenderer.write(rw.write(value), outputStream, spaces, sort)
 }
 
 extension (strValue: String) {
