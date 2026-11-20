@@ -48,10 +48,15 @@ for (const link of document.querySelectorAll('body > header > nav > div > a')) {
      <p>When a frontend sends a PATCH request without a field, it expects the existing value to remain unchanged. Model whether a field was sent separately from whether its value is nullable.</p>
      <p>That distinction is awkward in many Scala JSON libraries. A field codec is often only asked to produce a JSON value, so it cannot say “omit my enclosing key” when the field should be left unchanged; doing so requires a custom product encoder.</p>
      <p>Use a two-state <code>Patch[T]</code> with Tupson. Its <code>shouldWriteField</code> hook lets the codec omit a <code>Keep</code> field when serializing an object. Use <code>Patch[String]</code> for required fields and <code>Patch[Option[String]]</code> for nullable fields, so JSON <code>null</code> becomes <code>Set(None)</code>.</p>
-     <p>Define the patch type and its codec:</p>
+     <p>The following runnable example defines the codec, parses a request body, and writes a patch. A missing key becomes <code>Keep</code>. A present value becomes <code>Set</code>, including <code>Set(None)</code> for an explicit <code>null</code> in a nullable field.</p>
+     <!-- example:start examples/src/main/scala/patch.scala -->
      <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-keyword">import</span> ba.sake.tupson.{*, <span class="hljs-keyword">given</span>}
 <span class="hljs-keyword">import</span> org.typelevel.jawn.ast.*
 
+<span class="hljs-comment">/** A field update for a JSON PATCH-style API.
+  *
+  * A missing key is [[Patch.Keep]] and a present value is [[Patch.Set]]. Use `Patch[Option[T]]` for nullable fields.
+  */</span>
 <span class="hljs-keyword">enum</span> <span class="hljs-type">Patch</span>[+<span class="hljs-type">T</span>]:
   <span class="hljs-keyword">case</span> <span class="hljs-type">Set</span>(value: <span class="hljs-type">T</span>)
   <span class="hljs-keyword">case</span> <span class="hljs-type">Keep</span>
@@ -71,18 +76,19 @@ for (const link of document.querySelectorAll('body > header > nav > div > a')) {
     <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">default</span></span>: <span class="hljs-type">Option</span>[<span class="hljs-type">Patch</span>[<span class="hljs-type">T</span>]] = <span class="hljs-type">Some</span>(<span class="hljs-type">Keep</span>)
 
 <span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserPatch</span>(<span class="hljs-params">name: <span class="hljs-type">Patch</span>[<span class="hljs-type">String</span>], address: <span class="hljs-type">Patch</span>[<span class="hljs-type">Option</span>[<span class="hljs-type">String</span>]]</span>) <span class="hljs-title">derives</span> <span class="hljs-title">JsonRW</span></span>
+
+<span class="hljs-meta">@main</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">patchExample</span></span>: <span class="hljs-type">Unit</span> =
+  <span class="hljs-keyword">val</span> userPatch = <span class="hljs-string">"""{ "name": "Ada", "address": null }"""</span>.parseJson[<span class="hljs-type">UserPatch</span>]
+  println(userPatch) <span class="hljs-comment">// UserPatch(Set(Ada), Set(None))</span>
+
+  <span class="hljs-keyword">val</span> nameOnly = <span class="hljs-type">UserPatch</span>(<span class="hljs-type">Patch</span>.<span class="hljs-type">Set</span>(<span class="hljs-string">"Ada"</span>), <span class="hljs-type">Patch</span>.<span class="hljs-type">Keep</span>)
+  println(nameOnly.toJson(spaces = <span class="hljs-number">0</span>)) <span class="hljs-comment">// {"name":"Ada"}</span>
+
+  <span class="hljs-keyword">val</span> noChanges = <span class="hljs-type">UserPatch</span>(<span class="hljs-type">Patch</span>.<span class="hljs-type">Keep</span>, <span class="hljs-type">Patch</span>.<span class="hljs-type">Keep</span>)
+  println(noChanges.toJson(spaces = <span class="hljs-number">0</span>)) <span class="hljs-comment">// {}</span>
 </code>
           </pre>
-     <p>Parse a request body. A missing key becomes <code>Keep</code>; a present value becomes <code>Set</code>, including JSON <code>null</code> as <code>Set(None)</code> for a nullable field:</p>
-     <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-keyword">val</span> patch = <span class="hljs-string">"""{ "name": "Ada", "address": null }"""</span>.parseJson[<span class="hljs-type">UserPatch</span>]
-<span class="hljs-comment">// UserPatch(Patch.Set("Ada"), Patch.Set(None))</span>
-</code>
-          </pre>
-     <p>When writing a <code>UserPatch</code>, <code>Keep</code> fields are omitted:</p>
-     <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-type">UserPatch</span>(<span class="hljs-type">Patch</span>.<span class="hljs-type">Set</span>(<span class="hljs-string">"Ada"</span>), <span class="hljs-type">Patch</span>.<span class="hljs-type">Keep</span>).toJson(spaces = <span class="hljs-number">0</span>)
-<span class="hljs-comment">// {"name":"Ada"}</span>
-</code>
-          </pre>
+     <!-- example:end -->
      <p>Use <code>Patch</code> only as an object field. A top-level <code>Patch.Keep</code> has no JSON representation and fails to write.</p>
     </div>
     <aside aria-label="On this page">

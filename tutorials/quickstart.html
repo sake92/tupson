@@ -43,25 +43,26 @@ for (const link of document.querySelectorAll('body > header > nav > div > a')) {
      <p>Quickest way to start playing with Tupson is with this <a href="https://scastie.scala-lang.org/KQfj7lUST0i2Iz4lZOEwOQ">Scastie example</a>.</p>
      <h2 id="mill">Mill<a href="#mill" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
      <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">mvnDeps</span> </span>= <span class="hljs-keyword">super</span>.mvnDeps() ++ <span class="hljs-type">Seq</span>(
-  <span class="hljs-string">mvn"ba.sake::tupson:0.20.0"</span>
+  <span class="hljs-string">mvn"ba.sake::tupson:0.32.1"</span>
 )
 <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">scalacOptions</span> </span>= <span class="hljs-keyword">super</span>.scalacOptions() ++ <span class="hljs-type">Seq</span>(<span class="hljs-string">"-Yretain-trees"</span>)
 </code>
           </pre>
      <h2 id="sbt">Sbt<a href="#sbt" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
      <pre>            <code class="language-scala hljs" data-highlighted="yes">libraryDependencies ++= <span class="hljs-type">Seq</span>(
-  <span class="hljs-string">"ba.sake"</span> %% <span class="hljs-string">"tupson"</span> % <span class="hljs-string">"0.20.0"</span>
+  <span class="hljs-string">"ba.sake"</span> %% <span class="hljs-string">"tupson"</span> % <span class="hljs-string">"0.32.1"</span>
 )
 scalacOptions ++= <span class="hljs-type">Seq</span>(<span class="hljs-string">"-Yretain-trees"</span>)
 </code>
           </pre>
      <h2 id="scala-cli">Scala CLI<a href="#scala-cli" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
-     <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-comment">//&gt;</span> <span class="hljs-keyword">using</span> <span class="hljs-type">dep</span> <span class="hljs-string">ba.sake::tupson:0.20.0</span>
+     <pre>            <code class="language-scala hljs" data-highlighted="yes"><span class="hljs-comment">//&gt;</span> <span class="hljs-keyword">using</span> <span class="hljs-type">dep</span> <span class="hljs-string">ba.sake::tupson:0.32.1</span>
+<span class="hljs-comment">//&gt;</span> <span class="hljs-keyword">using</span> <span class="hljs-type">option</span> <span class="hljs-string">-Yretain-trees</span>
 </code>
           </pre>
      <h2 id="examples">Examples<a href="#examples" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
-     <p><a href="${Consts.GhSourcesUrl}/examples/src/main/scala">Examples</a> are runnable with <a href="https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html">Mill</a>:</p>
-     <pre>            <code class="language-sh hljs language-bash" data-highlighted="yes">./mill examples.runMain write
+     <p>From a checkout of the <a href="https://github.com/sake92/tupson">Tupson repository</a>, run the <a href="https://github.com/sake92/tupson/tree/main/examples/src/main/scala">examples</a> with Deder.</p>
+     <pre>            <code class="language-sh hljs language-bash" data-highlighted="yes">deder <span class="hljs-built_in">exec</span> -m examples -t runMain write
 </code>
           </pre>
      <h2 id="generic-derives">Generic derives<a href="#generic-derives" class="flatmark-anchor" aria-label="Anchor"> 🔗</a></h2>
