@@ -13,6 +13,11 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: VirtusLab/scala-cli-setup@main
+        with:
+          jvm: temurin:21
+      - name: Check documentation examples
+        run: scala-cli docs/sync_examples.scala
       - name: Build
         env: 
           FLATMARK_BASE_URL: https://sake92.github.io/tupson

@@ -31,14 +31,15 @@ scalacOptions ++= Seq("-Yretain-trees")
 
 ```scala
 //> using dep ba.sake::tupson:{{site.data.project.artifact.version}}
+//> using option -Yretain-trees
 ```
 
 ## Examples
 
-[Examples](${Consts.GhSourcesUrl}/examples/src/main/scala) are runnable with [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html):
+From a checkout of the [Tupson repository](https://github.com/sake92/tupson), run the [examples](https://github.com/sake92/tupson/tree/main/examples/src/main/scala) with Deder.
 
 ```sh
-./mill examples.runMain write
+deder exec -m examples -t runMain write
 ```
 
 ## Generic derives

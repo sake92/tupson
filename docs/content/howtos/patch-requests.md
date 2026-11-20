@@ -19,12 +19,17 @@ That distinction is awkward in many Scala JSON libraries. A field codec is often
 
 Use a two-state `Patch[T]` with Tupson. Its `shouldWriteField` hook lets the codec omit a `Keep` field when serializing an object. Use `Patch[String]` for required fields and `Patch[Option[String]]` for nullable fields, so JSON `null` becomes `Set(None)`.
 
-Define the patch type and its codec:
+The following runnable example defines the codec, parses a request body, and writes a patch. A missing key becomes `Keep`. A present value becomes `Set`, including `Set(None)` for an explicit `null` in a nullable field.
 
+<!-- example:start examples/src/main/scala/patch.scala -->
 ```scala
 import ba.sake.tupson.{*, given}
 import org.typelevel.jawn.ast.*
 
+/** A field update for a JSON PATCH-style API.
+  *
+  * A missing key is [[Patch.Keep]] and a present value is [[Patch.Set]]. Use `Patch[Option[T]]` for nullable fields.
+  */
 enum Patch[+T]:
   case Set(value: T)
   case Keep
@@ -44,20 +49,17 @@ object Patch:
     override def default: Option[Patch[T]] = Some(Keep)
 
 case class UserPatch(name: Patch[String], address: Patch[Option[String]]) derives JsonRW
+
+@main def patchExample: Unit =
+  val userPatch = """{ "name": "Ada", "address": null }""".parseJson[UserPatch]
+  println(userPatch) // UserPatch(Set(Ada), Set(None))
+
+  val nameOnly = UserPatch(Patch.Set("Ada"), Patch.Keep)
+  println(nameOnly.toJson(spaces = 0)) // {"name":"Ada"}
+
+  val noChanges = UserPatch(Patch.Keep, Patch.Keep)
+  println(noChanges.toJson(spaces = 0)) // {}
 ```
-
-Parse a request body. A missing key becomes `Keep`; a present value becomes `Set`, including JSON `null` as `Set(None)` for a nullable field:
-
-```scala
-val patch = """{ "name": "Ada", "address": null }""".parseJson[UserPatch]
-// UserPatch(Patch.Set("Ada"), Patch.Set(None))
-```
-
-When writing a `UserPatch`, `Keep` fields are omitted:
-
-```scala
-UserPatch(Patch.Set("Ada"), Patch.Keep).toJson(spaces = 0)
-// {"name":"Ada"}
-```
+<!-- example:end -->
 
 Use `Patch` only as an object field. A top-level `Patch.Keep` has no JSON representation and fails to write.
