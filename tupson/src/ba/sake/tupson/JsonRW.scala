@@ -225,16 +225,6 @@ object JsonRW extends LowPriorityJsonRWInstances {
     }
   }
 
-  given [A](using element: JsonRW[A]): JsonRW[Seq[A]] with {
-    override private[tupson] def default: Option[Seq[A]] = Some(Seq.empty)
-
-    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Seq[A] =
-      readArray(in, ctx, element, "Seq", Seq.empty[A])(Seq.newBuilder[A])
-
-    private[tupson] def encode(value: Seq[A], out: JsonWriter, sort: Boolean): Unit =
-      TupsonWriter.writeArray(value.iterator, out, sort, element)
-  }
-
   given [A](using element: JsonRW[A]): JsonRW[Set[A]] with {
     override private[tupson] def default: Option[Set[A]] = Some(Set.empty)
 
@@ -323,6 +313,17 @@ object JsonRW extends LowPriorityJsonRWInstances {
 }
 
 private[tupson] trait LowPriorityJsonRWInstances {
+  // Prefer the List codec when a contravariant consumer can use either collection type.
+  given [A](using element: JsonRW[A]): JsonRW[Seq[A]] with {
+    override private[tupson] def default: Option[Seq[A]] = Some(Seq.empty)
+
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Seq[A] =
+      readArray(in, ctx, element, "Seq", Seq.empty[A])(Seq.newBuilder[A])
+
+    private[tupson] def encode(value: Seq[A], out: JsonWriter, sort: Boolean): Unit =
+      TupsonWriter.writeArray(value.iterator, out, sort, element)
+  }
+
   inline given [A <: String | Char | Boolean | Int | Long | Float | Double](using ValueOf[A]): JsonRW[A] =
     JsonRWLiteral.derived[A]
 
