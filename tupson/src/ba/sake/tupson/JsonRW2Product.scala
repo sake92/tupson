@@ -116,12 +116,29 @@ private[tupson] object JsonRW2Product {
     def readProduct(slots: List[Slot], in: Expr[JsonReader], ctx: Expr[TupsonReader.DecodeContext])(using Quotes): Expr[A] = {
       val construct = Apply(applyTypeArguments(Select(New(TypeTree.of[A]), constructor)), slots.map(_.value))
       val defaults = Expr.block(slots.map(fillMissing(_, ctx)), '{ () })
+      val members = tag match {
+        case Some((key, _)) =>
+          val tagKey = Expr(key)
+          '{
+            var seenTag = false
+            TupsonReader.readObjectFields($in) { length =>
+              if $in.isCharBufEqualsTo(length, $tagKey) then {
+                if seenTag then $ctx.duplicateKey($tagKey)
+                seenTag = true
+                TupsonReader.skipValue($in)
+              } else ${ readField(slots, in, ctx, 'length) }
+            }
+          }
+        case None =>
+          '{
+            TupsonReader.readObjectFields($in) { length =>
+              ${ readField(slots, in, ctx, 'length) }
+            }
+          }
+      }
       '{
         val before = $ctx.errorCount
-        TupsonReader.readObjectFields($in) { length =>
-          if $ctx.errorLimitReached then TupsonReader.skipValue($in)
-          else ${ readField(slots, in, ctx, 'length) }
-        }
+        $members
         $defaults
         if $ctx.errorCount == before then ${ construct.asExprOf[A] }
         else null.asInstanceOf[A]
@@ -143,10 +160,13 @@ private[tupson] object JsonRW2Product {
             val read = '{ $ctx.withField($key)($codec.decode($in, $ctx)) }
             val assign = Assign(slot.value, read.asTerm).asExprOf[Unit]
             val markSeen = Assign(slot.seen, Expr(true).asTerm).asExprOf[Unit]
+            val seen = slot.seen.asExprOf[Boolean]
             '{
               if $in.isCharBufEqualsTo($length, $key) then {
-                $assign
+                if $seen then $ctx.duplicateKey($key)
                 $markSeen
+                if $ctx.errorLimitReached then TupsonReader.skipValue($in)
+                else $assign
               } else ${ readField(tail, in, ctx, length) }
             }
         }

@@ -83,6 +83,18 @@ private[tupson] object TupsonReader {
     tag
   }
 
+  def skipTaggedObject(in: JsonReader, ctx: DecodeContext, key: String): Unit = {
+    in.nextToken()
+    var seen = false
+    readObjectFields(in) { length =>
+      if in.isCharBufEqualsTo(length, key) then {
+        if seen then ctx.duplicateKey(key)
+        seen = true
+      }
+      skipValue(in)
+    }
+  }
+
   inline def readArray[A, C](
       in: JsonReader,
       ctx: DecodeContext,
@@ -185,6 +197,12 @@ private[tupson] object TupsonReader {
     def errorCount: Int = errors.size
 
     def errorLimitReached: Boolean = errorCount >= maxErrors
+
+    def duplicateKey(key: String): Nothing =
+      withField(key) {
+        val path = renderPath()
+        throw TupsonException(s"Duplicate JSON key at '$path'")
+      }
 
     inline def withField[A](key: String)(inline read: A): A =
       withPathEntry(key, 0)(read)

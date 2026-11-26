@@ -104,13 +104,13 @@ private[tupson] object JsonRW2Sum {
       TupsonReader.readToken(in, ctx, "Object", null.asInstanceOf[A])(_ == '{') {
         val tag = TupsonReader.readDiscriminator(in, ctx, tagKey)
         if tag == null then {
-          TupsonReader.skipValue(in)
+          TupsonReader.skipTaggedObject(in, ctx, tagKey)
           null.asInstanceOf[A]
         } else {
           codecsByTag.get(tag) match {
             case Some(codec) => codec.decode(in, ctx)
             case None =>
-              TupsonReader.skipValue(in)
+              TupsonReader.skipTaggedObject(in, ctx, tagKey)
               throw TupsonException(s"Subtype not found: '$tag'. Possible values: $possibleValues")
           }
         }

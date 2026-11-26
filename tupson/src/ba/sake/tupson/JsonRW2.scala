@@ -1,5 +1,6 @@
 package ba.sake.tupson
 
+import scala.collection.mutable.HashSet
 import scala.deriving.Mirror
 import scala.reflect.ClassTag
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonWriter}
@@ -214,10 +215,12 @@ object JsonRW2 {
         else {
           in.rollbackToken()
           val entries = Map.newBuilder[String, A]
+          val keys = HashSet.empty[String]
           val before = ctx.errorCount
           var more = true
           while more do {
             val key = in.readKeyAsString()
+            if !keys.add(key) then ctx.duplicateKey(key)
             if ctx.errorCount == before then {
               val value = ctx.withField(key)(element.decode(in, ctx))
               if ctx.errorCount == before then entries.addOne((key, value))

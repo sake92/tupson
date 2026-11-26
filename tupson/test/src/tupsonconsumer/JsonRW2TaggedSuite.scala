@@ -51,6 +51,18 @@ class JsonRW2TaggedSuite extends munit.FunSuite {
       """{"@type":"Other","id":[1,]}""".parseJson[Event]
     }
   }
+
+  test("reject repeated discriminators regardless of their values") {
+    Seq(
+      """{"@type":"Deleted","id":42,"@type":"Deleted"}""",
+      """{"@type":"Deleted","id":42,"@type":"Created"}""",
+      """{"@type":null,"id":42,"@type":"Deleted"}"""
+    ).foreach { input =>
+      interceptMessage[TupsonException]("Duplicate JSON key at '$.@type'") {
+        input.parseJson[Event]
+      }
+    }
+  }
 }
 
 object JsonRW2TaggedSuite {

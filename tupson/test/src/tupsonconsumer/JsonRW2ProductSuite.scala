@@ -85,6 +85,17 @@ class JsonRW2ProductSuite extends munit.FunSuite {
     val input = s"""{"batch":{"items":$invalid},"name":42}"""
     val error = intercept[ParsingException](input.parseJson[CappedProduct])
     assertEquals(error.errors.map(_.path), (0 until 10).map(index => s"$$.batch.items[$index]"))
+
+    val duplicate = s"""{"batch":{"items":$invalid},"name":"a","name":"b"}"""
+    interceptMessage[TupsonException]("Duplicate JSON key at '$.name'") {
+      duplicate.parseJson[CappedProduct]
+    }
+  }
+
+  test("reject repeated product fields") {
+    interceptMessage[TupsonException]("Duplicate JSON key at '$.name'") {
+      """{"name":"backup","name":"backup"}""".parseJson[Job]
+    }
   }
 
   test("default absent sequence, set, and array fields") {

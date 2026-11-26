@@ -157,12 +157,18 @@ class JsonRW2Suite extends munit.FunSuite {
   test("read maps with the same values as JsonRW") {
     val inputs = Seq(
       "{}",
-      """{"z":{"b":2,"a":1},"a":{},"escaped\"key":{"x":3}}""",
-      """{"a":{"x":1},"a":{"x":2}}"""
+      """{"z":{"b":2,"a":1},"a":{},"escaped\"key":{"x":3}}"""
     )
 
     inputs.foreach { input =>
       assertEquals(input.parseJson2[Map[String, Map[String, Int]]], input.parseJson[Map[String, Map[String, Int]]])
+    }
+  }
+
+  test("reject repeated map keys even after an invalid value") {
+    val json = """{"outer":{"a":false,"\u0061":2}}"""
+    interceptMessage[TupsonException]("Duplicate JSON key at '$.outer.a'") {
+      json.parseJson2[Map[String, Map[String, Int]]]
     }
   }
 
