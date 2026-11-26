@@ -72,8 +72,8 @@ private[tupson] object JsonRW2Product {
     def makeCodec(fields: List[Field])(using Quotes): Expr[JsonRW2[A]] = {
       val sortedFields = fields.sortBy(_.name)
       '{
-        JsonRW2.product[A](
-          (in, ctx) => JsonRW2.readObject[A](in, ctx) {
+        new ProductCodec[A](
+          (in, ctx) => TupsonReader.readObject[A](in, ctx) {
             ${ decodeFields(fields, Nil, 'in, 'ctx) }
           },
           (value, out, sort) => {
@@ -90,7 +90,7 @@ private[tupson] object JsonRW2Product {
         remaining: List[Field],
         slots: List[Slot],
         in: Expr[JsonReader],
-        ctx: Expr[JsonRW2.DecodeContext]
+        ctx: Expr[TupsonReader.DecodeContext]
     )(using Quotes): Expr[A] = remaining match {
       case Nil => readProduct(slots.reverse, in, ctx)
       case field :: tail =>
@@ -104,12 +104,12 @@ private[tupson] object JsonRW2Product {
         }
     }
 
-    def readProduct(slots: List[Slot], in: Expr[JsonReader], ctx: Expr[JsonRW2.DecodeContext])(using Quotes): Expr[A] = {
+    def readProduct(slots: List[Slot], in: Expr[JsonReader], ctx: Expr[TupsonReader.DecodeContext])(using Quotes): Expr[A] = {
       val construct = Apply(applyTypeArguments(Select(New(TypeTree.of[A]), constructor)), slots.map(_.value))
       val defaults = Expr.block(slots.map(fillMissing(_, ctx)), '{ () })
       '{
         val before = $ctx.errorCount
-        JsonRW2.readObjectFields($in) { length =>
+        TupsonReader.readObjectFields($in) { length =>
           ${ readField(slots, in, ctx, 'length) }
         }
         $defaults
@@ -121,10 +121,10 @@ private[tupson] object JsonRW2Product {
     def readField(
         slots: List[Slot],
         in: Expr[JsonReader],
-        ctx: Expr[JsonRW2.DecodeContext],
+        ctx: Expr[TupsonReader.DecodeContext],
         length: Expr[Int]
     )(using Quotes): Expr[Unit] = slots match {
-      case Nil => '{ JsonRW2.skipValue($in) }
+      case Nil => '{ TupsonReader.skipValue($in) }
       case slot :: tail =>
         slot.field.tpe.asType match {
           case '[f] =>
@@ -142,7 +142,7 @@ private[tupson] object JsonRW2Product {
         }
     }
 
-    def fillMissing(slot: Slot, ctx: Expr[JsonRW2.DecodeContext])(using Quotes): Expr[Unit] =
+    def fillMissing(slot: Slot, ctx: Expr[TupsonReader.DecodeContext])(using Quotes): Expr[Unit] =
       slot.field.tpe.asType match {
         case '[f] =>
           val seen = slot.seen.asExprOf[Boolean]
@@ -178,5 +178,13 @@ private[tupson] object JsonRW2Product {
     }
 
     cacheCodecs(fields, Nil)
+  }
+
+  private[tupson] final class ProductCodec[A](
+      read: (JsonReader, TupsonReader.DecodeContext) => A,
+      write: (A, JsonWriter, Boolean) => Unit
+  ) extends JsonRW2[A] {
+    private[tupson] def decode(in: JsonReader, ctx: TupsonReader.DecodeContext): A = read(in, ctx)
+    private[tupson] def encode(value: A, out: JsonWriter, sort: Boolean): Unit = write(value, out, sort)
   }
 }

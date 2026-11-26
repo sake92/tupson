@@ -6,6 +6,11 @@ import JsonRW2.*
 class JsonRW2ProductSuite extends munit.FunSuite {
   import JsonRW2ProductSuite.*
 
+  test("keep raw codec construction internal") {
+    val errors = compileErrors("new ba.sake.tupson.JsonRW2[Int]() {}")
+    assert(errors.contains("constructor JsonRW2 cannot be accessed"), errors)
+  }
+
   test("derive a product with constructor and codec defaults") {
     val input = """{"name":"backup","ignored":[null,{"ok":true}]}"""
     val job = Job("backup", 3, None, Map.empty)

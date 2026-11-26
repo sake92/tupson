@@ -1,26 +1,14 @@
 package ba.sake.tupson
 
-import scala.collection.mutable.ArrayBuffer
 import scala.deriving.Mirror
-import com.github.plokhotnyuk.jsoniter_scala.core.*
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonWriter}
+import TupsonReader.*
 
 /** A JSON codec that reads and writes directly through the backend. */
-sealed abstract class JsonRW2[A] {
-  private val reader = new JsonValueCodec[Either[ParsingException, A]] {
-    def nullValue: Either[ParsingException, A] = null
-
-    def decodeValue(in: JsonReader, default: Either[ParsingException, A]): Either[ParsingException, A] = {
-      val ctx = new JsonRW2.DecodeContext
-      val value = decode(in, ctx)
-      ctx.result(value)
-    }
-
-    def encodeValue(value: Either[ParsingException, A], out: JsonWriter): Unit =
-      throw new UnsupportedOperationException("read adapter")
-  }
-
-  private val sortedWriter = writer(sort = true)
-  private val unsortedWriter = writer(sort = false)
+abstract class JsonRW2[A] private[tupson] () {
+  private val reader = new TupsonReader(this)
+  private val sortedWriter = new TupsonWriter(this, sort = true)
+  private val unsortedWriter = new TupsonWriter(this, sort = false)
 
   final def bimap[B](read: A => B)(write: B => A): JsonRW2[B] =
     mapped((value, _) => read(value), write)
@@ -37,24 +25,13 @@ sealed abstract class JsonRW2[A] {
       write
     )
 
-  private[tupson] def decode(in: JsonReader, ctx: JsonRW2.DecodeContext): A
+  private[tupson] def decode(in: JsonReader, ctx: DecodeContext): A
   private[tupson] def encode(value: A, out: JsonWriter, sort: Boolean): Unit
   private[tupson] def default: Option[A] = None
 
-  private def read(json: String): A =
-    parse(readFromString(json)(using reader))
-
-  private def read(json: Array[Byte]): A =
-    parse(readFromArray(json)(using reader))
-
-  private def render(value: A, spaces: Int, sort: Boolean): String = {
-    val config = if spaces <= 0 then WriterConfig else WriterConfig.withIndentionStep(spaces)
-    writeToString(value, config)(using if sort then sortedWriter else unsortedWriter)
-  }
-
-  private def mapped[B](read: (A, JsonRW2.DecodeContext) => B, write: B => A): JsonRW2[B] =
+  private def mapped[B](read: (A, DecodeContext) => B, write: B => A): JsonRW2[B] =
     new JsonRW2[B] {
-      private[tupson] def decode(in: JsonReader, ctx: JsonRW2.DecodeContext): B = {
+      private[tupson] def decode(in: JsonReader, ctx: DecodeContext): B = {
         val before = ctx.errorCount
         val value = JsonRW2.this.decode(in, ctx)
         if ctx.errorCount == before then read(value, ctx)
@@ -64,23 +41,6 @@ sealed abstract class JsonRW2[A] {
       private[tupson] def encode(value: B, out: JsonWriter, sort: Boolean): Unit =
         JsonRW2.this.encode(write(value), out, sort)
     }
-
-  private def parse(read: => Either[ParsingException, A]): A =
-    try {
-      read match {
-        case Right(value) => value
-        case Left(error)  => throw error
-      }
-    } catch {
-      case e: JsonReaderException => throw TupsonException("JSON parsing exception", e)
-    }
-
-  private def writer(sort: Boolean): JsonValueCodec[A] = new JsonValueCodec[A] {
-    def nullValue: A = null.asInstanceOf[A]
-    def decodeValue(in: JsonReader, default: A): A =
-      throw new UnsupportedOperationException("write adapter")
-    def encodeValue(value: A, out: JsonWriter): Unit = encode(value, out, sort)
-  }
 }
 
 object JsonRW2 {
@@ -90,14 +50,15 @@ object JsonRW2 {
     ${ JsonRW2Product.derive[A] }
 
   extension (json: String)
-    def parseJson[A](using rw: JsonRW2[A]): A = rw.read(json)
+    def parseJson[A](using rw: JsonRW2[A]): A = rw.reader.read(json)
 
   extension (json: Array[Byte])
-    def parseJson[A](using rw: JsonRW2[A]): A = rw.read(json)
+    def parseJson[A](using rw: JsonRW2[A]): A = rw.reader.read(json)
 
   extension [A](value: A)
     def toJson(spaces: Int = 0, sort: Boolean = false)(using rw: JsonRW2[A]): String =
-      rw.render(value, spaces, sort)
+      val writer = if sort then rw.sortedWriter else rw.unsortedWriter
+      writer.render(value, spaces)
 
   given JsonRW2[String] with {
     private[tupson] def decode(in: JsonReader, ctx: DecodeContext): String =
@@ -224,118 +185,6 @@ object JsonRW2 {
         }
       }
       out.writeObjectEnd()
-    }
-  }
-
-  private[tupson] final class DecodeContext {
-    private var errors = Vector.empty[ParseError]
-    private lazy val fields = ArrayBuffer.empty[String]
-
-    def errorCount: Int = errors.size
-
-    inline def withField[A](key: String)(inline read: A): A = {
-      fields.addOne(key)
-      try read
-      finally fields.remove(fields.size - 1)
-    }
-
-    def fail(message: String, value: Option[Any] = None): Unit = {
-      val path = if fields.isEmpty then "$" else fields.mkString("$.", ".", "")
-      val error = ParseError(path, message, value)
-      errors = errors.appended(error)
-    }
-
-    def result[A](value: A): Either[ParsingException, A] =
-      if errors.isEmpty then Right(value) else Left(ParsingException(errors))
-  }
-
-  private[tupson] def product[A](
-      read: (JsonReader, DecodeContext) => A,
-      write: (A, JsonWriter, Boolean) => Unit
-  ): JsonRW2[A] = new JsonRW2[A] {
-    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): A = read(in, ctx)
-    private[tupson] def encode(value: A, out: JsonWriter, sort: Boolean): Unit = write(value, out, sort)
-  }
-
-  private[tupson] inline def readObject[A](in: JsonReader, ctx: DecodeContext)(inline read: A): A =
-    readToken(in, ctx, "Object", null.asInstanceOf[A])(_ == '{') {
-      in.nextToken()
-      read
-    }
-
-  private[tupson] inline def readObjectFields(in: JsonReader)(inline readField: Int => Unit): Unit =
-    if !in.isNextToken('}') then {
-      in.rollbackToken()
-      var more = true
-      while more do {
-        val length = in.readKeyAsCharBuf()
-        readField(length)
-        more = in.isNextToken(',')
-      }
-      if !in.isCurrentToken('}') then in.objectEndOrCommaError()
-    }
-
-  private def isNumber(token: Byte): Boolean =
-    token == '-' || (token >= '0' && token <= '9')
-
-  private inline def readToken[A](in: JsonReader, ctx: DecodeContext, expected: String, fallback: A)(
-      inline accepts: Byte => Boolean
-  )(inline read: A): A = {
-    val token = in.nextToken()
-    in.rollbackToken()
-    if accepts(token) then read
-    else {
-      mismatch(in, ctx, token, expected)
-      fallback
-    }
-  }
-
-  private def mismatch(in: JsonReader, ctx: DecodeContext, token: Byte, expected: String): Unit = {
-    val (actual, value) = token match {
-      case '"'       => ("String", Some(JsonRW2[String].render(in.readString(null), spaces = 0, sort = false).take(100)))
-      case 't' | 'f' => ("Boolean", Some(in.readBoolean().toString))
-      case 'n' =>
-        in.nextToken()
-        ("Null", Some(in.readNullOrError("null", "expected null")))
-      case '[' | '{' =>
-        skipValue(in)
-        val kind = if token == '[' then "Array" else "Object"
-        (kind, None)
-      case b if isNumber(b) => ("Number", Some(in.readNumber(null).toString))
-      case _ => in.decodeError("expected JSON value")
-    }
-    ctx.fail(s"should be $expected but it is $actual", value)
-  }
-
-  // Validate ignored values. JsonReader.skip can pass over malformed literals and containers.
-  private[tupson] def skipValue(in: JsonReader, depth: Int = 0): Unit = {
-    if depth == 128 then in.decodeError("skipped value exceeds nesting limit")
-    in.nextToken() match {
-      case start @ ('[' | '{') =>
-        val end: Byte = if start == '[' then ']' else '}'
-        if !in.isNextToken(end) then {
-          in.rollbackToken()
-          var more = true
-          while more do {
-            if start == '{' then in.readKeyAsCharBuf()
-            skipValue(in, depth + 1)
-            more = in.isNextToken(',')
-          }
-          if !in.isCurrentToken(end) then {
-            if start == '[' then in.arrayEndOrCommaError()
-            else in.objectEndOrCommaError()
-          }
-        }
-      case 'n' => in.readNullOrError((), "expected null")
-      case token =>
-        in.rollbackToken()
-        token match {
-          case '"'       => in.readStringAsCharBuf()
-          case 't' | 'f' => in.readBoolean()
-          case b if isNumber(b) => in.readNumber(null)
-          case _ => in.decodeError("expected JSON value")
-        }
-        ()
     }
   }
 }
