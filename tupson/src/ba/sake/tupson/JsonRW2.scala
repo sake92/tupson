@@ -1,6 +1,7 @@
 package ba.sake.tupson
 
 import scala.collection.mutable.ArrayBuffer
+import scala.deriving.Mirror
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 
 /** A JSON codec that reads and writes directly through the backend. */
@@ -38,6 +39,7 @@ sealed abstract class JsonRW2[A] {
 
   private[tupson] def decode(in: JsonReader, ctx: JsonRW2.DecodeContext): A
   private[tupson] def encode(value: A, out: JsonWriter, sort: Boolean): Unit
+  private[tupson] def default: Option[A] = None
 
   private def read(json: String): A =
     parse(readFromString(json)(using reader))
@@ -83,6 +85,9 @@ sealed abstract class JsonRW2[A] {
 
 object JsonRW2 {
   def apply[A](using rw: JsonRW2[A]): JsonRW2[A] = rw
+
+  inline def derived[A](using Mirror.ProductOf[A]): JsonRW2[A] =
+    ${ JsonRW2Product.derive[A] }
 
   extension (json: String)
     def parseJson[A](using rw: JsonRW2[A]): A = rw.read(json)
@@ -158,6 +163,8 @@ object JsonRW2 {
   }
 
   given [A](using element: JsonRW2[A]): JsonRW2[Option[A]] with {
+    override private[tupson] def default: Option[Option[A]] = Some(None)
+
     private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Option[A] = {
       if in.isNextToken('n') then in.readNullOrError(None, "expected null")
       else {
@@ -176,6 +183,8 @@ object JsonRW2 {
   }
 
   given [A](using element: JsonRW2[A]): JsonRW2[Map[String, A]] with {
+    override private[tupson] def default: Option[Map[String, A]] = Some(Map.empty)
+
     private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Map[String, A] =
       readToken(in, ctx, "Map", Map.empty[String, A])(_ == '{') {
         in.nextToken()
@@ -240,6 +249,32 @@ object JsonRW2 {
       if errors.isEmpty then Right(value) else Left(ParsingException(errors))
   }
 
+  private[tupson] def product[A](
+      read: (JsonReader, DecodeContext) => A,
+      write: (A, JsonWriter, Boolean) => Unit
+  ): JsonRW2[A] = new JsonRW2[A] {
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): A = read(in, ctx)
+    private[tupson] def encode(value: A, out: JsonWriter, sort: Boolean): Unit = write(value, out, sort)
+  }
+
+  private[tupson] inline def readObject[A](in: JsonReader, ctx: DecodeContext)(inline read: A): A =
+    readToken(in, ctx, "Object", null.asInstanceOf[A])(_ == '{') {
+      in.nextToken()
+      read
+    }
+
+  private[tupson] inline def readObjectFields(in: JsonReader)(inline readField: Int => Unit): Unit =
+    if !in.isNextToken('}') then {
+      in.rollbackToken()
+      var more = true
+      while more do {
+        val length = in.readKeyAsCharBuf()
+        readField(length)
+        more = in.isNextToken(',')
+      }
+      if !in.isCurrentToken('}') then in.objectEndOrCommaError()
+    }
+
   private def isNumber(token: Byte): Boolean =
     token == '-' || (token >= '0' && token <= '9')
 
@@ -273,7 +308,7 @@ object JsonRW2 {
   }
 
   // Validate ignored values. JsonReader.skip can pass over malformed literals and containers.
-  private def skipValue(in: JsonReader, depth: Int = 0): Unit = {
+  private[tupson] def skipValue(in: JsonReader, depth: Int = 0): Unit = {
     if depth == 128 then in.decodeError("skipped value exceeds nesting limit")
     in.nextToken() match {
       case start @ ('[' | '{') =>
