@@ -37,6 +37,14 @@ private[tupson] final class TupsonReader[A](codec: JsonRW2[A])
 private[tupson] object TupsonReader {
   private val maxErrors = 10
 
+  def replay[A](json: Array[Byte], codec: JsonRW2[A], ctx: DecodeContext): A =
+    readFromArrayReentrant(json)(using new JsonValueCodec[A] {
+      def nullValue: A = null.asInstanceOf[A]
+      def decodeValue(in: JsonReader, default: A): A = codec.decode(in, ctx)
+      def encodeValue(value: A, out: JsonWriter): Unit =
+        throw new UnsupportedOperationException("read adapter")
+    })
+
   inline def readObject[A](in: JsonReader, ctx: DecodeContext)(inline read: A): A =
     readToken(in, ctx, "Object", null.asInstanceOf[A])(_ == '{') {
       in.nextToken()
@@ -196,12 +204,15 @@ private[tupson] object TupsonReader {
 
     def errorCount: Int = errors.size
 
+    def discardErrorsAfter(count: Int): Unit =
+      errors = errors.take(count)
+
     def errorLimitReached: Boolean = errorCount >= maxErrors
 
     def duplicateKey(key: String): Nothing =
       withField(key) {
         val path = renderPath()
-        throw TupsonException(s"Duplicate JSON key at '$path'")
+        throw DuplicateKeyException(path)
       }
 
     inline def withField[A](key: String)(inline read: A): A =

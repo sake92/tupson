@@ -57,6 +57,8 @@ object JsonRW2 {
       case sum: Mirror.SumOf[A]   => JsonRW2Sum.derived[A](sum)
     }
 
+  inline given [A: IsUnion]: JsonRW2[A] = JsonRW2Union.derived[A]
+
   extension (json: String)
     def parseJson[A](using rw: JsonRW2[A]): A = rw.reader.read(json)
 

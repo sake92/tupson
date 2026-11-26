@@ -39,6 +39,9 @@ extension (strValue: String) {
 /* exceptions */
 sealed class TupsonException(msg: String, cause: Throwable = null) extends Exception(msg, cause)
 
+private[tupson] final class DuplicateKeyException(path: String)
+    extends TupsonException(s"Duplicate JSON key at '$path'")
+
 final class ParsingException(val errors: Seq[ParseError])
     extends TupsonException(
       errors
