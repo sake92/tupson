@@ -53,12 +53,15 @@ private[tupson] object TupsonReader {
     }
 
   inline def readObjectFields(in: JsonReader)(inline readField: Int => Unit): Unit =
+    readObjectMembers(in)(in.readKeyAsCharBuf())(readField)
+
+  inline def readObjectMembers[K](in: JsonReader)(inline readKey: K)(inline readMember: K => Unit): Unit =
     if !in.isNextToken('}') then {
       in.rollbackToken()
       var more = true
       while more do {
-        val length = in.readKeyAsCharBuf()
-        readField(length)
+        val key = readKey
+        readMember(key)
         more = in.isNextToken(',')
       }
       if !in.isCurrentToken('}') then in.objectEndOrCommaError()

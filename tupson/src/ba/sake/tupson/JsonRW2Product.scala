@@ -216,8 +216,12 @@ private[tupson] object JsonRW2Product {
             val codec = field.codec.asExprOf[JsonRW2[f]]
             val member = Select(value.asTerm, field.accessor).asExprOf[f]
             val write = '{
-              $out.writeKey($key)
-              $codec.encode($member, $out, $sort)
+              val fieldCodec = $codec
+              val fieldValue = $member
+              if fieldCodec.shouldWriteField(fieldValue) then {
+                $out.writeKey($key)
+                fieldCodec.encode(fieldValue, $out, $sort)
+              }
             }
             field.name -> write
         }

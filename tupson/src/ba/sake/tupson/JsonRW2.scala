@@ -1,5 +1,6 @@
 package ba.sake.tupson
 
+import java.io.OutputStream
 import java.math.{BigDecimal, BigInteger}
 import java.net.URI
 import java.time.{Duration, Instant, LocalDate, LocalDateTime, LocalTime, Period}
@@ -39,6 +40,7 @@ abstract class JsonRW2[A] private[tupson] () {
   private[tupson] def decode(in: JsonReader, ctx: DecodeContext): A
   private[tupson] def encode(value: A, out: JsonWriter, sort: Boolean): Unit
   private[tupson] def default: Option[A] = None
+  private[tupson] def shouldWriteField(value: A): Boolean = true
 
   private def mapped[B](read: (A, DecodeContext) => B, write: B => A): JsonRW2[B] =
     new JsonRW2[B] {
@@ -81,6 +83,11 @@ object JsonRW2 {
     def toJson(spaces: Int = 0, sort: Boolean = false)(using rw: JsonRW2[A]): String =
       val writer = if sort then rw.sortedWriter else rw.unsortedWriter
       writer.render(value, spaces)
+
+    /** Writes UTF-8 JSON and flushes the stream, leaving it open. */
+    def writeJson(out: OutputStream, spaces: Int = 0, sort: Boolean = false)(using rw: JsonRW2[A]): Unit =
+      val writer = if sort then rw.sortedWriter else rw.unsortedWriter
+      writer.write(value, out, spaces)
 
   given JsonRW2[String] with {
     private[tupson] def decode(in: JsonReader, ctx: DecodeContext): String =
