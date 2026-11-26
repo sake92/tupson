@@ -48,6 +48,7 @@ local const tupsonModules =
       publish = true
       deps {
         "org.typelevel::jawn-ast::1.6.0"
+        "com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.43.0"
       }
       pomSettings = (basePomSettings) {
         artifactId = "tupson"
