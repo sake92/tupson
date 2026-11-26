@@ -2,6 +2,7 @@ package ba.sake.tupson
 
 import java.math.{BigDecimal, BigInteger}
 import java.net.URI
+import java.time.{Duration, Instant, LocalDate, LocalDateTime, LocalTime, Period}
 import java.util.UUID
 import scala.collection.mutable.HashSet
 import scala.deriving.Mirror
@@ -144,13 +145,14 @@ object JsonRW2 {
       out.writeVal(value)
   }
 
-  given JsonRW2[URI] with {
-    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): URI =
-      readToken(in, ctx, "URI", null: URI)(_ == '"')(new URI(in.readString(null)))
+  given JsonRW2[URI] = stringValue("URI")(new URI(_))
 
-    private[tupson] def encode(value: URI, out: JsonWriter, sort: Boolean): Unit =
-      out.writeVal(value.toString)
-  }
+  given JsonRW2[Instant] = stringValue("Instant")(Instant.parse)
+  given JsonRW2[Duration] = stringValue("Duration")(Duration.parse)
+  given JsonRW2[Period] = stringValue("Period")(Period.parse)
+  given JsonRW2[LocalDate] = stringValue("LocalDate")(LocalDate.parse)
+  given JsonRW2[LocalTime] = stringValue("LocalTime")(LocalTime.parse)
+  given JsonRW2[LocalDateTime] = stringValue("LocalDateTime")(LocalDateTime.parse)
 
   given JsonRW2[BigDecimal] with {
     private[tupson] def decode(in: JsonReader, ctx: DecodeContext): BigDecimal =
@@ -288,4 +290,13 @@ object JsonRW2 {
       out.writeObjectEnd()
     }
   }
+
+  private def stringValue[A](expected: String)(parse: String => A): JsonRW2[A] =
+    new JsonRW2[A] {
+      private[tupson] def decode(in: JsonReader, ctx: DecodeContext): A =
+        readToken(in, ctx, expected, null.asInstanceOf[A])(_ == '"')(parse(in.readString(null)))
+
+      private[tupson] def encode(value: A, out: JsonWriter, sort: Boolean): Unit =
+        out.writeVal(value.toString)
+    }
 }
