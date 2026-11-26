@@ -1,6 +1,7 @@
 package ba.sake.tupson
 
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.Builder
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 
 private[tupson] final class TupsonReader[A](codec: JsonRW2[A])
@@ -50,6 +51,33 @@ private[tupson] object TupsonReader {
         more = in.isNextToken(',')
       }
       if !in.isCurrentToken('}') then in.objectEndOrCommaError()
+    }
+
+  inline def readArray[A, C](
+      in: JsonReader,
+      ctx: DecodeContext,
+      element: JsonRW2[A],
+      expected: String,
+      inline empty: C
+  )(inline newBuilder: Builder[A, C]): C =
+    readToken(in, ctx, expected, empty)(_ == '[') {
+      in.nextToken()
+      if in.isNextToken(']') then empty
+      else {
+        in.rollbackToken()
+        val values = newBuilder
+        val before = ctx.errorCount
+        var index = 0
+        var more = true
+        while more do {
+          val value = ctx.withIndex(index)(element.decode(in, ctx))
+          if ctx.errorCount == before then values.addOne(value)
+          index = index + 1
+          more = in.isNextToken(',')
+        }
+        if !in.isCurrentToken(']') then in.arrayEndOrCommaError()
+        if ctx.errorCount == before then values.result() else empty
+      }
     }
 
   def isNumber(token: Byte): Boolean =
@@ -118,23 +146,55 @@ private[tupson] object TupsonReader {
 
   final class DecodeContext {
     private var errors = Vector.empty[ParseError]
-    private lazy val fields = ArrayBuffer.empty[String]
+    private lazy val pathEntries = ArrayBuffer.empty[PathEntry]
+    private var pathDepth = 0
 
     def errorCount: Int = errors.size
 
-    inline def withField[A](key: String)(inline read: A): A = {
-      fields.addOne(key)
-      try read
-      finally fields.remove(fields.size - 1)
-    }
+    inline def withField[A](key: String)(inline read: A): A =
+      withPathEntry(key, 0)(read)
+
+    inline def withIndex[A](index: Int)(inline read: A): A =
+      withPathEntry(null, index)(read)
 
     def fail(message: String, value: Option[Any] = None): Unit = {
-      val path = if fields.isEmpty then "$" else fields.mkString("$.", ".", "")
+      val path = renderPath()
       val error = ParseError(path, message, value)
       errors = errors.appended(error)
     }
 
     def result[A](value: A): Either[ParsingException, A] =
       if errors.isEmpty then Right(value) else Left(ParsingException(errors))
+
+    private inline def withPathEntry[A](field: String, index: Int)(inline read: A): A = {
+      pushPathEntry(field, index)
+      try read
+      finally pathDepth = pathDepth - 1
+    }
+
+    private def pushPathEntry(field: String, index: Int): Unit = {
+      if pathDepth == pathEntries.size then pathEntries.addOne(new PathEntry)
+      val entry = pathEntries(pathDepth)
+      entry.field = field
+      entry.index = index
+      pathDepth = pathDepth + 1
+    }
+
+    private def renderPath(): String = {
+      val path = new StringBuilder("$")
+      var depth = 0
+      while depth < pathDepth do {
+        val entry = pathEntries(depth)
+        if entry.field == null then path.append('[').append(entry.index).append(']')
+        else path.append('.').append(entry.field)
+        depth = depth + 1
+      }
+      path.toString
+    }
+
+    private final class PathEntry {
+      var field: String = null
+      var index: Int = 0
+    }
   }
 }

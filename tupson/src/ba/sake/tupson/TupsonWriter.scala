@@ -15,3 +15,11 @@ private[tupson] final class TupsonWriter[A](codec: JsonRW2[A], sort: Boolean) ex
 
   def encodeValue(value: A, out: JsonWriter): Unit = codec.encode(value, out, sort)
 }
+
+private[tupson] object TupsonWriter {
+  def writeArray[A](values: Iterator[A], out: JsonWriter, sort: Boolean, element: JsonRW2[A]): Unit = {
+    out.writeArrayStart()
+    while values.hasNext do element.encode(values.next(), out, sort)
+    out.writeArrayEnd()
+  }
+}

@@ -79,6 +79,62 @@ class JsonRW2Suite extends munit.FunSuite {
     assertEquals(syntax.getMessage, "JSON parsing exception")
   }
 
+  test("read and write lists with the same wire format as JsonRW") {
+    Seq("[]", "[1,-2,3]").foreach { input =>
+      val value = input.parseJson2[List[Int]]
+      assertEquals(value, input.parseJson[List[Int]])
+      assertEquals(value.toJson2(), input)
+    }
+  }
+
+  test("accumulate list errors with nested indices") {
+    val input = """{"items":[[false,1],[true,null]]}"""
+    val expected = intercept[ParsingException](input.parseJson[Map[String, List[List[Int]]]])
+    val actual = intercept[ParsingException](input.parseJson2[Map[String, List[List[Int]]]])
+    assertEquals(actual.errors, expected.errors)
+    assertEquals(actual.errors.map(_.path), Seq("$.items[0][0]", "$.items[1][0]", "$.items[1][1]"))
+
+    Seq("[1,]", "[1").foreach { malformed =>
+      val syntax = intercept[TupsonException](malformed.parseJson2[List[Int]])
+      assertEquals(syntax.getMessage, "JSON parsing exception")
+    }
+  }
+
+  test("round-trip sequences, sets, and primitive and reference arrays") {
+    def roundTrip[A: JsonRW: JsonRW2](input: String): Unit = {
+      val value = input.parseJson2[A]
+      assertEquals(value, input.parseJson[A])
+      assertEquals(value.toJson2().parseJson[A], value)
+    }
+
+    roundTrip[Seq[Int]]("[3,1,3]")
+    roundTrip[Set[Int]]("[3,1,3]")
+
+    val ints = "[3,1,3]".parseJson2[Array[Int]]
+    assertEquals(ints.toList, "[3,1,3]".parseJson[Array[Int]].toList)
+    assertEquals(ints.toJson2(), "[3,1,3]")
+
+    val json = """["z","a"]"""
+    val strings = json.parseJson2[Array[String]]
+    assertEquals(strings.toList, json.parseJson[Array[String]].toList)
+    assertEquals(strings.toJson2(), json)
+    assertEquals("[]".parseJson2[Array[Int]].toList, Nil)
+  }
+
+  test("preserve indexed errors for sequences, sets, and arrays") {
+    def compare[A: JsonRW: JsonRW2](): Unit = {
+      val input = "[false,1,null]"
+      val expected = intercept[ParsingException](input.parseJson[A])
+      val actual = intercept[ParsingException](input.parseJson2[A])
+      assertEquals(actual.errors, expected.errors)
+      assertEquals(actual.errors.map(_.path), Seq("$[0]", "$[2]"))
+    }
+
+    compare[Seq[Int]]()
+    compare[Set[Int]]()
+    compare[Array[Int]]()
+  }
+
   test("read maps with the same values as JsonRW") {
     val inputs = Seq(
       "{}",

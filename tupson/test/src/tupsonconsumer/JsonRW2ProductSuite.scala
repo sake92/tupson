@@ -72,6 +72,21 @@ class JsonRW2ProductSuite extends munit.FunSuite {
     }
     assertEquals(error.errors, Seq(ParseError("$.email", "must contain @")))
   }
+
+  test("default an absent list field and reject explicit null") {
+    assertEquals("{}".parseJson[Batch], Batch(Nil))
+    assertEquals("""{"items":[1,2]}""".parseJson[Batch], Batch(List(1, 2)))
+    val error = intercept[ParsingException]("""{"items":null}""".parseJson[Batch])
+    assertEquals(error.errors, Seq(ParseError("$.items", "should be List but it is Null", Some("null"))))
+  }
+
+  test("default absent sequence, set, and array fields") {
+    val collections = "{}".parseJson[Collections]
+    assertEquals(collections.sequence, Seq.empty)
+    assertEquals(collections.set, Set.empty)
+    assertEquals(collections.array.toList, Nil)
+    assertEquals(collections.toJson(), """{"sequence":[],"set":[],"array":[]}""")
+  }
 }
 
 object JsonRW2ProductSuite {
@@ -88,4 +103,6 @@ object JsonRW2ProductSuite {
     }(_.value)
   }
   case class Contact(email: Email) derives JsonRW2
+  case class Batch(items: List[Int]) derives JsonRW2
+  case class Collections(sequence: Seq[Int], set: Set[Int], array: Array[Int]) derives JsonRW2
 }

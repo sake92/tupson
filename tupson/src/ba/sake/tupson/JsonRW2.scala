@@ -1,6 +1,7 @@
 package ba.sake.tupson
 
 import scala.deriving.Mirror
+import scala.reflect.ClassTag
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonWriter}
 import TupsonReader.*
 
@@ -141,6 +142,60 @@ object JsonRW2 {
         case Some(item) => element.encode(item, out, sort)
         case None       => out.writeNull()
       }
+  }
+
+  given [A](using element: JsonRW2[A]): JsonRW2[List[A]] with {
+    override private[tupson] def default: Option[List[A]] = Some(Nil)
+
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): List[A] =
+      readArray(in, ctx, element, "List", List.empty[A])(List.newBuilder[A])
+
+    private[tupson] def encode(value: List[A], out: JsonWriter, sort: Boolean): Unit = {
+      out.writeArrayStart()
+      var remaining = value
+      while remaining.nonEmpty do {
+        element.encode(remaining.head, out, sort)
+        remaining = remaining.tail
+      }
+      out.writeArrayEnd()
+    }
+  }
+
+  given [A](using element: JsonRW2[A]): JsonRW2[Seq[A]] with {
+    override private[tupson] def default: Option[Seq[A]] = Some(Seq.empty)
+
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Seq[A] =
+      readArray(in, ctx, element, "Seq", Seq.empty[A])(Seq.newBuilder[A])
+
+    private[tupson] def encode(value: Seq[A], out: JsonWriter, sort: Boolean): Unit =
+      TupsonWriter.writeArray(value.iterator, out, sort, element)
+  }
+
+  given [A](using element: JsonRW2[A]): JsonRW2[Set[A]] with {
+    override private[tupson] def default: Option[Set[A]] = Some(Set.empty)
+
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Set[A] =
+      readArray(in, ctx, element, "Set", Set.empty[A])(Set.newBuilder[A])
+
+    private[tupson] def encode(value: Set[A], out: JsonWriter, sort: Boolean): Unit =
+      TupsonWriter.writeArray(value.iterator, out, sort, element)
+  }
+
+  given [A: ClassTag](using element: JsonRW2[A]): JsonRW2[Array[A]] with {
+    override private[tupson] def default: Option[Array[A]] = Some(Array.empty)
+
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Array[A] =
+      readArray(in, ctx, element, "Array", Array.empty[A])(Array.newBuilder[A])
+
+    private[tupson] def encode(value: Array[A], out: JsonWriter, sort: Boolean): Unit = {
+      out.writeArrayStart()
+      var index = 0
+      while index < value.length do {
+        element.encode(value(index), out, sort)
+        index = index + 1
+      }
+      out.writeArrayEnd()
+    }
   }
 
   given [A](using element: JsonRW2[A]): JsonRW2[Map[String, A]] with {
