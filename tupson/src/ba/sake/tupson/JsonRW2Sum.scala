@@ -22,8 +22,6 @@ private[tupson] object JsonRW2Sum {
           deriveEnum[A, elements, labels](sum)
         else if model.flags.is(Flags.Enum) then
           report.errorAndAbort(s"JsonRW2 does not yet derive enums with payloads: ${Type.show[A]}")
-        else if model.getAnnotation(TypeRepr.of[discriminator].typeSymbol).nonEmpty then
-          report.errorAndAbort(s"JsonRW2 does not yet derive custom discriminators: ${Type.show[A]}")
         else deriveTagged[A, elements, labels](sum)
       case _ => quotes.reflect.report.errorAndAbort(s"Cannot resolve sum cases for ${Type.show[A]}")
     }
@@ -57,7 +55,21 @@ private[tupson] object JsonRW2Sum {
   ): Expr[JsonRW2[A]] = {
     import quotes.reflect.*
 
-    val tagKey = "@type"
+    val model = TypeRepr.of[A].dealias.typeSymbol
+    val annotation = model.getAnnotation(TypeRepr.of[discriminator].typeSymbol)
+    val tagKey = annotation match {
+      case None => "@type"
+      case Some(Apply(_, List(argument))) =>
+        val name = argument match {
+          case NamedArg(_, value) => value
+          case value              => value
+        }
+        name.asExprOf[String].value.getOrElse {
+          report.errorAndAbort("JsonRW2 requires a compile-time constant discriminator name", name.pos)
+        }
+      case Some(other) =>
+        report.errorAndAbort("Cannot resolve the JsonRW2 discriminator name", other.pos)
+    }
     def entries[Cases: Type, Names: Type]: List[Expr[(String, JsonRW2[A])]] =
       (Type.of[Cases], Type.of[Names]) match {
         case ('[EmptyTuple], '[EmptyTuple]) => Nil

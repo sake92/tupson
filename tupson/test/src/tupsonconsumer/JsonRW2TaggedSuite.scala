@@ -1,6 +1,6 @@
 package tupsonconsumer
 
-import ba.sake.tupson.{JsonRW2, ParseError, ParsingException, TupsonException}
+import ba.sake.tupson.{JsonRW2, ParseError, ParsingException, TupsonException, discriminator}
 import JsonRW2.*
 
 class JsonRW2TaggedSuite extends munit.FunSuite {
@@ -63,6 +63,32 @@ class JsonRW2TaggedSuite extends munit.FunSuite {
       }
     }
   }
+
+  test("read and write a custom discriminator") {
+    val value: Command = Start("backup")
+    val first = """{"kind":"Start","job":"backup"}"""
+    val last = """{"job":"backup","kind":"Start"}"""
+    assertEquals(first.parseJson[Command], value)
+    assertEquals(last.parseJson[Command], value)
+    assertEquals(value.toJson(), first)
+    assertEquals(value.toJson(sort = true), last)
+
+    val missing = intercept[ParsingException]("""{"@type":"Start","job":"backup"}""".parseJson[Command])
+    assertEquals(missing.errors, Seq(ParseError("$.kind", "is missing")))
+
+    interceptMessage[TupsonException]("Duplicate JSON key at '$.kind'") {
+      """{"kind":"Start","job":"backup","kind":"Stop"}""".parseJson[Command]
+    }
+  }
+
+  test("reject a custom discriminator that conflicts with a subtype field") {
+    val errors = compileErrors("""
+      @discriminator("kind")
+      sealed trait Action derives JsonRW2
+      case class Run(kind: String) extends Action
+    """)
+    assert(errors.contains("Discriminator 'kind' conflicts with a field"), errors)
+  }
 }
 
 object JsonRW2TaggedSuite {
@@ -70,4 +96,9 @@ object JsonRW2TaggedSuite {
   case class Created(name: String, `!id`: Int) extends Event
   case class Deleted(id: Int) extends Event
   case class Envelope(event: Event) derives JsonRW2
+
+  @discriminator(name = "kind")
+  sealed trait Command derives JsonRW2
+  case class Start(job: String) extends Command
+  case class Stop(job: String) extends Command
 }
