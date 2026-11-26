@@ -94,6 +94,25 @@ class JsonRW2ProductSuite extends munit.FunSuite {
     assertEquals(collections.array.toList, Nil)
     assertEquals(collections.toJson(), """{"sequence":[],"set":[],"array":[]}""")
   }
+
+  test("derive a recursive product and preserve nested error paths") {
+    val input = """{"value":1,"children":[{"value":2}]}"""
+    val tree = Node(1, List(Node(2, Nil)))
+    assertEquals(input.parseJson[Node], tree)
+    assertEquals(tree.toJson().parseJson[Node], tree)
+
+    val error = intercept[ParsingException] {
+      """{"value":1,"children":[{"value":false},{}]}""".parseJson[Node]
+    }
+    assertEquals(error.errors.map(_.path), Seq("$.children[0].value", "$.children[1].value"))
+  }
+
+  test("derive mutually recursive product codecs") {
+    val value = Parent(Some(Child(None)))
+    val input = """{"child":{"parent":null}}"""
+    assertEquals(value.toJson(), input)
+    assertEquals(input.parseJson[Parent], value)
+  }
 }
 
 object JsonRW2ProductSuite {
@@ -113,4 +132,7 @@ object JsonRW2ProductSuite {
   case class Batch(items: List[Int]) derives JsonRW2
   case class CappedProduct(batch: Batch, name: String, required: Int) derives JsonRW2
   case class Collections(sequence: Seq[Int], set: Set[Int], array: Array[Int]) derives JsonRW2
+  case class Node(value: Int, children: List[Node]) derives JsonRW2
+  case class Parent(child: Option[Child]) derives JsonRW2
+  case class Child(parent: Option[Parent]) derives JsonRW2
 }

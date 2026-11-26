@@ -63,7 +63,8 @@ private[tupson] object JsonRW2Product {
             case '[f] =>
               val codec = field.codec.asExprOf[JsonRW2[f]]
               '{
-                val fieldCodec = $codec
+                // A field codec may refer back to this product's given during initialization.
+                lazy val fieldCodec = $codec
                 ${ cacheCodecs(tail, field.copy(codec = 'fieldCodec.asTerm) :: cached) }
               }
           }
