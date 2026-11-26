@@ -50,8 +50,11 @@ abstract class JsonRW2[A] private[tupson] () {
 object JsonRW2 {
   def apply[A](using rw: JsonRW2[A]): JsonRW2[A] = rw
 
-  inline def derived[A](using Mirror.ProductOf[A]): JsonRW2[A] =
-    ${ JsonRW2Product.derive[A] }
+  inline def derived[A](using mirror: Mirror.Of[A]): JsonRW2[A] =
+    inline mirror match {
+      case _: Mirror.ProductOf[A] => JsonRW2Product.derived[A]
+      case sum: Mirror.SumOf[A]   => JsonRW2Sum.derived[A](sum)
+    }
 
   extension (json: String)
     def parseJson[A](using rw: JsonRW2[A]): A = rw.reader.read(json)

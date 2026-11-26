@@ -4,7 +4,9 @@ import scala.quoted.*
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonWriter}
 
 private[tupson] object JsonRW2Product {
-  def derive[A: Type](using Quotes): Expr[JsonRW2[A]] = {
+  inline def derived[A]: JsonRW2[A] = ${ derive[A] }
+
+  private def derive[A: Type](using Quotes): Expr[JsonRW2[A]] = {
     import quotes.reflect.*
 
     val model = TypeRepr.of[A].dealias
