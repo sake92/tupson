@@ -1,5 +1,8 @@
 package ba.sake.tupson
 
+import java.math.{BigDecimal, BigInteger}
+import java.net.URI
+import java.util.UUID
 import scala.collection.mutable.HashSet
 import scala.deriving.Mirror
 import scala.reflect.ClassTag
@@ -131,6 +134,38 @@ object JsonRW2 {
 
     private[tupson] def encode(value: Double, out: JsonWriter, sort: Boolean): Unit =
       out.writeVal(value)
+  }
+
+  given JsonRW2[UUID] with {
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): UUID =
+      readToken(in, ctx, "UUID", null: UUID)(_ == '"')(UUID.fromString(in.readString(null)))
+
+    private[tupson] def encode(value: UUID, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(value)
+  }
+
+  given JsonRW2[URI] with {
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): URI =
+      readToken(in, ctx, "URI", null: URI)(_ == '"')(new URI(in.readString(null)))
+
+    private[tupson] def encode(value: URI, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(value.toString)
+  }
+
+  given JsonRW2[BigDecimal] with {
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): BigDecimal =
+      readToken(in, ctx, "BigDecimal", null: BigDecimal)(isNumber)(readExactDecimal(in))
+
+    private[tupson] def encode(value: BigDecimal, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(scala.math.BigDecimal(value))
+  }
+
+  given JsonRW2[BigInteger] with {
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): BigInteger =
+      readToken(in, ctx, "BigInteger", null: BigInteger)(isNumber)(readBigInteger(in))
+
+    private[tupson] def encode(value: BigInteger, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(BigInt(value))
   }
 
   given [A](using element: JsonRW2[A]): JsonRW2[Option[A]] with {

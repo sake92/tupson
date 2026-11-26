@@ -1,5 +1,6 @@
 package ba.sake.tupson
 
+import java.math.{BigDecimal, BigInteger, MathContext}
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Builder
 import com.github.plokhotnyuk.jsoniter_scala.core.*
@@ -135,6 +136,24 @@ private[tupson] object TupsonReader {
 
   def isNumber(token: Byte): Boolean =
     token == '-' || (token >= '0' && token <= '9')
+
+  def readExactDecimal(in: JsonReader): BigDecimal =
+    in.readBigDecimal(null, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue).bigDecimal
+
+  def readBigInteger(in: JsonReader): BigInteger = {
+    in.setMark()
+    try {
+      val value = in.readBigInt(null, Int.MaxValue)
+      in.resetMark()
+      value.bigInteger
+    } catch {
+      case _: JsonReaderException =>
+        in.rollbackToMark()
+        // A valid decimal in fraction or exponent notation is a format error for BigInteger.
+        readExactDecimal(in)
+        throw new NumberFormatException("Expected an integer JSON number")
+    }
+  }
 
   inline def readToken[A](in: JsonReader, ctx: DecodeContext, expected: String, fallback: A)(
       inline accepts: Byte => Boolean

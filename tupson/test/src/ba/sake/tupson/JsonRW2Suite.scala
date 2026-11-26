@@ -1,10 +1,54 @@
 package ba.sake.tupson
 
+import java.math.{BigDecimal, BigInteger}
+import java.net.URI
 import java.nio.charset.StandardCharsets.UTF_8
+import java.util.UUID
 import ba.sake.tupson.{*, given}
 import JsonRW2.{parseJson as parseJson2, toJson as toJson2}
 
 class JsonRW2Suite extends munit.FunSuite {
+  test("preserve UUID and URI wire formats") {
+    def compare[A: JsonRW: JsonRW2](json: String): Unit = {
+      val value = json.parseJson2[A]
+      assertEquals(value, json.parseJson[A])
+      assertEquals(value.toJson2(), json)
+    }
+
+    compare[UUID]("\"2d931510-d99f-494a-8c67-87feb05e1594\"")
+    compare[URI]("\"https://example.com/a%20b?c=d\"")
+    intercept[IllegalArgumentException]("\"bad-uuid\"".parseJson2[UUID])
+    val mismatch = intercept[ParsingException]("123".parseJson2[URI])
+    assertEquals(mismatch.errors, Seq(ParseError("$", "should be URI but it is Number", Some("123"))))
+  }
+
+  test("read and write exact decimals without rounding or losing scale") {
+    val inputs = Seq("1e3", "1234567890.12345678901234567890", "1." + "0123456789" * 40)
+    inputs.foreach { json =>
+      val expected = json.parseJson[BigDecimal]
+      val actual = json.parseJson2[BigDecimal]
+      assertEquals(actual, expected)
+      assertEquals(actual.toJson2(), expected.toJson(spaces = 0))
+    }
+  }
+
+  test("preserve big integers and reject fraction syntax") {
+    val inputs = Seq("42", "-9223372036854775809", "1234567890" * 40)
+    inputs.foreach { json =>
+      val value = json.parseJson2[BigInteger]
+      assertEquals(value, json.parseJson[BigInteger])
+      assertEquals(value.toJson2(), json)
+    }
+
+    Seq("1.5", "1e0").foreach { input =>
+      intercept[NumberFormatException](input.parseJson[BigInteger])
+      intercept[NumberFormatException](input.parseJson2[BigInteger])
+    }
+    interceptMessage[TupsonException]("JSON parsing exception") {
+      "01".parseJson2[BigInteger]
+    }
+  }
+
   test("read scalar values with the same results as JsonRW") {
     def compare[A: JsonRW: JsonRW2](inputs: String*): Unit =
       inputs.foreach(input => assertEquals(input.parseJson2[A], input.parseJson[A]))
