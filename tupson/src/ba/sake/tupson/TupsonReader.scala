@@ -55,6 +55,34 @@ private[tupson] object TupsonReader {
       if !in.isCurrentToken('}') then in.objectEndOrCommaError()
     }
 
+  def readDiscriminator(in: JsonReader, ctx: DecodeContext, key: String): String = {
+    in.setMark()
+    in.nextToken()
+    var tag: String = null
+    var found = false
+    if !in.isNextToken('}') then {
+      in.rollbackToken()
+      var more = true
+      while more && !found do {
+        val length = in.readKeyAsCharBuf()
+        if in.isCharBufEqualsTo(length, key) then {
+          found = true
+          tag = ctx.withField(key) {
+            readToken(in, ctx, "String", null: String)(_ == '"')(in.readString(null))
+          }
+        } else {
+          skipValue(in)
+          more = in.isNextToken(',')
+        }
+      }
+      if !found && !in.isCurrentToken('}') then in.objectEndOrCommaError()
+    }
+    // Release the reader's mark before the subtype codec reads the object.
+    in.rollbackToMark()
+    if !found then ctx.withField(key)(ctx.fail("is missing"))
+    tag
+  }
+
   inline def readArray[A, C](
       in: JsonReader,
       ctx: DecodeContext,

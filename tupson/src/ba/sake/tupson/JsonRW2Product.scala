@@ -6,7 +6,10 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonWriter}
 private[tupson] object JsonRW2Product {
   inline def derived[A]: JsonRW2[A] = ${ derive[A] }
 
-  private def derive[A: Type](using Quotes): Expr[JsonRW2[A]] = {
+  private def derive[A: Type](using Quotes): Expr[JsonRW2[A]] =
+    derive[A](None)
+
+  def derive[A: Type](tag: Option[(String, String)])(using Quotes): Expr[JsonRW2[A]] = {
     import quotes.reflect.*
 
     val model = TypeRepr.of[A].dealias
@@ -16,6 +19,10 @@ private[tupson] object JsonRW2Product {
     val accessors = modelSymbol.caseFields
     if !modelSymbol.flags.is(Flags.Case) || parameters.map(_.map(_.name)) != List(accessors.map(_.name)) then
       report.errorAndAbort(s"JsonRW2 requires a case class with one parameter list: ${Type.show[A]}")
+    tag.foreach { (key, _) =>
+      if accessors.exists(_.name == key) then
+        report.errorAndAbort(s"Discriminator '$key' conflicts with a field of ${Type.show[A]}")
+    }
 
     case class Field(accessor: Symbol, tpe: TypeRepr, codec: Term, default: Option[Term]) {
       val name: String = accessor.name
@@ -73,7 +80,6 @@ private[tupson] object JsonRW2Product {
       }
 
     def makeCodec(fields: List[Field])(using Quotes): Expr[JsonRW2[A]] = {
-      val sortedFields = fields.sortBy(_.name)
       '{
         new ProductCodec[A](
           (in, ctx) => TupsonReader.readObject[A](in, ctx) {
@@ -81,8 +87,8 @@ private[tupson] object JsonRW2Product {
           },
           (value, out, sort) => {
             out.writeObjectStart()
-            if sort then ${ writeFields(sortedFields, 'value, 'out, 'sort) }
-            else ${ writeFields(fields, 'value, 'out, 'sort) }
+            if sort then ${ writeFields(fields, 'value, 'out, 'sort, sorted = true) }
+            else ${ writeFields(fields, 'value, 'out, 'sort, sorted = false) }
             out.writeObjectEnd()
           }
         )
@@ -165,20 +171,37 @@ private[tupson] object JsonRW2Product {
           '{ if !$seen && !$ctx.errorLimitReached then $missing }
       }
 
-    def writeFields(fields: List[Field], value: Expr[A], out: Expr[JsonWriter], sort: Expr[Boolean])(using Quotes): Expr[Unit] = {
+    def writeFields(
+        fields: List[Field],
+        value: Expr[A],
+        out: Expr[JsonWriter],
+        sort: Expr[Boolean],
+        sorted: Boolean
+    )(using Quotes): Expr[Unit] = {
       val writes = fields.map { field =>
         field.tpe.asType match {
           case '[f] =>
             val key = Expr(field.name)
             val codec = field.codec.asExprOf[JsonRW2[f]]
             val member = Select(value.asTerm, field.accessor).asExprOf[f]
-            '{
+            val write = '{
               $out.writeKey($key)
               $codec.encode($member, $out, $sort)
             }
+            field.name -> write
         }
       }
-      Expr.block(writes, '{ () })
+      val discriminator = tag.map { (name, label) =>
+        val key = Expr(name)
+        val value = Expr(label)
+        name -> '{
+          $out.writeKey($key)
+          $out.writeVal($value)
+        }
+      }
+      val members = discriminator.toList ::: writes
+      val ordered = if sorted then members.sortBy(_._1) else members
+      Expr.block(ordered.map(_._2), '{ () })
     }
 
     cacheCodecs(fields, Nil)
