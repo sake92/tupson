@@ -1,6 +1,6 @@
 package tupsonconsumer
 
-import ba.sake.tupson.{JsonRW2, ParseError, ParsingException, TupsonException}
+import ba.sake.tupson.{JsonRW2, ParseError, ParsingException, TupsonException, discriminator}
 import JsonRW2.*
 
 class JsonRW2EnumSuite extends munit.FunSuite {
@@ -24,6 +24,30 @@ class JsonRW2EnumSuite extends munit.FunSuite {
     val error = intercept[ParsingException]("""{"status":false}""".parseJson[Response])
     assertEquals(error.errors, Seq(ParseError("$.status", "should be String but it is Boolean", Some("false"))))
   }
+
+  test("round-trip both singleton and payload cases of a mixed enum as tagged objects") {
+    val idle: JobState = JobState.Idle
+    val running: JobState = JobState.Running("backup", 2)
+    val idleJson = """{"@type":"Idle"}"""
+    val runningJson = """{"@type":"Running","job":"backup","attempt":2}"""
+    assertEquals(idle.toJson(), idleJson)
+    assert(idleJson.parseJson[JobState] eq JobState.Idle)
+    assertEquals(running.toJson(), runningJson)
+    assertEquals(runningJson.parseJson[JobState], running)
+    assertEquals("""{"job":"backup","@type":"Running"}""".parseJson[JobState], JobState.Running("backup"))
+
+    val error = intercept[ParsingException] {
+      """{"job":false,"@type":"Running"}""".parseJson[JobState]
+    }
+    assertEquals(error.errors, Seq(ParseError("$.job", "should be String but it is Boolean", Some("false"))))
+  }
+
+  test("apply a custom discriminator to enum cases with payloads") {
+    val value: Keyed = Keyed.Entry(42)
+    val json = """{"kind":"Entry","id":42}"""
+    assertEquals(value.toJson(), json)
+    assertEquals(json.parseJson[Keyed], value)
+  }
 }
 
 object JsonRW2EnumSuite {
@@ -37,4 +61,14 @@ object JsonRW2EnumSuite {
   }
 
   case class Response(status: Status) derives JsonRW2
+
+  enum JobState derives JsonRW2 {
+    case Idle
+    case Running(job: String, attempt: Int = 1)
+  }
+
+  @discriminator("kind")
+  enum Keyed derives JsonRW2 {
+    case Entry(id: Int)
+  }
 }

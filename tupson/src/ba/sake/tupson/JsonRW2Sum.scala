@@ -20,8 +20,6 @@ private[tupson] object JsonRW2Sum {
         val model = TypeRepr.of[A].dealias.typeSymbol
         if model.flags.is(Flags.Enum) && model.companionClass.methodMember("values").nonEmpty then
           deriveEnum[A, elements, labels](sum)
-        else if model.flags.is(Flags.Enum) then
-          report.errorAndAbort(s"JsonRW2 does not yet derive enums with payloads: ${Type.show[A]}")
         else deriveTagged[A, elements, labels](sum)
       case _ => quotes.reflect.report.errorAndAbort(s"Cannot resolve sum cases for ${Type.show[A]}")
     }
