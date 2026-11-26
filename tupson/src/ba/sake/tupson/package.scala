@@ -56,3 +56,9 @@ case class ParseError(
 
 /* annotations */
 case class discriminator(name: String) extends StaticAnnotation
+
+/** Inlines a nested case class's derived fields into the containing JSON object. */
+final class flatten extends StaticAnnotation
+
+/** Captures unclaimed keys in a Map[String, Json] and writes them back as sibling fields. */
+final class other extends StaticAnnotation
