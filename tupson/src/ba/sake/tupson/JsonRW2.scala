@@ -3,6 +3,7 @@ package ba.sake.tupson
 import java.math.{BigDecimal, BigInteger}
 import java.net.URI
 import java.time.{Duration, Instant, LocalDate, LocalDateTime, LocalTime, Period}
+import java.time.{OffsetDateTime, OffsetTime, ZoneId, ZoneOffset, ZonedDateTime}
 import java.util.UUID
 import scala.collection.mutable.HashSet
 import scala.deriving.Mirror
@@ -153,6 +154,11 @@ object JsonRW2 {
   given JsonRW2[LocalDate] = stringValue("LocalDate")(LocalDate.parse)
   given JsonRW2[LocalTime] = stringValue("LocalTime")(LocalTime.parse)
   given JsonRW2[LocalDateTime] = stringValue("LocalDateTime")(LocalDateTime.parse)
+  given JsonRW2[OffsetDateTime] = stringValue("OffsetDateTime")(OffsetDateTime.parse)
+  given JsonRW2[OffsetTime] = stringValue("OffsetTime")(OffsetTime.parse)
+  given JsonRW2[ZonedDateTime] = stringValue("ZonedDateTime")(ZonedDateTime.parse)
+  given JsonRW2[ZoneId] = stringValue("ZoneId")(ZoneId.of)
+  given JsonRW2[ZoneOffset] = stringValue("ZoneOffset")(ZoneOffset.of)
 
   given JsonRW2[BigDecimal] with {
     private[tupson] def decode(in: JsonReader, ctx: DecodeContext): BigDecimal =

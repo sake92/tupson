@@ -1,6 +1,7 @@
 package ba.sake.tupson
 
 import java.time.{Duration, Instant, LocalDate, LocalDateTime, LocalTime, Period}
+import java.time.{OffsetDateTime, OffsetTime, ZoneId, ZoneOffset, ZonedDateTime}
 import java.time.format.DateTimeParseException
 import JsonRW2.{parseJson as parseJson2, toJson as toJson2}
 
@@ -21,6 +22,17 @@ class JsonRW2TimeSuite extends munit.FunSuite {
   roundTrip[LocalDate]("LocalDate", "\"2024-02-29\"", "\"2024-02-29\"")
   roundTrip[LocalTime]("LocalTime", "\"12:34:00\"", "\"12:34\"")
   roundTrip[LocalDateTime]("LocalDateTime", "\"2026-08-28T12:34:56.1234\"", "\"2026-08-28T12:34:56.123400\"")
+  roundTrip[OffsetDateTime]("OffsetDateTime", "\"2026-08-28T12:34:00+02:00\"", "\"2026-08-28T12:34+02:00\"")
+  roundTrip[OffsetTime]("OffsetTime", "\"12:34:56-05:30\"", "\"12:34:56-05:30\"")
+  roundTrip[ZonedDateTime](
+    "ZonedDateTime with a named region",
+    "\"2026-08-28T12:34:56+02:00[Europe/Berlin]\"",
+    "\"2026-08-28T12:34:56+02:00[Europe/Berlin]\""
+  )
+  roundTrip[ZonedDateTime]("ZonedDateTime with a fixed offset", "\"2026-08-28T12:34:56Z\"", "\"2026-08-28T12:34:56Z\"")
+  roundTrip[ZoneId]("ZoneId region", "\"Europe/Berlin\"", "\"Europe/Berlin\"")
+  roundTrip[ZoneId]("ZoneId offset", "\"+02:00\"", "\"+02:00\"")
+  roundTrip[ZoneOffset]("ZoneOffset", "\"+02:00\"", "\"+02:00\"")
 
   test("keep the target type and path for time values of the wrong JSON type") {
     val input = """{"date":123}"""
