@@ -102,6 +102,28 @@ class JsonRW2TaggedSuite extends munit.FunSuite {
     """)
     assert(errors.contains("Discriminator 'kind' conflicts with a field"), errors)
   }
+
+  test("round-trip a recursive tagged sum with late tags at each level") {
+    val leaf = """{"value":7,"@type":"Leaf"}"""
+    val branch = s"""{"children":[$leaf],"@type":"Branch"}"""
+    val input = s"""{"children":[$branch,$leaf],"@type":"Branch"}"""
+    val tree: Tree = Branch(List(Branch(List(Leaf(7))), Leaf(7)))
+
+    assertEquals(input.parseJson[Tree], tree)
+    assertEquals(tree.toJson().parseJson[Tree], tree)
+  }
+
+  test("report indexed paths for errors inside recursive tagged sums") {
+    val leaf = """{"value":false,"@type":"Leaf"}"""
+    val branch = s"""{"children":[$leaf],"@type":"Branch"}"""
+    val input = s"""{"children":[$branch],"@type":"Branch"}"""
+
+    val error = intercept[ParsingException](input.parseJson[Tree])
+    assertEquals(
+      error.errors,
+      Seq(ParseError("$.children[0].children[0].value", "should be Int but it is Boolean", Some("false")))
+    )
+  }
 }
 
 object JsonRW2TaggedSuite {
@@ -115,4 +137,8 @@ object JsonRW2TaggedSuite {
   sealed trait Command derives JsonRW2
   case class Start(job: String) extends Command
   case class Stop(job: String) extends Command
+
+  sealed trait Tree derives JsonRW2
+  case class Branch(children: List[Tree]) extends Tree
+  case class Leaf(value: Int) extends Tree
 }
