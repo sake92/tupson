@@ -124,6 +124,26 @@ class JsonRW2TaggedSuite extends munit.FunSuite {
       Seq(ParseError("$.children[0].children[0].value", "should be Int but it is Boolean", Some("false")))
     )
   }
+
+  test("use the type parameter's codec in generic tagged sums") {
+    val number: Result[Int] = Success(42)
+    val text: Result[String] = Success("backup")
+    val numberJson = """{"@type":"Success","value":42}"""
+    val textJson = """{"@type":"Success","value":"backup"}"""
+    assertEquals(number.toJson(), numberJson)
+    assertEquals(text.toJson(), textJson)
+    assertEquals(numberJson.parseJson[Result[Int]], number)
+    assertEquals(textJson.parseJson[Result[String]], text)
+
+    val failure: Result[Int] = Failure("unavailable")
+    val failureJson = """{"@type":"Failure","message":"unavailable"}"""
+    assertEquals(failure.toJson(), failureJson)
+    assertEquals(failureJson.parseJson[Result[Int]], failure)
+    assertEquals(failureJson.parseJson[Result[String]], Failure("unavailable"))
+
+    val mismatch = intercept[ParsingException](numberJson.parseJson[Result[String]])
+    assertEquals(mismatch.errors, Seq(ParseError("$.value", "should be String but it is Number", Some("42"))))
+  }
 }
 
 object JsonRW2TaggedSuite {
@@ -141,4 +161,8 @@ object JsonRW2TaggedSuite {
   sealed trait Tree derives JsonRW2
   case class Branch(children: List[Tree]) extends Tree
   case class Leaf(value: Int) extends Tree
+
+  sealed trait Result[+A] derives JsonRW2
+  case class Success[A](value: A) extends Result[A]
+  case class Failure(message: String) extends Result[Nothing]
 }
