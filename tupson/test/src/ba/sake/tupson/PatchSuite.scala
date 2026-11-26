@@ -1,8 +1,8 @@
 package ba.sake.tupson
 
 
-class JsonRWPatchSuite extends munit.FunSuite {
-  import JsonRWPatchSuite.*
+class PatchSuite extends munit.FunSuite {
+  import PatchSuite.*
   import Patch.*
 
   test("distinguish absent, null, and present PATCH fields") {
@@ -36,6 +36,6 @@ class JsonRWPatchSuite extends munit.FunSuite {
   }
 }
 
-object JsonRWPatchSuite {
+object PatchSuite {
   case class UserPatch(name: Patch[String], address: Patch[Option[String]], tags: Patch[Seq[String]]) derives JsonRW
 }

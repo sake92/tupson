@@ -1,11 +1,9 @@
-package tupsonconsumer
+package ba.sake.tupson
 
 import scala.collection.immutable.VectorMap
-import ba.sake.tupson.{Json, JsonRW, TupsonException}
-import ba.sake.tupson.{parseJson, toJson}
 
-class JsonRWDynamicSuite extends munit.FunSuite {
-  import JsonRWDynamicSuite.*
+class DynamicJsonSuite extends munit.FunSuite {
+  import DynamicJsonSuite.*
 
   test("round-trip dynamic values inside a typed product") {
     val input = """{"kind":"event","data":{"z":[null,true,"ž"],"a":-0.00e+02}}"""
@@ -37,8 +35,42 @@ class JsonRWDynamicSuite extends munit.FunSuite {
       """[{"a":1,"a":2}]""".parseJson[Json]
     }
   }
+
+  test("parse Json") {
+    assertEquals(""" "aaa" """.parseJson[Json], Json.Str("aaa"))
+    assertEquals(""" 123 """.parseJson[Json], Json.Num("123"))
+  }
+
+  test("write sorted output") {
+    val value = """{"b":1,"a":{"d":4,"c":3},"arr":[{"f":6,"e":5}]}""".parseJson[Json]
+    assertEquals(
+      value.toJson(spaces = 2, sort = true),
+      """{
+        |  "a": {
+        |    "c": 3,
+        |    "d": 4
+        |  },
+        |  "arr": [
+        |    {
+        |      "e": 5,
+        |      "f": 6
+        |    }
+        |  ],
+        |  "b": 1
+        |}""".stripMargin
+    )
+    assertEquals(
+      value.toJson(spaces = 0, sort = true),
+      """{"a":{"c":3,"d":4},"arr":[{"e":5,"f":6}],"b":1}"""
+    )
+    assertEquals(
+      value.toJson(spaces = -1, sort = true),
+      """{"a":{"c":3,"d":4},"arr":[{"e":5,"f":6}],"b":1}"""
+    )
+  }
+
 }
 
-object JsonRWDynamicSuite {
+object DynamicJsonSuite {
   case class Event(kind: String, data: Json) derives JsonRW
 }

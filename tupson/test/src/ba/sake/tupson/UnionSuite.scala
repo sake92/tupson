@@ -1,10 +1,9 @@
-package tupsonconsumer
+package ba.sake.tupson
 
-import ba.sake.tupson.{JsonRW, ParseError, ParsingException, TupsonException}
-import ba.sake.tupson.{parseJson, toJson}
+import ProductFixtures.*
 
-class JsonRWUnionSuite extends munit.FunSuite {
-  import JsonRWUnionSuite.*
+class UnionSuite extends munit.FunSuite {
+  import UnionSuite.*
 
   test("read and write scalar unions by trying alternatives and dispatching by runtime type") {
     val number: Id = 42
@@ -79,9 +78,53 @@ class JsonRWUnionSuite extends munit.FunSuite {
       """{"name":"backup","ignored":[1,]}""".parseJson[First | Second]
     }
   }
+
+  test("parse union type") {
+    assertEquals("1".parseJson[Int | String | Boolean], 1)
+    assertEquals(""" "bla" """.parseJson[Int | String | Boolean], "bla")
+
+    assertEquals(
+      """{"str":"str","integer":123}""".parseJson[CaseClass1 | CaseClass2],
+      CaseClass1("str", 123)
+    )
+
+    assertEquals(
+      """{"bla":"c2","c1":{"str":"str","integer":123}}""".parseJson[CaseClass1 | CaseClass2],
+      CaseClass2("c2", CaseClass1("str", 123))
+    )
+
+    assertEquals("""{ "x": 5 }""".parseJson[(x: Int) | (y: String)], (x = 5))
+    assertEquals("""{ "y": "str" }""".parseJson[(x: Int) | (y: String)], (y = "str"))
+  }
+
+  test("write union type") {
+    locally {
+      val value: Int | String = 1
+      assertEquals(value.toJson(), """1""")
+    }
+    locally {
+      val value: Int | String = "bla"
+      assertEquals(value.toJson(), """ "bla" """.trim)
+    }
+    locally {
+      val value: CaseClass1 | CaseClass2 = CaseClass1("str", 123)
+      assertEquals(
+        value.toJson(spaces = 0).parseJson[Json],
+        """{"str":"str","integer":123}""".parseJson[Json]
+      )
+    }
+    locally {
+      val value: CaseClass1 | CaseClass2 | Int = CaseClass2("c2", CaseClass1("str", 123))
+      assertEquals(
+        value.toJson(spaces = 0).parseJson[Json],
+        """{"bla":"c2","c1":{"str":"str","integer":123}}""".parseJson[Json]
+      )
+    }
+  }
+
 }
 
-object JsonRWUnionSuite {
+object UnionSuite {
   type Id = Int | String
   case class JobId(id: Id) derives JsonRW
   case class First(id: Int) derives JsonRW

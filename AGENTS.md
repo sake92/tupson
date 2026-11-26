@@ -11,8 +11,8 @@ This repository uses **Deder** (`deder.pkl`) for contributor workflows.
 - Install Deder: `brew install sake92/tap/deder`
 - Compile everything: `deder exec -t compile`
 - Run the full test matrix (JVM, Scala.js, Scala Native, `tupson-config`, and `tupson-sttp`): `deder exec -t test`
-- Run one JVM suite: `deder exec -m tupson-jvm-test-3.9.0 -t test ba.sake.tupson.ParseSuite`
-- Run one JVM test: `deder exec -m tupson-jvm-test-3.9.0 -t test 'ba.sake.tupson.ParseSuite#parse primitives'`
+- Run one JVM suite: `deder exec -m tupson-jvm-test-3.9.0 -t test ba.sake.tupson.ScalarSuite`
+- Run one JVM test: `deder exec -m tupson-jvm-test-3.9.0 -t test 'ba.sake.tupson.ScalarSuite#parse primitives'`
 - Fast JVM-only loop: `deder exec -m tupson-jvm-test-3.9.0 -t testInMemory`
 - Check rewrite/lint rules: `deder exec -t fixCheck`
 - Apply rewrites: `deder exec -t fix`

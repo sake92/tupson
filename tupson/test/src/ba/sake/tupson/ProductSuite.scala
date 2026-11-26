@@ -1,15 +1,9 @@
-package tupsonconsumer
+package ba.sake.tupson
 
-import ba.sake.tupson.{JsonRW, ParseError, ParsingException, TupsonException}
-import ba.sake.tupson.{parseJson, toJson}
+import ProductFixtures.*
 
-class JsonRWProductSuite extends munit.FunSuite {
-  import JsonRWProductSuite.*
-
-  test("keep raw codec construction internal") {
-    val errors = compileErrors("new ba.sake.tupson.JsonRW[Int]() {}")
-    assert(errors.contains("constructor JsonRW cannot be accessed"), errors)
-  }
+class ProductSuite extends munit.FunSuite {
+  import ProductSuite.*
 
   test("derive a product with constructor and codec defaults") {
     val input = """{"name":"backup","ignored":[null,{"ok":true}]}"""
@@ -124,9 +118,145 @@ class JsonRWProductSuite extends munit.FunSuite {
     assertEquals(value.toJson(), input)
     assertEquals(input.parseJson[Parent], value)
   }
+
+  test("parse case class") {
+    assertEquals(
+      """{"str":"str","integer":123}""".parseJson[CaseClass1],
+      CaseClass1("str", 123)
+    )
+
+    assertEquals(
+      """{"bla":"c2","c1":{"str":"str","integer":123}}""".parseJson[CaseClass2],
+      CaseClass2("c2", CaseClass1("str", 123))
+    )
+
+    val ex1 = intercept[ParsingException] {
+      """{"str":"str"}""".parseJson[CaseClass1]
+    }
+    assertEquals(
+      ex1.errors,
+      Seq(ParseError("$.integer", "is missing", None))
+    )
+
+    intercept[TupsonException] {
+      // has to be an object
+      """5""".parseJson[CaseClass1]
+    }
+    val ex2 = intercept[ParsingException] {
+      """{ "str":123 }""".parseJson[CaseClass1]
+    }
+    assertEquals(
+      ex2.errors,
+      Seq(
+        ParseError("$.str", "should be String but it is Number", Some("123")),
+        ParseError("$.integer", "is missing", None)
+      )
+    )
+
+    val ex3 = intercept[ParsingException] {
+      """{"bla":"str", "c1": { "str":123 }}""".parseJson[CaseClass2]
+    }
+    assertEquals(
+      ex3.errors,
+      Seq(
+        ParseError("$.c1.str", "should be String but it is Number", Some("123")),
+        ParseError("$.c1.integer", "is missing", None)
+      )
+    )
+  }
+
+  test("write case class") {
+    assertEquals(
+      CaseClass1("str", 123).toJson(spaces = 0).parseJson[Json],
+      """{"str":"str","integer":123}""".parseJson[Json]
+    )
+
+    assertEquals(
+      CaseClass2("c2", CaseClass1("str", 123)).toJson(spaces = 0).parseJson[Json],
+      """{"bla":"c2","c1":{"str":"str","integer":123}}""".parseJson[Json]
+    )
+  }
+
+  test("parse recursive data type") {
+    import rec.*
+    assertEquals(
+      """{"children":[{"children":[]}]}""".parseJson[Node],
+      Node(Seq(Node(Seq.empty)))
+    )
+  }
+
+  test("write recursive data type") {
+    import rec.*
+    val n1 = Node(Seq(Node(Seq.empty)))
+    assertEquals(
+      n1.toJson(spaces = 0),
+      """{"children":[{"children":[]}]}"""
+    )
+  }
+
+  test("parse with weird key name") {
+    import weird_named.*
+    assertEquals(
+      """{"weird named key":1}""".parseJson[WeirdNamed],
+      WeirdNamed(1)
+    )
+  }
+
+  test("write with weird key name") {
+    import weird_named.*
+    val r1 = WeirdNamed(1)
+    assertEquals(
+      r1.toJson(spaces = 0),
+      """{"weird named key":1}"""
+    )
+  }
+
+  test("parse missing keys to their global defaults") {
+    assertEquals(
+      """{}""".parseJson[CaseClassOpt],
+      CaseClassOpt(None, Seq.empty, Map.empty)
+    )
+    assertEquals(
+      """{ "str": null, "seq": [], "map": {} }""".parseJson[CaseClassOpt],
+      CaseClassOpt(None, Seq.empty, Map.empty)
+    )
+    assertEquals(
+      """{ "str": "value", "seq": ["abc"], "map": {"a": "aaa"} }""".parseJson[CaseClassOpt],
+      CaseClassOpt(Some("value"), Seq("abc"), Map("a" -> "aaa"))
+    )
+  }
+
+  test("parse missing keys to their local defaults") {
+    case class Bla(x: String = "deflt") derives JsonRW
+
+    assertEquals(
+      """{}""".parseJson[Bla],
+      Bla("deflt")
+    )
+    assertEquals(
+      """{}""".parseJson[CaseClassDefault],
+      CaseClassDefault(Seq.empty, Some("default"))
+    )
+    assertEquals(
+      """{ "lst": ["value"], "str": "string" }""".parseJson[CaseClassDefault],
+      CaseClassDefault(Seq("value"), Some("string"))
+    )
+    assertEquals(
+      """{ "lst": ["value"], "str": null }""".parseJson[CaseClassDefault],
+      CaseClassDefault(Seq("value"), None)
+    )
+    intercept[TupsonException] {
+      // "lst" must not be null
+      assertEquals(
+        """{ "lst": null }""".parseJson[CaseClassDefault],
+        CaseClassDefault(Seq.empty, None)
+      )
+    }
+  }
+
 }
 
-object JsonRWProductSuite {
+object ProductSuite {
   case class Job(name: String, retries: Int = 3, email: Option[String], limits: Map[String, Int]) derives JsonRW
   case class DefaultEmail(email: Option[String] = Some("default")) derives JsonRW
   case class Box[A](`wire key`: A, fallback: Option[A] = None) derives JsonRW
@@ -146,4 +276,28 @@ object JsonRWProductSuite {
   case class Node(value: Int, children: List[Node]) derives JsonRW
   case class Parent(child: Option[Child]) derives JsonRW
   case class Child(parent: Option[Parent]) derives JsonRW
+}
+
+private object ProductFixtures {
+  case class CaseClass1(str: String, integer: Int) derives JsonRW
+  case class CaseClass2(bla: String, c1: CaseClass1) derives JsonRW
+
+  case class CaseClassOpt(str: Option[String], seq: Seq[String], map: Map[String, String]) derives JsonRW
+  case class CaseClassDefault(
+      // parsed as Seq.empty IF THE KEY IS MISSING (not failing)
+      lst: Seq[String] = Seq.empty,
+
+      // parsed as Some("default") IF THE KEY IS MISSING (not failing)
+      str: Option[String] = Some("default")
+  ) derives JsonRW
+  object rec {
+    case class Node(children: Seq[Node]) derives JsonRW
+  }
+
+  object weird_named {
+    case class WeirdNamed(`weird named key`: Int) derives JsonRW
+  }
+
+  case class Gen[T](value: T) derives JsonRW
+  case class GenericBox[T](gen: Gen[T]) derives JsonRW
 }

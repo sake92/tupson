@@ -1,84 +1,67 @@
 package ba.sake.tupson
 
-import java.math.{BigDecimal, BigInteger}
-import java.net.URI
-import java.nio.charset.StandardCharsets.UTF_8
-import java.util.UUID
-import ba.sake.tupson.{*, given}
+class CollectionSuite extends munit.FunSuite {
 
-class JsonRWSuite extends munit.FunSuite {
-  test("preserve UUID and URI wire formats") {
-    def compare[A: JsonRW](json: String): Unit = {
-      val value = json.parseJson[A]
-      assertEquals(value.toJson(), json)
+  test("parse Seq") {
+    assertEquals("[1,2,3]".parseJson[Seq[Int]], Seq(1, 2, 3))
+    assertEquals("[1,2,3]".parseJson[Array[Int]].toSeq, Array(1, 2, 3).toSeq)
+
+    val ex1 = intercept[ParsingException] {
+      """5""".parseJson[Seq[Int]]
     }
+    assertEquals(
+      ex1.errors,
+      Seq(ParseError("$", "should be Seq but it is Number", Some("5")))
+    )
 
-    compare[UUID]("\"2d931510-d99f-494a-8c67-87feb05e1594\"")
-    compare[URI]("\"https://example.com/a%20b?c=d\"")
-    intercept[IllegalArgumentException]("\"bad-uuid\"".parseJson[UUID])
-    val mismatch = intercept[ParsingException]("123".parseJson[URI])
-    assertEquals(mismatch.errors, Seq(ParseError("$", "should be URI but it is Number", Some("123"))))
+    val ex2 = intercept[ParsingException] {
+      """[ true, "" ]""".parseJson[Seq[Int]]
+    }
+    assertEquals(
+      ex2.errors,
+      Seq(
+        ParseError("$[0]", "should be Int but it is Boolean", Some("true")),
+        ParseError("$[1]", "should be Int but it is String", Some(""""""""))
+      )
+    )
   }
 
-  test("read and write exact decimals without rounding or losing scale") {
-    val inputs = Seq("1e3", "1234567890.12345678901234567890", "1." + "0123456789" * 40)
-    inputs.foreach { json =>
-      val expected = new BigDecimal(json)
-      val actual = json.parseJson[BigDecimal]
-      assertEquals(actual, expected)
-      assertEquals(actual.toJson(), expected.toString)
+  test("write Seq") {
+    assertEquals(Seq(1, 2, 3).toJson(spaces = 0), "[1,2,3]")
+    assertEquals(Array(1, 2, 3).toJson(spaces = 0), "[1,2,3]")
+  }
+
+  test("parse Option") {
+    assertEquals("123".parseJson[Option[Int]], Option(123))
+    assertEquals("null".parseJson[Option[Int]], Option.empty[Int])
+  }
+
+  test("write Option") {
+    assertEquals(Option(123).toJson(), "123")
+    assertEquals(Option.empty[Int].toJson(), "null")
+  }
+
+  test("parse Map") {
+    assertEquals(
+      """{"a":"abc"}""".parseJson[Map[String, String]],
+      Map("a" -> "abc")
+    )
+    assertEquals(
+      """{"string":"abc"}""".parseJson[Map[String, String]],
+      Map("string" -> "abc")
+    )
+    intercept[TupsonException] {
+      // has to be an object
+      """5""".parseJson[Map[String, String]]
     }
   }
 
-  test("preserve big integers and reject fraction syntax") {
-    val inputs = Seq("42", "-9223372036854775809", "1234567890" * 40)
-    inputs.foreach { json =>
-      val value = json.parseJson[BigInteger]
-      assertEquals(value, new BigInteger(json))
-      assertEquals(value.toJson(), json)
-    }
-
-    Seq("1.5", "1e0").foreach { input =>
-      intercept[NumberFormatException](input.parseJson[BigInteger])
-    }
-    interceptMessage[TupsonException]("JSON parsing exception") {
-      "01".parseJson[BigInteger]
-    }
-  }
-
-  test("round-trip scalar values from strings and UTF-8 bytes") {
-    def roundTrip[A: JsonRW](value: A): Unit = {
-      val json = value.toJson()
-      assertEquals(json.parseJson[A], value)
-      assertEquals(json.getBytes(UTF_8).parseJson[A], value)
-    }
-
-    roundTrip("ž 😃\n\"\\")
-    roundTrip('ž')
-    roundTrip(false)
-    roundTrip(Int.MinValue)
-    roundTrip(Long.MaxValue)
-    roundTrip(1.233f)
-    roundTrip(1.23456789d)
-  }
-
-  test("report type mismatches and reject malformed values") {
-    val error = intercept[ParsingException]("5".parseJson[Boolean])
-    assertEquals(error.errors, Seq(ParseError("$", "should be Boolean but it is Number", Some("5"))))
-
-    val nullValue = intercept[ParsingException]("null".parseJson[Int])
-    assertEquals(nullValue.errors, Seq(ParseError("$", "should be Int but it is Null", Some("null"))))
-    intercept[ParsingException]("[null]".parseJson[Int])
-
-    val emptyChar = intercept[ParsingException]("\"\"".parseJson[Char])
-    assertEquals(emptyChar.errors, Seq(ParseError("$", "should be Char but it is String", Some("\"\""))))
-
-    Seq("[1,]", "{\"a\":trux}", "true false").foreach { input =>
-      val syntax = intercept[TupsonException](input.parseJson[Boolean])
-      assertEquals(syntax.getMessage, "JSON parsing exception")
-    }
-    intercept[TupsonException]("5.0".parseJson[Int])
-    intercept[TupsonException]("2147483648".parseJson[Int])
+  test("write Map") {
+    assertEquals(Map("a" -> "abc").toJson(spaces = 0), """{"a":"abc"}""")
+    assertEquals(
+      Map("string" -> "abc").toJson(spaces = 0),
+      """{"string":"abc"}"""
+    )
   }
 
   test("preserve element errors when reading an option") {
@@ -146,7 +129,7 @@ class JsonRWSuite extends munit.FunSuite {
     def compare[A: JsonRW](): Unit = {
       val input = "[false,1,null]"
       val actual = intercept[ParsingException](input.parseJson[A])
-        assertEquals(actual.errors.map(_.path), Seq("$[0]", "$[2]"))
+      assertEquals(actual.errors.map(_.path), Seq("$[0]", "$[2]"))
     }
 
     compare[Seq[Int]]()
@@ -178,22 +161,5 @@ class JsonRWSuite extends munit.FunSuite {
       """{"bad":false,"extra":[1,]}""".parseJson[Map[String, Int]]
     }
     assertEquals(syntax.getMessage, "JSON parsing exception")
-  }
-
-  test("map scalar codecs and preserve validation errors") {
-    case class Email(value: String)
-    val unchecked = JsonRW[String].bimap(Email.apply)(_.value)
-    assertEquals("\"ada\"".parseJson[Email](using unchecked), Email("ada"))
-
-    val email = JsonRW[String].emap { value =>
-      if value.contains('@') then Right(Email(value)) else Left("must contain @")
-    }(_.value)
-    val value = Email("ada@example.org")
-    assertEquals(value.toJson()(using email).parseJson[Email](using email), value)
-
-    val invalid = intercept[ParsingException]("\"ada\"".parseJson[Email](using email))
-    assertEquals(invalid.errors, Seq(ParseError("$", "must contain @")))
-    val mismatch = intercept[ParsingException]("42".parseJson[Email](using email))
-    assertEquals(mismatch.errors.map(_.msg), Seq("should be String but it is Number"))
   }
 }
