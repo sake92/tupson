@@ -1,5 +1,6 @@
 package ba.sake.tupson
 
+import scala.collection.mutable.ArrayBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 
 /** A JSON codec that reads and writes directly through the backend. */
@@ -156,12 +157,82 @@ object JsonRW2 {
       out.writeVal(value)
   }
 
+  given [A](using element: JsonRW2[A]): JsonRW2[Option[A]] with {
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Option[A] = {
+      if in.isNextToken('n') then in.readNullOrError(None, "expected null")
+      else {
+        in.rollbackToken()
+        val before = ctx.errorCount
+        val value = element.decode(in, ctx)
+        if ctx.errorCount == before then Option(value) else None
+      }
+    }
+
+    private[tupson] def encode(value: Option[A], out: JsonWriter, sort: Boolean): Unit =
+      value match {
+        case Some(item) => element.encode(item, out, sort)
+        case None       => out.writeNull()
+      }
+  }
+
+  given [A](using element: JsonRW2[A]): JsonRW2[Map[String, A]] with {
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Map[String, A] =
+      readToken(in, ctx, "Map", Map.empty[String, A])(_ == '{') {
+        in.nextToken()
+        if in.isNextToken('}') then Map.empty
+        else {
+          in.rollbackToken()
+          val entries = Map.newBuilder[String, A]
+          val before = ctx.errorCount
+          var more = true
+          while more do {
+            val key = in.readKeyAsString()
+            if ctx.errorCount == before then {
+              val value = ctx.withField(key)(element.decode(in, ctx))
+              if ctx.errorCount == before then entries.addOne((key, value))
+            } else skipValue(in)
+            more = in.isNextToken(',')
+          }
+          if !in.isCurrentToken('}') then in.objectEndOrCommaError()
+          if ctx.errorCount == before then entries.result() else Map.empty
+        }
+      }
+
+    private[tupson] def encode(value: Map[String, A], out: JsonWriter, sort: Boolean): Unit = {
+      out.writeObjectStart()
+      if sort then {
+        val keys = value.keysIterator.toArray.sorted
+        keys.foreach { key =>
+          out.writeKey(key)
+          element.encode(value(key), out, sort)
+        }
+      } else {
+        val entries = value.iterator
+        while entries.hasNext do {
+          val (key, entry) = entries.next()
+          out.writeKey(key)
+          element.encode(entry, out, sort)
+        }
+      }
+      out.writeObjectEnd()
+    }
+  }
+
   private[tupson] final class DecodeContext {
     private var errors = Vector.empty[ParseError]
+    private lazy val fields = ArrayBuffer.empty[String]
 
     def errorCount: Int = errors.size
+
+    inline def withField[A](key: String)(inline read: A): A = {
+      fields.addOne(key)
+      try read
+      finally fields.remove(fields.size - 1)
+    }
+
     def fail(message: String, value: Option[Any] = None): Unit = {
-      val error = ParseError("$", message, value)
+      val path = if fields.isEmpty then "$" else fields.mkString("$.", ".", "")
+      val error = ParseError(path, message, value)
       errors = errors.appended(error)
     }
 
@@ -188,7 +259,9 @@ object JsonRW2 {
     val (actual, value) = token match {
       case '"'       => ("String", Some(JsonRW2[String].render(in.readString(null), spaces = 0, sort = false).take(100)))
       case 't' | 'f' => ("Boolean", Some(in.readBoolean().toString))
-      case 'n'       => ("Null", Some(in.readNullOrError("null", "expected null")))
+      case 'n' =>
+        in.nextToken()
+        ("Null", Some(in.readNullOrError("null", "expected null")))
       case '[' | '{' =>
         skipValue(in)
         val kind = if token == '[' then "Array" else "Object"
@@ -218,12 +291,12 @@ object JsonRW2 {
             else in.objectEndOrCommaError()
           }
         }
+      case 'n' => in.readNullOrError((), "expected null")
       case token =>
         in.rollbackToken()
         token match {
           case '"'       => in.readStringAsCharBuf()
           case 't' | 'f' => in.readBoolean()
-          case 'n'       => in.readNullOrError((), "expected null")
           case b if isNumber(b) => in.readNumber(null)
           case _ => in.decodeError("expected JSON value")
         }
