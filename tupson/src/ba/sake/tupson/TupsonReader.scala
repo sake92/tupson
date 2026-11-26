@@ -5,7 +5,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Builder
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 
-private[tupson] final class TupsonReader[A](codec: JsonRW2[A])
+private[tupson] final class TupsonReader[A](codec: JsonRW[A])
     extends JsonValueCodec[Either[ParsingException, A]] {
   def read(json: String): A =
     parse(readFromString(json)(using this))
@@ -38,7 +38,7 @@ private[tupson] final class TupsonReader[A](codec: JsonRW2[A])
 private[tupson] object TupsonReader {
   private val maxErrors = 10
 
-  def replay[A](json: Array[Byte], codec: JsonRW2[A], ctx: DecodeContext): A =
+  def replay[A](json: Array[Byte], codec: JsonRW[A], ctx: DecodeContext): A =
     readFromArrayReentrant(json)(using new JsonValueCodec[A] {
       def nullValue: A = null.asInstanceOf[A]
       def decodeValue(in: JsonReader, default: A): A = codec.decode(in, ctx)
@@ -110,7 +110,7 @@ private[tupson] object TupsonReader {
   inline def readArray[A, C](
       in: JsonReader,
       ctx: DecodeContext,
-      element: JsonRW2[A],
+      element: JsonRW[A],
       expected: String,
       inline empty: C
   )(inline newBuilder: Builder[A, C]): C =
@@ -172,7 +172,7 @@ private[tupson] object TupsonReader {
 
   private def mismatch(in: JsonReader, ctx: DecodeContext, token: Byte, expected: String): Unit = {
     val (actual, value) = token match {
-      case '"'       => ("String", Some(JsonRW2.toJson(in.readString(null))().take(100)))
+      case '"'       => ("String", Some(in.readString(null).toJson().take(100)))
       case 't' | 'f' => ("Boolean", Some(in.readBoolean().toString))
       case 'n' =>
         in.nextToken()

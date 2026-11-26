@@ -3,13 +3,13 @@ package ba.sake.tupson
 import scala.quoted.*
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonWriter}
 
-private[tupson] object JsonRW2Product {
-  inline def derived[A]: JsonRW2[A] = ${ derive[A] }
+private[tupson] object JsonRWProduct {
+  inline def derived[A]: JsonRW[A] = ${ derive[A] }
 
-  private def derive[A: Type](using Quotes): Expr[JsonRW2[A]] =
+  private def derive[A: Type](using Quotes): Expr[JsonRW[A]] =
     derive[A](None)
 
-  def derive[A: Type](tag: Option[(String, String)])(using Quotes): Expr[JsonRW2[A]] = {
+  def derive[A: Type](tag: Option[(String, String)])(using Quotes): Expr[JsonRW[A]] = {
     import quotes.reflect.*
 
     val model = TypeRepr.of[A].dealias
@@ -26,7 +26,7 @@ private[tupson] object JsonRW2Product {
     if singleton.isEmpty &&
       (!modelSymbol.flags.is(Flags.Case) || parameters.map(_.map(_.name)) != List(accessors.map(_.name)))
     then
-      report.errorAndAbort(s"JsonRW2 requires a case class with one parameter list: ${Type.show[A]}")
+      report.errorAndAbort(s"JsonRW requires a case class with one parameter list: ${Type.show[A]}")
     tag.foreach { (key, _) =>
       if accessors.exists(_.name == key) then
         report.errorAndAbort(s"Discriminator '$key' conflicts with a field of ${Type.show[A]}")
@@ -51,9 +51,9 @@ private[tupson] object JsonRW2Product {
       val tpe = model.memberType(accessor).widenTermRefByName
       tpe.asType match {
         case '[field] =>
-          val codec = Expr.summon[JsonRW2[field]].getOrElse {
+          val codec = Expr.summon[JsonRW[field]].getOrElse {
             report.errorAndAbort(
-              s"No JsonRW2[${Type.show[field]}] for ${Type.show[A]}.${accessor.name}"
+              s"No JsonRW[${Type.show[field]}] for ${Type.show[A]}.${accessor.name}"
             )
           }
           val default = if parameters.head(index).flags.is(Flags.HasDefault) then {
@@ -72,13 +72,13 @@ private[tupson] object JsonRW2Product {
       }
     }
 
-    def cacheCodecs(remaining: List[Field], cached: List[Field])(using Quotes): Expr[JsonRW2[A]] =
+    def cacheCodecs(remaining: List[Field], cached: List[Field])(using Quotes): Expr[JsonRW[A]] =
       remaining match {
         case Nil => makeCodec(cached.reverse)
         case field :: tail =>
           field.tpe.asType match {
             case '[f] =>
-              val codec = field.codec.asExprOf[JsonRW2[f]]
+              val codec = field.codec.asExprOf[JsonRW[f]]
               '{
                 // A field codec may refer back to this product's given during initialization.
                 lazy val fieldCodec = $codec
@@ -87,7 +87,7 @@ private[tupson] object JsonRW2Product {
           }
       }
 
-    def makeCodec(fields: List[Field])(using Quotes): Expr[JsonRW2[A]] = {
+    def makeCodec(fields: List[Field])(using Quotes): Expr[JsonRW[A]] = {
       '{
         new ProductCodec[A](
           (in, ctx) => TupsonReader.readObject[A](in, ctx) {
@@ -167,7 +167,7 @@ private[tupson] object JsonRW2Product {
         slot.field.tpe.asType match {
           case '[f] =>
             val key = Expr(slot.field.name)
-            val codec = slot.field.codec.asExprOf[JsonRW2[f]]
+            val codec = slot.field.codec.asExprOf[JsonRW[f]]
             val read = '{ $ctx.withField($key)($codec.decode($in, $ctx)) }
             val assign = Assign(slot.value, read.asTerm).asExprOf[Unit]
             val markSeen = Assign(slot.seen, Expr(true).asTerm).asExprOf[Unit]
@@ -190,7 +190,7 @@ private[tupson] object JsonRW2Product {
           val missing = slot.field.default match {
             case Some(value) => Assign(slot.value, value).asExprOf[Unit]
             case None =>
-              val codec = slot.field.codec.asExprOf[JsonRW2[f]]
+              val codec = slot.field.codec.asExprOf[JsonRW[f]]
               val key = Expr(slot.field.name)
               '{
                 $codec.default match {
@@ -213,7 +213,7 @@ private[tupson] object JsonRW2Product {
         field.tpe.asType match {
           case '[f] =>
             val key = Expr(field.name)
-            val codec = field.codec.asExprOf[JsonRW2[f]]
+            val codec = field.codec.asExprOf[JsonRW[f]]
             val member = Select(value.asTerm, field.accessor).asExprOf[f]
             val write = '{
               val fieldCodec = $codec
@@ -245,7 +245,7 @@ private[tupson] object JsonRW2Product {
   private[tupson] final class ProductCodec[A](
       read: (JsonReader, TupsonReader.DecodeContext) => A,
       write: (A, JsonWriter, Boolean) => Unit
-  ) extends JsonRW2[A] {
+  ) extends JsonRW[A] {
     private[tupson] def decode(in: JsonReader, ctx: TupsonReader.DecodeContext): A = read(in, ctx)
     private[tupson] def encode(value: A, out: JsonWriter, sort: Boolean): Unit = write(value, out, sort)
   }

@@ -1,6 +1,5 @@
 package ba.sake.tupson
 
-import org.typelevel.jawn.ast.*
 import java.util.UUID
 import java.time.*
 
@@ -50,9 +49,9 @@ class ParseSuite extends munit.FunSuite {
     assertEquals("-9007199254740992".parseJson[Long], -9007199254740992L)
   }
 
-  test("parse JValue") {
-    assertEquals(""" "aaa" """.parseJson[JValue], JString("aaa"))
-    assertEquals(""" 123 """.parseJson[JValue], JNum("123"))
+  test("parse Json") {
+    assertEquals(""" "aaa" """.parseJson[Json], Json.Str("aaa"))
+    assertEquals(""" 123 """.parseJson[Json], Json.Num("123"))
   }
 
   test("parse UUID") {
@@ -256,17 +255,6 @@ class ParseSuite extends munit.FunSuite {
     )
   }
 
-  test("parse PATCH-style fields") {
-    assertEquals(
-      """{ "name": "Ada", "address": null }""".parseJson[UserPatch],
-      UserPatch(Patch.Set("Ada"), Patch.Clear)
-    )
-    assertEquals(
-      """{}""".parseJson[UserPatch],
-      UserPatch(Patch.Keep, Patch.Keep)
-    )
-  }
-
   /* missing key -> default "local" value */
   test("parse missing keys to their local defaults") {
     case class Bla(x: String = "deflt") derives JsonRW
@@ -420,7 +408,7 @@ class ParseSuite extends munit.FunSuite {
     }
     assertEquals(
       exMissing.errors,
-      Seq(ParseError("@type", "is missing", None))
+      Seq(ParseError("$.@type", "is missing", None))
     )
 
     interceptMessage[TupsonException](

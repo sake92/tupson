@@ -1,5 +1,4 @@
 import ba.sake.tupson.{*, given}
-import org.typelevel.jawn.ast.JValue
 
 @main def parse: Unit = {
   val x = """{
@@ -15,5 +14,5 @@ case class ParsedData(
     dbl: Double,
     str: String,
     list: Seq[String],
-    dynamic: JValue
+    dynamic: Json
 ) derives JsonRW

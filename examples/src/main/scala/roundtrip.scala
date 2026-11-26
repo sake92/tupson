@@ -3,7 +3,7 @@ import ba.sake.tupson.{*, given}
 @main def roundtrip: Unit = {
   val x = RoundtripData(true, 5, 3.14, "xyz", Seq("a", "b"))
 
-  val json = x.toJson
+  val json = x.toJson()
   println(json)
 
   val xAgain = json.parseJson[RoundtripData]

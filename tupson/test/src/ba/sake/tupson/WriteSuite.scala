@@ -3,41 +3,39 @@ package ba.sake.tupson
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets.UTF_8
 
-import org.typelevel.jawn.ast.JValue
-
 class WriteSuite extends munit.FunSuite {
 
   test("write primitives") {
-    assertEquals(true.toJson, "true")
-    assertEquals(false.toJson, "false")
+    assertEquals(true.toJson(), "true")
+    assertEquals(false.toJson(), "false")
 
     // https://github.com/scala-js/scala-js/blob/v1.7.1/test-suite/shared/src/test/scala/org/scalajs/testsuite/javalib/lang/FloatTest.scala#L81-L85
-    assertEquals(1.233f.toJson.substring(0, 5), "1.233")
+    assertEquals(1.233f.toJson().substring(0, 5), "1.233")
 
-    assertEquals(1.234_567_89d.toJson, "1.23456789")
+    assertEquals(1.234_567_89d.toJson(), "1.23456789")
 
-    assertEquals(1.toJson, "1")
+    assertEquals(1.toJson(), "1")
 
-    assertEquals(1L.toJson, "1")
+    assertEquals(1L.toJson(), "1")
 
-    assertEquals("".toJson, "\"\"")
-    assertEquals("abc".toJson, "\"abc\"")
+    assertEquals("".toJson(), "\"\"")
+    assertEquals("abc".toJson(), "\"abc\"")
 
-    assertEquals('a'.toJson, "\"a\"")
+    assertEquals('a'.toJson(), "\"a\"")
   }
 
   test("write Long") {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER
     // TODO see if JS likes this..
-    assertEquals(9007199254740991L.toJson, "9007199254740991")
-    assertEquals(9007199254740992L.toJson, "9007199254740992")
+    assertEquals(9007199254740991L.toJson(), "9007199254740991")
+    assertEquals(9007199254740992L.toJson(), "9007199254740992")
 
-    assertEquals(-9007199254740991L.toJson, "-9007199254740991")
-    assertEquals(-9007199254740992L.toJson, "-9007199254740992")
+    assertEquals(-9007199254740991L.toJson(), "-9007199254740991")
+    assertEquals(-9007199254740992L.toJson(), "-9007199254740992")
 
     Seq(Long.MinValue, Long.MaxValue).foreach { value =>
       val output = new ByteArrayOutputStream()
-      value.writeJsonTo(output, spaces = 0, sort = false)
+      value.writeJson(output, spaces = 0, sort = false)
       assertEquals(new String(output.toByteArray, UTF_8), value.toString)
     }
   }
@@ -48,13 +46,8 @@ class WriteSuite extends munit.FunSuite {
   }
 
   test("write Option") {
-    assertEquals(Option(123).toJson, "123")
-    assertEquals(Option.empty[Int].toJson, "null")
-  }
-
-  test("write PATCH-style fields") {
-    assertEquals(UserPatch(Patch.Keep, Patch.Keep).toJson(spaces = 0), "{}")
-    assertEquals(UserPatch(Patch.Set("Ada"), Patch.Clear).toJson(spaces = 0), """{"address":null,"name":"Ada"}""")
+    assertEquals(Option(123).toJson(), "123")
+    assertEquals(Option.empty[Int].toJson(), "null")
   }
 
   test("write Map") {
@@ -68,13 +61,13 @@ class WriteSuite extends munit.FunSuite {
   /* case class */
   test("write case class") {
     assertEquals(
-      CaseClass1("str", 123).toJson(spaces = 0).parseJson[JValue],
-      """{"str":"str","integer":123}""".parseJson[JValue]
+      CaseClass1("str", 123).toJson(spaces = 0).parseJson[Json],
+      """{"str":"str","integer":123}""".parseJson[Json]
     )
 
     assertEquals(
-      CaseClass2("c2", CaseClass1("str", 123)).toJson(spaces = 0).parseJson[JValue],
-      """{"bla":"c2","c1":{"str":"str","integer":123}}""".parseJson[JValue]
+      CaseClass2("c2", CaseClass1("str", 123)).toJson(spaces = 0).parseJson[Json],
+      """{"bla":"c2","c1":{"str":"str","integer":123}}""".parseJson[Json]
     )
   }
 
@@ -83,8 +76,8 @@ class WriteSuite extends munit.FunSuite {
     import seal.*
     val s1: SealedBase = SealedCase1("str", 123)
     assertEquals(
-      s1.toJson(spaces = 0).parseJson[JValue],
-      """{"str":"str","@type":"SealedCase1","integer":123}""".parseJson[JValue]
+      s1.toJson(spaces = 0).parseJson[Json],
+      """{"str":"str","@type":"SealedCase1","integer":123}""".parseJson[Json]
     )
     val s2: SealedBase = SealedCase2
     assertEquals(
@@ -98,13 +91,13 @@ class WriteSuite extends munit.FunSuite {
     import enums.*
     val s1 = Semaphore.Red
     assertEquals(
-      s1.toJson,
+      s1.toJson(),
       """ "Red" """.trim
     )
 
     val c1 = Color.Green
     assertEquals(
-      c1.toJson,
+      c1.toJson(),
       """ "Green" """.trim
     )
   }
@@ -115,12 +108,12 @@ class WriteSuite extends munit.FunSuite {
     val s2: Enum1 = Enum1.Enum1Case("str", None)
     val s3: Enum1 = Enum1.`eNum CaseD`
     assertEquals(
-      s1.toJson(spaces = 0).parseJson[JValue],
-      """{"str":"str","@type":"Enum1Case","integer":123}""".parseJson[JValue]
+      s1.toJson(spaces = 0).parseJson[Json],
+      """{"str":"str","@type":"Enum1Case","integer":123}""".parseJson[Json]
     )
     assertEquals(
-      s2.toJson(spaces = 0).parseJson[JValue],
-      """{"str":"str","@type":"Enum1Case","integer":null}""".parseJson[JValue]
+      s2.toJson(spaces = 0).parseJson[Json],
+      """{"str":"str","@type":"Enum1Case","integer":null}""".parseJson[Json]
     )
     assertEquals(
       s3.toJson(spaces = 0),
@@ -134,8 +127,8 @@ class WriteSuite extends munit.FunSuite {
     val a2 = Annot1.B("abc")
     assertEquals(a1.toJson(spaces = 0), """{"tip":"A"}""")
     assertEquals(
-      a2.toJson(spaces = 0).parseJson[JValue],
-      """{"x":"abc","tip":"B"}""".parseJson[JValue]
+      a2.toJson(spaces = 0).parseJson[Json],
+      """{"x":"abc","tip":"B"}""".parseJson[Json]
     )
   }
 
@@ -144,14 +137,14 @@ class WriteSuite extends munit.FunSuite {
 
     val burried1 = inner.burried.Inside.Abc
     assertEquals(
-      burried1.toJson,
+      burried1.toJson(),
       """"Abc""""
     )
 
     /* no worky yet
     val burried2 = (new inner.instance).Inside.Def
     assertEquals(
-      burried2.toJson,
+      burried2.toJson(),
       """{"@type":"Def"}"""
     )
      */
@@ -181,24 +174,24 @@ class WriteSuite extends munit.FunSuite {
   test("write union type") {
     locally {
       val value: Int | String = 1
-      assertEquals(value.toJson, """1""")
+      assertEquals(value.toJson(), """1""")
     }
     locally {
       val value: Int | String = "bla"
-      assertEquals(value.toJson, """ "bla" """.trim)
+      assertEquals(value.toJson(), """ "bla" """.trim)
     }
     locally {
       val value: CaseClass1 | CaseClass2 = CaseClass1("str", 123)
       assertEquals(
-        value.toJson(spaces = 0).parseJson[JValue],
-        """{"str":"str","integer":123}""".parseJson[JValue]
+        value.toJson(spaces = 0).parseJson[Json],
+        """{"str":"str","integer":123}""".parseJson[Json]
       )
     }
     locally {
       val value: CaseClass1 | CaseClass2 | Int = CaseClass2("c2", CaseClass1("str", 123))
       assertEquals(
-        value.toJson(spaces = 0).parseJson[JValue],
-        """{"bla":"c2","c1":{"str":"str","integer":123}}""".parseJson[JValue]
+        value.toJson(spaces = 0).parseJson[Json],
+        """{"bla":"c2","c1":{"str":"str","integer":123}}""".parseJson[Json]
       )
     }
   }
@@ -206,8 +199,8 @@ class WriteSuite extends munit.FunSuite {
   test("write named tuple") {
     val nt1: Person = (name = "Mujo", age = 35)
     assertEquals(
-      nt1.toJson(spaces = 0).parseJson[JValue],
-      """{"age":35,"name":"Mujo"}""".parseJson[JValue]
+      nt1.toJson(spaces = 0).parseJson[Json],
+      """{"age":35,"name":"Mujo"}""".parseJson[Json]
     )
   }
 
@@ -234,23 +227,23 @@ class WriteSuite extends munit.FunSuite {
     assertEquals(unionBool.toJson(spaces = 0, sort = true), "true")
   }
 
-  test("write default spaced output") {
+  test("write compact by default and allow pretty sorted output") {
     assertEquals(
-      CaseClass1("str", 123).toJson,
+      CaseClass1("str", 123).toJson(spaces = 2, sort = true),
       """{
         |  "integer": 123,
         |  "str": "str"
         |}""".stripMargin
     )
     assertEquals(
-      CaseClass1("str", 123).toJson(spaces = 0),
-      """{"integer":123,"str":"str"}"""
+      CaseClass1("str", 123).toJson(),
+      """{"str":"str","integer":123}"""
     )
   }
 
   test("write custom spaced output") {
     assertEquals(
-      Seq(CaseClass1("str", 123), CaseClass1("x", 456)).toJson(spaces = 4),
+      Seq(CaseClass1("str", 123), CaseClass1("x", 456)).toJson(spaces = 4, sort = true),
       """[
         |    {
         |        "integer": 123,
@@ -266,7 +259,7 @@ class WriteSuite extends munit.FunSuite {
 
   test("write explicit unsorted output") {
     assertEquals(
-      CaseClass1("str", 123).toJson(sort = false),
+      CaseClass1("str", 123).toJson(spaces = 2, sort = false),
       """{
         |  "str": "str",
         |  "integer": 123
@@ -278,26 +271,10 @@ class WriteSuite extends munit.FunSuite {
     )
   }
 
-  test("write JSON stream matches the rendered string") {
-    val value = CaseClass2("č😀\"", CaseClass1("str", 123))
-
-    val compactOutput = new ByteArrayOutputStream()
-    value.writeJsonTo(compactOutput, spaces = 0, sort = false)
-    assertEquals(new String(compactOutput.toByteArray, UTF_8), value.toJson(spaces = 0, sort = false))
-
-    val prettyOutput = new ByteArrayOutputStream()
-    value.writeJsonTo(prettyOutput)
-    assertEquals(new String(prettyOutput.toByteArray, UTF_8), value.toJson)
-
-    val canonicalOutput = new ByteArrayOutputStream()
-    value.writeJsonTo(canonicalOutput, spaces = 0, sort = true)
-    assertEquals(new String(canonicalOutput.toByteArray, UTF_8), value.toJson(spaces = 0, sort = true))
-  }
-
   test("write sorted output") {
-    val value = """{"b":1,"a":{"d":4,"c":3},"arr":[{"f":6,"e":5}]}""".parseJson[JValue]
+    val value = """{"b":1,"a":{"d":4,"c":3},"arr":[{"f":6,"e":5}]}""".parseJson[Json]
     assertEquals(
-      value.toJson(sort = true),
+      value.toJson(spaces = 2, sort = true),
       """{
         |  "a": {
         |    "c": 3,
@@ -330,20 +307,20 @@ class WriteSuite extends munit.FunSuite {
   }
 
   test("write generic product and sum") {
-    assertEquals(Gen(1).toJson(spaces = 0).parseJson[JValue], """{"value":1}""".parseJson[JValue])
-    assertEquals(Box(Gen(1)).toJson(spaces = 0).parseJson[JValue], """{"gen":{"value":1}}""".parseJson[JValue])
+    assertEquals(Gen(1).toJson(spaces = 0).parseJson[Json], """{"value":1}""".parseJson[Json])
+    assertEquals(Box(Gen(1)).toJson(spaces = 0).parseJson[Json], """{"gen":{"value":1}}""".parseJson[Json])
     val e: Expr[Int] = Add(Const(1), Const(2))
     assertEquals(
-      e.toJson(spaces = 0).parseJson[JValue],
-      """{"@type":"Add","left":{"@type":"Const","value":1},"right":{"@type":"Const","value":2}}""".parseJson[JValue]
+      e.toJson(spaces = 0).parseJson[Json],
+      """{"@type":"Add","left":{"@type":"Const","value":1},"right":{"@type":"Const","value":2}}""".parseJson[Json]
     )
   }
 
   test("write generic sum with generic payload") {
     val e: Expr[Gen[Int]] = Add(Const(Gen(1)), Const(Gen(2)))
     assertEquals(
-      e.toJson(spaces = 0).parseJson[JValue],
-      """{"@type":"Add","left":{"@type":"Const","value":{"value":1}},"right":{"@type":"Const","value":{"value":2}}}""".parseJson[JValue]
+      e.toJson(spaces = 0).parseJson[Json],
+      """{"@type":"Add","left":{"@type":"Const","value":{"value":1}},"right":{"@type":"Const","value":{"value":2}}}""".parseJson[Json]
     )
   }
 

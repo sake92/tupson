@@ -1,14 +1,14 @@
 package tupsonconsumer
 
-import ba.sake.tupson.{JsonRW2, ParseError, ParsingException, TupsonException}
-import JsonRW2.*
+import ba.sake.tupson.{JsonRW, ParseError, ParsingException, TupsonException}
+import ba.sake.tupson.{parseJson, toJson}
 
-class JsonRW2ProductSuite extends munit.FunSuite {
-  import JsonRW2ProductSuite.*
+class JsonRWProductSuite extends munit.FunSuite {
+  import JsonRWProductSuite.*
 
   test("keep raw codec construction internal") {
-    val errors = compileErrors("new ba.sake.tupson.JsonRW2[Int]() {}")
-    assert(errors.contains("constructor JsonRW2 cannot be accessed"), errors)
+    val errors = compileErrors("new ba.sake.tupson.JsonRW[Int]() {}")
+    assert(errors.contains("constructor JsonRW cannot be accessed"), errors)
   }
 
   test("derive a product with constructor and codec defaults") {
@@ -28,7 +28,7 @@ class JsonRW2ProductSuite extends munit.FunSuite {
       calls = calls + 1
       calls
     }
-    case class LocalJob(retries: Int = nextRetries()) derives JsonRW2
+    case class LocalJob(retries: Int = nextRetries()) derives JsonRW
 
     assertEquals("""{"retries":9}""".parseJson[LocalJob].retries, 9)
     intercept[ParsingException]("""{"retries":null}""".parseJson[LocalJob])
@@ -126,24 +126,24 @@ class JsonRW2ProductSuite extends munit.FunSuite {
   }
 }
 
-object JsonRW2ProductSuite {
-  case class Job(name: String, retries: Int = 3, email: Option[String], limits: Map[String, Int]) derives JsonRW2
-  case class DefaultEmail(email: Option[String] = Some("default")) derives JsonRW2
-  case class Box[A](`wire key`: A, fallback: Option[A] = None) derives JsonRW2
-  case class Empty() derives JsonRW2
-  case class Nest(inner: Box[Int], empty: Empty) derives JsonRW2
+object JsonRWProductSuite {
+  case class Job(name: String, retries: Int = 3, email: Option[String], limits: Map[String, Int]) derives JsonRW
+  case class DefaultEmail(email: Option[String] = Some("default")) derives JsonRW
+  case class Box[A](`wire key`: A, fallback: Option[A] = None) derives JsonRW
+  case class Empty() derives JsonRW
+  case class Nest(inner: Box[Int], empty: Empty) derives JsonRW
 
   case class Email(value: String)
   object Email {
-    given JsonRW2[Email] = JsonRW2[String].emap { value =>
+    given JsonRW[Email] = JsonRW[String].emap { value =>
       if value.contains('@') then Right(Email(value)) else Left("must contain @")
     }(_.value)
   }
-  case class Contact(email: Email) derives JsonRW2
-  case class Batch(items: List[Int]) derives JsonRW2
-  case class CappedProduct(batch: Batch, name: String, required: Int) derives JsonRW2
-  case class Collections(sequence: Seq[Int], set: Set[Int], array: Array[Int]) derives JsonRW2
-  case class Node(value: Int, children: List[Node]) derives JsonRW2
-  case class Parent(child: Option[Child]) derives JsonRW2
-  case class Child(parent: Option[Parent]) derives JsonRW2
+  case class Contact(email: Email) derives JsonRW
+  case class Batch(items: List[Int]) derives JsonRW
+  case class CappedProduct(batch: Batch, name: String, required: Int) derives JsonRW
+  case class Collections(sequence: Seq[Int], set: Set[Int], array: Array[Int]) derives JsonRW
+  case class Node(value: Int, children: List[Node]) derives JsonRW
+  case class Parent(child: Option[Child]) derives JsonRW
+  case class Child(parent: Option[Parent]) derives JsonRW
 }

@@ -2,39 +2,20 @@ package ba.sake.tupson
 
 import java.io.OutputStream
 import scala.annotation.StaticAnnotation
-import scala.annotation.targetName
-import org.typelevel.jawn
-import org.typelevel.jawn.ast.JParser
 
-extension [T](value: T)(using rw: JsonRW[T]) {
-  @targetName("toJsonDefault")
-  def toJson: String =
-    TupsonRenderer.render(rw.write(value), spaces = 2, sort = true)
+extension (json: String)
+  def parseJson[A](using rw: JsonRW[A]): A = rw.readJson(json)
 
-  @targetName("toJsonWithOptions")
-  def toJson(spaces: Int = 2, sort: Boolean = true): String =
-    TupsonRenderer.render(rw.write(value), spaces, sort)
+extension (json: Array[Byte])
+  def parseJson[A](using rw: JsonRW[A]): A = rw.readJson(json)
 
-  /** Writes compact or pretty JSON as UTF-8 without materializing the JSON as a String.
-    *
-    * The output stream is flushed but remains open.
-    */
-  def writeJsonTo(outputStream: OutputStream, spaces: Int = 2, sort: Boolean = true): Unit =
-    TupsonRenderer.write(rw.write(value), outputStream, spaces, sort)
-}
+extension [A](value: A)
+  def toJson(spaces: Int = 0, sort: Boolean = false)(using rw: JsonRW[A]): String =
+    rw.renderJson(value, spaces, sort)
 
-extension (strValue: String) {
-  def parseJson[T](using rw: JsonRW[T]): T = try {
-    val jValue = JParser.parseUnsafe(strValue)
-    rw.parse("$", jValue)
-  } catch {
-    case e: jawn.ParseException =>
-      throw TupsonException("JSON parsing exception", e)
-    case e: jawn.IncompleteParseException =>
-      throw TupsonException("JSON parsing exception", e)
-  }
-
-}
+  /** Writes UTF-8 JSON and flushes the stream, leaving it open. */
+  def writeJson(out: OutputStream, spaces: Int = 0, sort: Boolean = false)(using rw: JsonRW[A]): Unit =
+    rw.writeTo(value, out, spaces, sort)
 
 /* exceptions */
 sealed class TupsonException(msg: String, cause: Throwable = null) extends Exception(msg, cause)

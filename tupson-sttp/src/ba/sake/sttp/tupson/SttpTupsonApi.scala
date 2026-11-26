@@ -14,7 +14,7 @@ trait SttpTupsonApi {
 
   /** Serialize the given value as JSON, to be used as a request's body using `sttp.client4.Request.body`. */
   def asJson[B](b: B)(using rw: JsonRW[B]): StringBody =
-    StringBody(b.toJson(0), "UTF-8", MediaType.ApplicationJson)
+    StringBody(b.toJson(spaces = 0, sort = true), "UTF-8", MediaType.ApplicationJson)
 
   /** If the response is successful (2xx), tries to deserialize the body from a string into JSON. Returns:
     *   - `Right(b)` if the parsing was successful

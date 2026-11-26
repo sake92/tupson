@@ -8,7 +8,7 @@ lazy val root = (project in file("."))
       baseDirectory.value / ".." / "tupson" / "src",
       baseDirectory.value / ".." / "tupson" / "src-jvm"
     ),
-    libraryDependencies += "org.typelevel" %% "jawn-ast" % "1.6.0",
+    libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "2.43.0",
     scalacOptions ++= Seq(
       "-Yretain-trees",
       "-deprecation",

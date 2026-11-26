@@ -2,11 +2,11 @@ package tupsonconsumer
 
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets.UTF_8
-import ba.sake.tupson.JsonRW2
-import JsonRW2.*
+import ba.sake.tupson.JsonRW
+import ba.sake.tupson.{parseJson, toJson, writeJson}
 
-class JsonRW2StreamSuite extends munit.FunSuite {
-  import JsonRW2StreamSuite.*
+class JsonRWStreamSuite extends munit.FunSuite {
+  import JsonRWStreamSuite.*
 
   test("write the same UTF-8 as toJson and flush without closing") {
     val value = Payload(List(Item("č😀\"\\", 1)), "test")
@@ -46,7 +46,7 @@ class JsonRW2StreamSuite extends munit.FunSuite {
   }
 }
 
-object JsonRW2StreamSuite {
-  case class Item(name: String, id: Int) derives JsonRW2
-  case class Payload(items: List[Item], label: String) derives JsonRW2
+object JsonRWStreamSuite {
+  case class Item(name: String, id: Int) derives JsonRW
+  case class Payload(items: List[Item], label: String) derives JsonRW
 }

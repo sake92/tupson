@@ -19,7 +19,7 @@ object Json {
   final case class Arr(values: Vector[Json]) extends Json
   final case class Obj(fields: VectorMap[String, Json]) extends Json
 
-  given JsonRW2[Json] with {
+  given JsonRW[Json] with {
     private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Json = {
       val token = in.nextToken()
       if token == 'n' then in.readNullOrError(Null, "expected null")

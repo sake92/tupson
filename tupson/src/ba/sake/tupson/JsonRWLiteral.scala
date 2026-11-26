@@ -4,20 +4,20 @@ import scala.compiletime.summonFrom
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonWriter}
 import TupsonReader.DecodeContext
 
-private[tupson] object JsonRW2Literal {
-  inline def derived[A <: String | Char | Boolean | Int | Long | Float | Double](using valueOf: ValueOf[A]): JsonRW2[A] =
+private[tupson] object JsonRWLiteral {
+  inline def derived[A <: String | Char | Boolean | Int | Long | Float | Double](using valueOf: ValueOf[A]): JsonRW[A] =
     summonFrom {
-      case ev: (A <:< String)  => literal(valueOf.value, JsonRW2[String])(using ev)
+      case ev: (A <:< String)  => literal(valueOf.value, JsonRW[String])(using ev)
       case ev: (A <:< Char)    => literalChar(valueOf.value)(using ev)
-      case ev: (A <:< Boolean) => literal(valueOf.value, JsonRW2[Boolean])(using ev)
-      case ev: (A <:< Int)     => literal(valueOf.value, JsonRW2[Int])(using ev)
-      case ev: (A <:< Long)    => literal(valueOf.value, JsonRW2[Long])(using ev)
-      case ev: (A <:< Float)   => literal(valueOf.value, JsonRW2[Float])(using ev)
-      case ev: (A <:< Double)  => literal(valueOf.value, JsonRW2[Double])(using ev)
+      case ev: (A <:< Boolean) => literal(valueOf.value, JsonRW[Boolean])(using ev)
+      case ev: (A <:< Int)     => literal(valueOf.value, JsonRW[Int])(using ev)
+      case ev: (A <:< Long)    => literal(valueOf.value, JsonRW[Long])(using ev)
+      case ev: (A <:< Float)   => literal(valueOf.value, JsonRW[Float])(using ev)
+      case ev: (A <:< Double)  => literal(valueOf.value, JsonRW[Double])(using ev)
     }
 
-  private def literal[A, B](expected: A, codec: JsonRW2[B])(using ev: A <:< B): JsonRW2[A] =
-    new JsonRW2[A] {
+  private def literal[A, B](expected: A, codec: JsonRW[B])(using ev: A <:< B): JsonRW[A] =
+    new JsonRW[A] {
       private val message = s"should be literal value '$expected'"
 
       private[tupson] def decode(in: JsonReader, ctx: DecodeContext): A = {
@@ -31,8 +31,8 @@ private[tupson] object JsonRW2Literal {
         codec.encode(ev(value), out, sort)
     }
 
-  private def literalChar[A](expected: A)(using ev: A <:< Char): JsonRW2[A] =
-    new JsonRW2[A] {
+  private def literalChar[A](expected: A)(using ev: A <:< Char): JsonRW[A] =
+    new JsonRW[A] {
       private val expectedChar = ev(expected)
       private val message = s"should be literal value '$expected'"
 

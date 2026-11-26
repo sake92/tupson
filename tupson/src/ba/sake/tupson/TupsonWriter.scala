@@ -3,7 +3,7 @@ package ba.sake.tupson
 import java.io.OutputStream
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 
-private[tupson] final class TupsonWriter[A](codec: JsonRW2[A], sort: Boolean) extends JsonValueCodec[A] {
+private[tupson] final class TupsonWriter[A](codec: JsonRW[A], sort: Boolean) extends JsonValueCodec[A] {
   def render(value: A, spaces: Int): String =
     writeToString(value, config(spaces))(using this)
 
@@ -24,7 +24,7 @@ private[tupson] final class TupsonWriter[A](codec: JsonRW2[A], sort: Boolean) ex
 }
 
 private[tupson] object TupsonWriter {
-  def writeArray[A](values: Iterator[A], out: JsonWriter, sort: Boolean, element: JsonRW2[A]): Unit = {
+  def writeArray[A](values: Iterator[A], out: JsonWriter, sort: Boolean, element: JsonRW[A]): Unit = {
     out.writeArrayStart()
     while values.hasNext do element.encode(values.next(), out, sort)
     out.writeArrayEnd()

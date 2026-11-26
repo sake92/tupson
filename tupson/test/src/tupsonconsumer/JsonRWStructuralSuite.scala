@@ -1,10 +1,10 @@
 package tupsonconsumer
 
-import ba.sake.tupson.{JsonRW2, ParseError, ParsingException, TupsonException}
-import JsonRW2.*
+import ba.sake.tupson.{JsonRW, ParseError, ParsingException, TupsonException}
+import ba.sake.tupson.{parseJson, toJson}
 
-class JsonRW2StructuralSuite extends munit.FunSuite {
-  import JsonRW2StructuralSuite.*
+class JsonRWStructuralSuite extends munit.FunSuite {
+  import JsonRWStructuralSuite.*
 
   test("round-trip literal fields and reject other values") {
     val json = """{"name":"backup","attempt":3,"active":true,"grade":"a","total":9,"ratio":1.5,"weight":2.25}"""
@@ -61,10 +61,10 @@ class JsonRW2StructuralSuite extends munit.FunSuite {
   }
 }
 
-object JsonRW2StructuralSuite {
+object JsonRWStructuralSuite {
   type Person = (name: String, age: Int)
   type Choice = "start" | "stop"
-  case class Envelope(details: (id: "fixed", person: Person)) derives JsonRW2
+  case class Envelope(details: (id: "fixed", person: Person)) derives JsonRW
   case class Fixed(name: "backup", attempt: 3, active: true, grade: 'a', total: 9L, ratio: 1.5f, weight: 2.25)
-      derives JsonRW2
+      derives JsonRW
 }

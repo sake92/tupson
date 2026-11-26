@@ -1,10 +1,10 @@
 package tupsonconsumer
 
-import ba.sake.tupson.{JsonRW2, ParseError, ParsingException, TupsonException, discriminator}
-import JsonRW2.*
+import ba.sake.tupson.{JsonRW, ParseError, ParsingException, TupsonException, discriminator}
+import ba.sake.tupson.{parseJson, toJson}
 
-class JsonRW2TaggedSuite extends munit.FunSuite {
-  import JsonRW2TaggedSuite.*
+class JsonRWTaggedSuite extends munit.FunSuite {
+  import JsonRWTaggedSuite.*
 
   test("read a tagged subtype with the discriminator first or last") {
     val first = """{"@type":"Created","name":"backup","!id":42}"""
@@ -97,7 +97,7 @@ class JsonRW2TaggedSuite extends munit.FunSuite {
   test("reject a custom discriminator that conflicts with a subtype field") {
     val errors = compileErrors("""
       @discriminator("kind")
-      sealed trait Action derives JsonRW2
+      sealed trait Action derives JsonRW
       case class Run(kind: String) extends Action
     """)
     assert(errors.contains("Discriminator 'kind' conflicts with a field"), errors)
@@ -146,23 +146,23 @@ class JsonRW2TaggedSuite extends munit.FunSuite {
   }
 }
 
-object JsonRW2TaggedSuite {
-  sealed trait Event derives JsonRW2
+object JsonRWTaggedSuite {
+  sealed trait Event derives JsonRW
   case class Created(name: String, `!id`: Int) extends Event
   case class Deleted(id: Int) extends Event
   case object Stopped extends Event
-  case class Envelope(event: Event) derives JsonRW2
+  case class Envelope(event: Event) derives JsonRW
 
   @discriminator(name = "kind")
-  sealed trait Command derives JsonRW2
+  sealed trait Command derives JsonRW
   case class Start(job: String) extends Command
   case class Stop(job: String) extends Command
 
-  sealed trait Tree derives JsonRW2
+  sealed trait Tree derives JsonRW
   case class Branch(children: List[Tree]) extends Tree
   case class Leaf(value: Int) extends Tree
 
-  sealed trait Result[+A] derives JsonRW2
+  sealed trait Result[+A] derives JsonRW
   case class Success[A](value: A) extends Result[A]
   case class Failure(message: String) extends Result[Nothing]
 }

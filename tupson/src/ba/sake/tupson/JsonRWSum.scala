@@ -5,10 +5,10 @@ import scala.quoted.*
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonWriter}
 import TupsonReader.DecodeContext
 
-private[tupson] object JsonRW2Sum {
-  inline def derived[A](inline mirror: Mirror.SumOf[A]): JsonRW2[A] = ${ derive[A]('mirror) }
+private[tupson] object JsonRWSum {
+  inline def derived[A](inline mirror: Mirror.SumOf[A]): JsonRW[A] = ${ derive[A]('mirror) }
 
-  private def derive[A: Type](mirror: Expr[Mirror.SumOf[A]])(using Quotes): Expr[JsonRW2[A]] =
+  private def derive[A: Type](mirror: Expr[Mirror.SumOf[A]])(using Quotes): Expr[JsonRW[A]] =
     mirror match {
       case '{
             $sum: Mirror.SumOf[A] {
@@ -26,7 +26,7 @@ private[tupson] object JsonRW2Sum {
 
   private def deriveEnum[A: Type, Elements: Type, Labels: Type](sum: Expr[Mirror.SumOf[A]])(using
       Quotes
-  ): Expr[JsonRW2[A]] = {
+  ): Expr[JsonRW[A]] = {
     import quotes.reflect.*
 
     def entries[Cases: Type, Names: Type]: List[Expr[(String, A)]] =
@@ -50,7 +50,7 @@ private[tupson] object JsonRW2Sum {
 
   private def deriveTagged[A: Type, Elements: Type, Labels: Type](sum: Expr[Mirror.SumOf[A]])(using
       Quotes
-  ): Expr[JsonRW2[A]] = {
+  ): Expr[JsonRW[A]] = {
     import quotes.reflect.*
 
     val model = TypeRepr.of[A].dealias.typeSymbol
@@ -63,12 +63,12 @@ private[tupson] object JsonRW2Sum {
           case value              => value
         }
         name.asExprOf[String].value.getOrElse {
-          report.errorAndAbort("JsonRW2 requires a compile-time constant discriminator name", name.pos)
+          report.errorAndAbort("JsonRW requires a compile-time constant discriminator name", name.pos)
         }
       case Some(other) =>
-        report.errorAndAbort("Cannot resolve the JsonRW2 discriminator name", other.pos)
+        report.errorAndAbort("Cannot resolve the JsonRW discriminator name", other.pos)
     }
-    def entries[Cases: Type, Names: Type]: List[Expr[(String, JsonRW2[A])]] =
+    def entries[Cases: Type, Names: Type]: List[Expr[(String, JsonRW[A])]] =
       (Type.of[Cases], Type.of[Names]) match {
         case ('[EmptyTuple], '[EmptyTuple]) => Nil
         case ('[element *: tail], '[name *: names]) =>
@@ -76,8 +76,8 @@ private[tupson] object JsonRW2Sum {
             case Some(value: String) => value
             case _ => report.errorAndAbort(s"Cannot resolve subtype label ${Type.show[name]}")
           }
-          val codec = JsonRW2Product.derive[element](Some(tagKey -> label))
-          val named = '{ (${ Expr(label) }, $codec.asInstanceOf[JsonRW2[A]]) }
+          val codec = JsonRWProduct.derive[element](Some(tagKey -> label))
+          val named = '{ (${ Expr(label) }, $codec.asInstanceOf[JsonRW[A]]) }
           named :: entries[tail, names]
         case _ => report.errorAndAbort(s"Cannot resolve subtypes for ${Type.show[A]}")
       }
@@ -86,7 +86,7 @@ private[tupson] object JsonRW2Sum {
     '{ new TaggedCodec[A]($sum, ${ Expr(tagKey) }, $cases) }
   }
 
-  private[tupson] final class EnumCodec[A](mirror: Mirror.SumOf[A], cases: List[(String, A)]) extends JsonRW2[A] {
+  private[tupson] final class EnumCodec[A](mirror: Mirror.SumOf[A], cases: List[(String, A)]) extends JsonRW[A] {
     private val values = cases.toMap
     private val names = cases.iterator.map(_._1).toArray
     private val possibleValues = names.iterator.map(name => s"'$name'").mkString(", ")
@@ -104,8 +104,8 @@ private[tupson] object JsonRW2Sum {
   private[tupson] final class TaggedCodec[A](
       mirror: Mirror.SumOf[A],
       tagKey: String,
-      cases: List[(String, JsonRW2[A])]
-  ) extends JsonRW2[A] {
+      cases: List[(String, JsonRW[A])]
+  ) extends JsonRW[A] {
     private val codecsByTag = cases.toMap
     private val codecsByOrdinal = cases.iterator.map(_._2).toArray
     private val possibleValues = cases.iterator.map((name, _) => s"'$name'").mkString(", ")

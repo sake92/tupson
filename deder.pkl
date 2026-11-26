@@ -47,7 +47,6 @@ local const tupsonModules =
     template = (baseTemplate) {
       publish = true
       deps {
-        "org.typelevel::jawn-ast::1.6.0"
         "com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.43.0"
       }
       pomSettings = (basePomSettings) {

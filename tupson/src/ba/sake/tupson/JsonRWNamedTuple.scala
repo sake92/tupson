@@ -5,19 +5,19 @@ import scala.compiletime.{constValueTuple, summonAll}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonWriter}
 import TupsonReader.DecodeContext
 
-private[tupson] object JsonRW2NamedTuple {
-  inline def derived[A <: AnyNamedTuple]: JsonRW2[A] = {
+private[tupson] object JsonRWNamedTuple {
+  inline def derived[A <: AnyNamedTuple]: JsonRW[A] = {
     val names = constValueTuple[Names[A]].productIterator.map(_.asInstanceOf[String]).toArray
-    val codecs = summonAll[Tuple.Map[DropNames[A], JsonRW2]].productIterator
-      .map(_.asInstanceOf[JsonRW2[Any]])
+    val codecs = summonAll[Tuple.Map[DropNames[A], JsonRW]].productIterator
+      .map(_.asInstanceOf[JsonRW[Any]])
       .toArray
     new NamedTupleCodec[A](names, codecs)
   }
 
   private[tupson] final class NamedTupleCodec[A <: AnyNamedTuple](
       names: Array[String],
-      codecs: Array[JsonRW2[Any]]
-  ) extends JsonRW2[A] {
+      codecs: Array[JsonRW[Any]]
+  ) extends JsonRW[A] {
     private val fieldOrder = names.indices.toArray
     private val sortedFieldOrder = fieldOrder.sortBy(names(_))
 

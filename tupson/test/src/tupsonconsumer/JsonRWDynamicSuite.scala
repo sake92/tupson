@@ -1,11 +1,11 @@
 package tupsonconsumer
 
 import scala.collection.immutable.VectorMap
-import ba.sake.tupson.{Json, JsonRW2, TupsonException}
-import JsonRW2.*
+import ba.sake.tupson.{Json, JsonRW, TupsonException}
+import ba.sake.tupson.{parseJson, toJson}
 
-class JsonRW2DynamicSuite extends munit.FunSuite {
-  import JsonRW2DynamicSuite.*
+class JsonRWDynamicSuite extends munit.FunSuite {
+  import JsonRWDynamicSuite.*
 
   test("round-trip dynamic values inside a typed product") {
     val input = """{"kind":"event","data":{"z":[null,true,"ž"],"a":-0.00e+02}}"""
@@ -39,6 +39,6 @@ class JsonRW2DynamicSuite extends munit.FunSuite {
   }
 }
 
-object JsonRW2DynamicSuite {
-  case class Event(kind: String, data: Json) derives JsonRW2
+object JsonRWDynamicSuite {
+  case class Event(kind: String, data: Json) derives JsonRW
 }

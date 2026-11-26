@@ -1,10 +1,10 @@
 package tupsonconsumer
 
-import ba.sake.tupson.{JsonRW2, ParseError, ParsingException, TupsonException, discriminator}
-import JsonRW2.*
+import ba.sake.tupson.{JsonRW, ParseError, ParsingException, TupsonException, discriminator}
+import ba.sake.tupson.{parseJson, toJson}
 
-class JsonRW2EnumSuite extends munit.FunSuite {
-  import JsonRW2EnumSuite.*
+class JsonRWEnumSuite extends munit.FunSuite {
+  import JsonRWEnumSuite.*
 
   test("round-trip singleton enum cases as strings") {
     assertEquals(Status.Ready.toJson(), "\"Ready\"")
@@ -50,25 +50,25 @@ class JsonRW2EnumSuite extends munit.FunSuite {
   }
 }
 
-object JsonRW2EnumSuite {
-  enum Status derives JsonRW2 {
+object JsonRWEnumSuite {
+  enum Status derives JsonRW {
     case Ready, Failed
   }
 
-  enum Color(val rgb: Int) derives JsonRW2 {
+  enum Color(val rgb: Int) derives JsonRW {
     case Green extends Color(0x00ff00)
     case Red extends Color(0xff0000)
   }
 
-  case class Response(status: Status) derives JsonRW2
+  case class Response(status: Status) derives JsonRW
 
-  enum JobState derives JsonRW2 {
+  enum JobState derives JsonRW {
     case Idle
     case Running(job: String, attempt: Int = 1)
   }
 
   @discriminator("kind")
-  enum Keyed derives JsonRW2 {
+  enum Keyed derives JsonRW {
     case Entry(id: Int)
   }
 }

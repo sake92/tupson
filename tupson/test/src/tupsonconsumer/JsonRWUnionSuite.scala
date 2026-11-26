@@ -1,10 +1,10 @@
 package tupsonconsumer
 
-import ba.sake.tupson.{JsonRW2, ParseError, ParsingException, TupsonException}
-import JsonRW2.*
+import ba.sake.tupson.{JsonRW, ParseError, ParsingException, TupsonException}
+import ba.sake.tupson.{parseJson, toJson}
 
-class JsonRW2UnionSuite extends munit.FunSuite {
-  import JsonRW2UnionSuite.*
+class JsonRWUnionSuite extends munit.FunSuite {
+  import JsonRWUnionSuite.*
 
   test("read and write scalar unions by trying alternatives and dispatching by runtime type") {
     val number: Id = 42
@@ -81,18 +81,18 @@ class JsonRW2UnionSuite extends munit.FunSuite {
   }
 }
 
-object JsonRW2UnionSuite {
+object JsonRWUnionSuite {
   type Id = Int | String
-  case class JobId(id: Id) derives JsonRW2
-  case class First(id: Int) derives JsonRW2
-  case class Second(name: String) derives JsonRW2
-  case class Envelope(before: Int, value: First | Second) derives JsonRW2
+  case class JobId(id: Id) derives JsonRW
+  case class First(id: Int) derives JsonRW
+  case class Second(name: String) derives JsonRW
+  case class Envelope(before: Int, value: First | Second) derives JsonRW
 
-  sealed trait Event derives JsonRW2
+  sealed trait Event derives JsonRW
   case class Created(code: Int) extends Event
 
   case class Email(value: String)
   object Email {
-    given JsonRW2[Email] = JsonRW2[String].bimap(Email.apply)(_.value)
+    given JsonRW[Email] = JsonRW[String].bimap(Email.apply)(_.value)
   }
 }

@@ -1,631 +1,329 @@
 package ba.sake.tupson
 
-import scala.collection.mutable.ArrayDeque
-import scala.compiletime.*
-import scala.deriving.*
-import scala.quoted.*
-import NamedTuple.AnyNamedTuple
-import NamedTuple.Names
-import NamedTuple.DropNames
-import NamedTuple.NamedTuple
-import NamedTuple.withNames
-import scala.reflect.ClassTag
+import java.math.{BigDecimal, BigInteger}
 import java.net.URI
-import java.net.URL
-import java.math.BigDecimal
-import java.math.BigInteger
-import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.OffsetTime
-import java.time.ZonedDateTime
-import java.time.ZoneId
-import java.time.ZoneOffset
-import java.time.YearMonth
-import java.time.MonthDay
-import java.time.Year
-import java.time.Month
-import java.time.DayOfWeek
-import java.time.Duration
-import java.time.Period
+import java.time.{Duration, Instant, LocalDate, LocalDateTime, LocalTime, Period}
+import java.time.{DayOfWeek, Month, MonthDay, Year, YearMonth}
+import java.time.{OffsetDateTime, OffsetTime, ZoneId, ZoneOffset, ZonedDateTime}
 import java.util.UUID
-import org.typelevel.jawn.ast.*
+import scala.collection.mutable.HashSet
+import scala.deriving.Mirror
+import scala.NamedTuple.AnyNamedTuple
+import scala.reflect.ClassTag
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonWriter}
+import TupsonReader.*
 
-trait JsonRW[T]:
+/** A JSON codec that reads and writes directly through the backend.
+  *
+  * Decoding reports up to ten validation errors per document. Syntax errors are fatal.
+  */
+abstract class JsonRW[A] private[tupson] () {
+  private val reader = new TupsonReader(this)
+  private val sortedWriter = new TupsonWriter(this, sort = true)
+  private val unsortedWriter = new TupsonWriter(this, sort = false)
 
-  def write(value: T): JValue
+  final def bimap[B](read: A => B)(write: B => A): JsonRW[B] =
+    mapped((value, _) => read(value), write)
 
-  /** Whether `T` should be written when it is a field of an object.
-    *
-    * Values are written by [[write]] when this returns `true`.
-    */
-  def shouldWriteField(value: T): Boolean = true
+  final def emap[B](read: A => Either[String, B])(write: B => A): JsonRW[B] =
+    mapped(
+      (value, ctx) =>
+        read(value) match {
+          case Right(result) => result
+          case Left(message) =>
+            ctx.fail(message)
+            null.asInstanceOf[B]
+        },
+      write
+    )
 
-  def parse(path: String, jValue: JValue): T
+  private[tupson] def decode(in: JsonReader, ctx: DecodeContext): A
+  private[tupson] def encode(value: A, out: JsonWriter, sort: Boolean): Unit
+  private[tupson] def default: Option[A] = None
+  private[tupson] def shouldWriteField(value: A): Boolean = true
 
-  /** Global default for `T` when key is missing in JSON.
-    */
-  def default: Option[T] = None
+  private[tupson] def readJson(json: String): A = reader.read(json)
+  private[tupson] def readJson(json: Array[Byte]): A = reader.read(json)
 
-object JsonRW extends LowPriorityJsonRWInstances:
+  private[tupson] def renderJson(value: A, spaces: Int, sort: Boolean): String = {
+    val writer = if sort then sortedWriter else unsortedWriter
+    writer.render(value, spaces)
+  }
 
-  def apply[T](using rw: JsonRW[T]) = rw
+  private[tupson] def writeTo(value: A, out: java.io.OutputStream, spaces: Int, sort: Boolean): Unit = {
+    val writer = if sort then sortedWriter else unsortedWriter
+    writer.write(value, out, spaces)
+  }
 
-  private[tupson] def writeArray[T](values: IterableOnce[T], rw: JsonRW[T]): JArray = {
-    val iterator = values.iterator
-    val knownSize = values.knownSize
-    val elements =
-      if knownSize >= 0 then {
-        val result = new Array[JValue](knownSize)
-        var index = 0
-        while iterator.hasNext do {
-          result(index) = rw.write(iterator.next())
-          index += 1
-        }
-        result
-      } else {
-        val builder = Array.newBuilder[JValue]
-        while iterator.hasNext do {
-          builder += rw.write(iterator.next())
-        }
-        builder.result()
+  private def mapped[B](read: (A, DecodeContext) => B, write: B => A): JsonRW[B] =
+    new JsonRW[B] {
+      private[tupson] def decode(in: JsonReader, ctx: DecodeContext): B = {
+        val before = ctx.errorCount
+        val value = JsonRW.this.decode(in, ctx)
+        if ctx.errorCount == before then read(value, ctx)
+        else null.asInstanceOf[B]
       }
-    JArray(elements)
-  }
 
-  // needed for enums macro
+      private[tupson] def encode(value: B, out: JsonWriter, sort: Boolean): Unit =
+        JsonRW.this.encode(write(value), out, sort)
+    }
+}
+
+object JsonRW extends LowPriorityJsonRWInstances {
+  def apply[A](using rw: JsonRW[A]): JsonRW[A] = rw
+
+  inline def derived[A](using mirror: Mirror.Of[A]): JsonRW[A] =
+    inline mirror match {
+      case _: Mirror.ProductOf[A] => JsonRWProduct.derived[A]
+      case sum: Mirror.SumOf[A]   => JsonRWSum.derived[A](sum)
+    }
+
+  inline given [A: IsUnion]: JsonRW[A] = JsonRWUnion.derived[A]
+
   given JsonRW[String] with {
-    override def write(value: String): JValue = JString(value)
-    override def parse(path: String, jValue: JValue): String = jValue match
-      case JString(s) => s
-      case other      => JsonRW.typeMismatchError(path, "String", other)
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): String =
+      readToken(in, ctx, "String", null: String)(_ == '"')(in.readString(null))
+
+    private[tupson] def encode(value: String, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(value)
   }
 
-  given JsonRW[JValue] with {
-    override def write(value: JValue): JValue = value
-    override def parse(path: String, jValue: JValue): JValue = jValue
-  }
-
-  /* basic instances */
   given JsonRW[Char] with {
-    override def write(value: Char): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): Char = jValue match
-      case JString(s) =>
-        s.headOption.getOrElse(JsonRW.typeMismatchError(path, "Char", jValue))
-      case other => JsonRW.typeMismatchError(path, "Char", other)
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Char =
+      readToken(in, ctx, "Char", 0.toChar)(_ == '"') {
+        val value = in.readString(null)
+        if value.nonEmpty then value.charAt(0)
+        else {
+          ctx.fail("should be Char but it is String", Some("\"\""))
+          0.toChar
+        }
+      }
+
+    private[tupson] def encode(value: Char, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(value)
   }
 
   given JsonRW[Boolean] with {
-    override def write(value: Boolean): JValue = JBool(value)
-    override def parse(path: String, jValue: JValue): Boolean = jValue match
-      case JTrue  => true
-      case JFalse => false
-      case other  => JsonRW.typeMismatchError(path, "Boolean", other)
-  }
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Boolean =
+      readToken(in, ctx, "Boolean", false)(b => b == 't' || b == 'f')(in.readBoolean())
 
-  given JsonRW[Float] with {
-    override def write(value: Float): JValue = DoubleNum(value)
-    override def parse(path: String, jValue: JValue): Float = jValue match
-      case DoubleNum(n) => n.toFloat
-      case DeferNum(n)  => n.toFloat
-      case LongNum(n)   => n.toFloat
-      case DeferLong(s) => s.toFloat
-      case other        => JsonRW.typeMismatchError(path, "Float", other)
-  }
-
-  given JsonRW[Double] with {
-    override def write(value: Double): JValue = DoubleNum(value)
-    override def parse(path: String, jValue: JValue): Double = jValue match
-      case DoubleNum(n) => n.toDouble
-      case DeferNum(n)  => n.toDouble
-      case LongNum(n)   => n.toDouble
-      case DeferLong(s) => s.toDouble
-      case other        => JsonRW.typeMismatchError(path, "Double", other)
+    private[tupson] def encode(value: Boolean, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(value)
   }
 
   given JsonRW[Int] with {
-    override def write(value: Int): JValue = LongNum(value)
-    override def parse(path: String, jValue: JValue): Int = jValue match
-      case LongNum(n)   => n.toInt
-      case DeferLong(s) => s.toInt
-      case other        => JsonRW.typeMismatchError(path, "Int", other)
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Int =
+      readToken(in, ctx, "Int", 0)(isNumber)(in.readInt())
+
+    private[tupson] def encode(value: Int, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(value)
   }
 
   given JsonRW[Long] with {
-    override def write(value: Long): JValue = LongNum(value)
-    override def parse(path: String, jValue: JValue): Long = jValue match
-      case LongNum(n)   => n
-      case DeferLong(s) => s.toLong
-      case other        => JsonRW.typeMismatchError(path, "Long", other)
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Long =
+      readToken(in, ctx, "Long", 0L)(isNumber)(in.readLong())
+
+    private[tupson] def encode(value: Long, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(value)
+  }
+
+  given JsonRW[Float] with {
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Float =
+      readToken(in, ctx, "Float", 0f)(isNumber)(in.readFloat())
+
+    private[tupson] def encode(value: Float, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(value.toDouble)
+  }
+
+  given JsonRW[Double] with {
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Double =
+      readToken(in, ctx, "Double", 0d)(isNumber)(in.readDouble())
+
+    private[tupson] def encode(value: Double, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(value)
   }
 
   given JsonRW[UUID] with {
-    override def write(value: UUID): JValue = JString(value.toString())
-    override def parse(path: String, jValue: JValue): UUID = jValue match
-      case JString(s) => UUID.fromString(s)
-      case other      => JsonRW.typeMismatchError(path, "UUID", other)
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): UUID =
+      readToken(in, ctx, "UUID", null: UUID)(_ == '"')(UUID.fromString(in.readString(null)))
+
+    private[tupson] def encode(value: UUID, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(value)
   }
 
-  // java.time
-  given JsonRW[Instant] with {
-    override def write(value: Instant): JValue = JString(value.toString)
+  given JsonRW[URI] = stringValue("URI")(new URI(_))
 
-    override def parse(path: String, jValue: JValue): Instant = jValue match
-      case JString(s) => Instant.parse(s)
-      case other      => JsonRW.typeMismatchError(path, "Instant", other)
-  }
+  given JsonRW[Instant] = stringValue("Instant")(Instant.parse)
+  given JsonRW[Duration] = stringValue("Duration")(Duration.parse)
+  given JsonRW[Period] = stringValue("Period")(Period.parse)
+  given JsonRW[LocalDate] = stringValue("LocalDate")(LocalDate.parse)
+  given JsonRW[LocalTime] = stringValue("LocalTime")(LocalTime.parse)
+  given JsonRW[LocalDateTime] = stringValue("LocalDateTime")(LocalDateTime.parse)
+  given JsonRW[OffsetDateTime] = stringValue("OffsetDateTime")(OffsetDateTime.parse)
+  given JsonRW[OffsetTime] = stringValue("OffsetTime")(OffsetTime.parse)
+  given JsonRW[ZonedDateTime] = stringValue("ZonedDateTime")(ZonedDateTime.parse)
+  given JsonRW[ZoneId] = stringValue("ZoneId")(ZoneId.of)
+  given JsonRW[ZoneOffset] = stringValue("ZoneOffset")(ZoneOffset.of)
+  given JsonRW[YearMonth] = stringValue("YearMonth")(YearMonth.parse)
+  given JsonRW[MonthDay] = stringValue("MonthDay")(MonthDay.parse)
+  given JsonRW[Year] = stringValue("Year")(Year.parse)
+  given JsonRW[Month] = stringValue("Month")(Month.valueOf)
+  given JsonRW[DayOfWeek] = stringValue("DayOfWeek")(DayOfWeek.valueOf)
 
-  given JsonRW[Duration] with {
-    override def write(value: Duration): JValue = JString(value.toString)
-
-    override def parse(path: String, jValue: JValue): Duration = jValue match
-      case JString(s) => Duration.parse(s)
-      case other      => JsonRW.typeMismatchError(path, "Duration", other)
-  }
-
-  given JsonRW[Period] with {
-    override def write(value: Period): JValue = JString(value.toString)
-
-    override def parse(path: String, jValue: JValue): Period = jValue match
-      case JString(s) => Period.parse(s)
-      case other      => JsonRW.typeMismatchError(path, "Period", other)
-  }
-
-  given JsonRW[LocalDate] with {
-    override def write(value: LocalDate): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): LocalDate = jValue match
-      case JString(s) => LocalDate.parse(s)
-      case other      => JsonRW.typeMismatchError(path, "LocalDate", other)
-  }
-
-  given JsonRW[LocalTime] with {
-    override def write(value: LocalTime): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): LocalTime = jValue match
-      case JString(s) => LocalTime.parse(s)
-      case other      => JsonRW.typeMismatchError(path, "LocalTime", other)
-  }
-
-  given JsonRW[LocalDateTime] with {
-    override def write(value: LocalDateTime): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): LocalDateTime = jValue match
-      case JString(s) => LocalDateTime.parse(s)
-      case other      => JsonRW.typeMismatchError(path, "LocalDateTime", other)
-  }
-
-  given JsonRW[OffsetDateTime] with {
-    override def write(value: OffsetDateTime): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): OffsetDateTime = jValue match
-      case JString(s) => OffsetDateTime.parse(s)
-      case other      => JsonRW.typeMismatchError(path, "OffsetDateTime", other)
-  }
-
-  given JsonRW[OffsetTime] with {
-    override def write(value: OffsetTime): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): OffsetTime = jValue match
-      case JString(s) => OffsetTime.parse(s)
-      case other      => JsonRW.typeMismatchError(path, "OffsetTime", other)
-  }
-
-  given JsonRW[ZonedDateTime] with {
-    override def write(value: ZonedDateTime): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): ZonedDateTime = jValue match
-      case JString(s) => ZonedDateTime.parse(s)
-      case other      => JsonRW.typeMismatchError(path, "ZonedDateTime", other)
-  }
-
-  given JsonRW[ZoneId] with {
-    override def write(value: ZoneId): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): ZoneId = jValue match
-      case JString(s) => ZoneId.of(s)
-      case other      => JsonRW.typeMismatchError(path, "ZoneId", other)
-  }
-
-  given JsonRW[ZoneOffset] with {
-    override def write(value: ZoneOffset): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): ZoneOffset = jValue match
-      case JString(s) => ZoneOffset.of(s)
-      case other      => JsonRW.typeMismatchError(path, "ZoneOffset", other)
-  }
-
-  given JsonRW[YearMonth] with {
-    override def write(value: YearMonth): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): YearMonth = jValue match
-      case JString(s) => YearMonth.parse(s)
-      case other      => JsonRW.typeMismatchError(path, "YearMonth", other)
-  }
-
-  given JsonRW[MonthDay] with {
-    override def write(value: MonthDay): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): MonthDay = jValue match
-      case JString(s) => MonthDay.parse(s)
-      case other      => JsonRW.typeMismatchError(path, "MonthDay", other)
-  }
-
-  given JsonRW[Year] with {
-    override def write(value: Year): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): Year = jValue match
-      case JString(s) => Year.parse(s)
-      case other      => JsonRW.typeMismatchError(path, "Year", other)
-  }
-
-  given JsonRW[Month] with {
-    override def write(value: Month): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): Month = jValue match
-      case JString(s) => Month.valueOf(s)
-      case other      => JsonRW.typeMismatchError(path, "Month", other)
-  }
-
-  given JsonRW[DayOfWeek] with {
-    override def write(value: DayOfWeek): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): DayOfWeek = jValue match
-      case JString(s) => DayOfWeek.valueOf(s)
-      case other      => JsonRW.typeMismatchError(path, "DayOfWeek", other)
-  }
-
-  // java.math
-  // stored via raw string (DeferNum) to preserve exact precision
   given JsonRW[BigDecimal] with {
-    override def write(value: BigDecimal): JValue = DeferNum(value.toString)
-    override def parse(path: String, jValue: JValue): BigDecimal = jValue match
-      case n: JNum => BigDecimal(n.render())
-      case other   => JsonRW.typeMismatchError(path, "BigDecimal", other)
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): BigDecimal =
+      readToken(in, ctx, "BigDecimal", null: BigDecimal)(isNumber)(readExactDecimal(in))
+
+    private[tupson] def encode(value: BigDecimal, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(scala.math.BigDecimal(value))
   }
 
   given JsonRW[BigInteger] with {
-    override def write(value: BigInteger): JValue = DeferNum(value.toString)
-    override def parse(path: String, jValue: JValue): BigInteger = jValue match
-      case n: JNum => BigInteger(n.render())
-      case other   => JsonRW.typeMismatchError(path, "BigInteger", other)
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): BigInteger =
+      readToken(in, ctx, "BigInteger", null: BigInteger)(isNumber)(readBigInteger(in))
+
+    private[tupson] def encode(value: BigInteger, out: JsonWriter, sort: Boolean): Unit =
+      out.writeVal(BigInt(value))
   }
 
-  // java.net
-  given JsonRW[URI] with {
-    override def write(value: URI): JValue = JString(value.toString)
-    override def parse(path: String, jValue: JValue): URI = jValue match
-      case JString(s) => new URI(s)
-      case other      => JsonRW.typeMismatchError(path, "URI", other)
-  }
+  given [A](using element: JsonRW[A]): JsonRW[Option[A]] with {
+    override private[tupson] def default: Option[Option[A]] = Some(None)
 
-  given [T](using trw: JsonRW[T]): JsonRW[Option[T]] with {
-    override def write(value: Option[T]): JValue = value match
-      case None    => JNull
-      case Some(v) => trw.write(v)
-    override def parse(path: String, jValue: JValue): Option[T] = jValue match
-      case JNull => None
-      case other => Option(trw.parse(path, jValue))
-    override def default: Option[Option[T]] = Some(None)
-  }
-
-  /* collections */
-  given [T](using trw: JsonRW[T]): JsonRW[List[T]] with {
-    override def write(value: List[T]): JValue =
-      JsonRW.writeArray(value, trw)
-    override def parse(path: String, jValue: JValue): List[T] = jValue match
-      case JArray(list) => rethrowingKeysErrors(path, list).toList
-      case other        => JsonRW.typeMismatchError(path, "List", other)
-    override def default: Option[List[T]] = Some(List.empty)
-  }
-
-  given [T: ClassTag](using trw: JsonRW[T]): JsonRW[Array[T]] with {
-    override def write(value: Array[T]): JValue =
-      JsonRW.writeArray(value, trw)
-    override def parse(path: String, jValue: JValue): Array[T] = jValue match
-      case JArray(arr) => rethrowingKeysErrors(path, arr).toArray
-      case other       => JsonRW.typeMismatchError(path, "Array", other)
-    override def default: Option[Array[T]] = Some(Array.empty)
-  }
-
-  given [T](using trw: JsonRW[T]): JsonRW[Set[T]] with {
-    override def write(value: Set[T]): JValue =
-      JsonRW.writeArray(value, trw)
-    override def parse(path: String, jValue: JValue): Set[T] = jValue match
-      case JArray(set) => rethrowingKeysErrors(path, set).toSet
-      case other       => JsonRW.typeMismatchError(path, "Set", other)
-    override def default: Option[Set[T]] = Some(Set.empty)
-  }
-
-  given [T](using trw: JsonRW[T]): JsonRW[Map[String, T]] with {
-    override def write(value: Map[String, T]): JValue =
-      val initialCapacity = math.max(4, value.size * 2)
-      val members = new scala.collection.mutable.HashMap[String, JValue](initialCapacity, 0.75)
-      val entries = value.iterator
-      while entries.hasNext do {
-        val (key, entryValue) = entries.next()
-        members.put(key, trw.write(entryValue))
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Option[A] = {
+      if in.isNextToken('n') then in.readNullOrError(None, "expected null")
+      else {
+        in.rollbackToken()
+        val before = ctx.errorCount
+        val value = element.decode(in, ctx)
+        if ctx.errorCount == before then Option(value) else None
       }
-      JObject(members)
-    override def parse(path: String, jValue: JValue): Map[String, T] =
-      jValue match
-        case JObject(map) =>
-          map.map((k, v) => k -> trw.parse(s"$path.$k", v)).toMap
-        case other => JsonRW.typeMismatchError(path, "Map", other)
-    override def default: Option[Map[String, T]] = Some(Map.empty)
-  }
-
-  /* macro derived instances */
-  inline def derived[T](using m: Mirror.Of[T]): JsonRW[T] = ${ derivedUsingMirrorMacro[T]('m) }
-
-  private def derivedUsingMirrorMacro[T: Type](mirror: Expr[Mirror.Of[T]])(using Quotes): Expr[JsonRW[T]] =
-    derivedMacro[T](Some(mirror))
-
-  private def derivedMacro[T: Type](mirrorOpt: Option[Expr[Mirror.Of[T]]] = None)(using Quotes): Expr[JsonRW[T]] = {
-    import quotes.reflect.*
-
-    val mirror: Expr[Mirror.Of[T]] = mirrorOpt.orElse(Expr.summon[Mirror.Of[T]]).getOrElse {
-      report.errorAndAbort(
-        s"Cannot derive JsonRW[${Type.show[T]}] automatically because it is not a product or sum type"
-      )
     }
 
-    def isAnnotation(a: quotes.reflect.Term): Boolean =
-      a.tpe.typeSymbol.maybeOwner.isNoSymbol ||
-        a.tpe.typeSymbol.owner.fullName != "scala.annotation.internal"
-
-    mirror match
-      case '{
-            type label <: Tuple;
-            $m: Mirror.ProductOf[T] { type MirroredElemTypes = elementTypes; type MirroredElemLabels = `label` }
-          } =>
-        val rwInstancesExpr = summonInstances[T, elementTypes]
-        val rwInstances = Expr.ofList(rwInstancesExpr)
-        val labelNames = Type.valueOfTuple[label].map(_.toList.map(_.toString)).getOrElse(List.empty)
-        val labels = Expr(labelNames)
-        val defaultValues = defaultValuesExpr[T]
-        val initialCapacity = math.max(4, labelNames.size * 2)
-        val initialCapacityExpr = Expr(initialCapacity)
-
-        def writeFields(
-            valueExpr: Expr[T],
-            membersExpr: Expr[scala.collection.mutable.Map[String, JValue]]
-        )(using Quotes): Expr[Unit] = {
-          val statements = labelNames.zip(rwInstancesExpr).zipWithIndex.map { case ((label, rw), index) =>
-            val fieldLabel = Expr(label)
-            val fieldIndex = Expr(index)
-            '{
-              val fieldValue = $valueExpr.asInstanceOf[Product].productElement($fieldIndex)
-              val fieldRW = $rw.asInstanceOf[JsonRW[Any]]
-              if fieldRW.shouldWriteField(fieldValue) then {
-                $membersExpr($fieldLabel) = fieldRW.write(fieldValue)
-              }
-            }
-          }
-          Expr.block(statements, '{ () })
-        }
-
-        val writeMembers: Expr[(T, scala.collection.mutable.Map[String, JValue]) => Unit] =
-          '{ (value: T, members: scala.collection.mutable.Map[String, JValue]) =>
-            ${ writeFields('value, 'members) }
-          }
-
-        '{
-
-          new JsonRW[T] {
-            override def write(value: T): JValue = {
-              val members = new scala.collection.mutable.HashMap[String, JValue]($initialCapacityExpr, 0.75)
-              $writeMembers(value, members)
-              JObject(members)
-            }
-
-            override def parse(path: String, jValue: JValue): T = jValue match
-              case JObject(jsonMap) =>
-                val arguments = ArrayDeque.empty[Any]
-                val keyErrors = ArrayDeque.empty[ParseError]
-                val defaultValuesMap = $defaultValues.toMap
-
-                $labels.zip($rwInstances).foreach { case (label, rw) =>
-                  val keyPath = s"$path.$label"
-                  val keyPresent = jsonMap.contains(label)
-                  val hasGlobalDefault = rw.default.nonEmpty
-
-                  val defaultOpt = defaultValuesMap(label)
-                  val hasLocalDefault = defaultOpt.isDefined
-
-                  if !keyPresent && !hasGlobalDefault && !hasLocalDefault then
-                    keyErrors += ParseError(keyPath, "is missing")
-                  else {
-                    val argOpt = jsonMap
-                      .get(label)
-                      .flatMap { paramJValue =>
-                        try {
-                          Some(rw.parse(keyPath, paramJValue))
-                        } catch {
-                          case pe: ParsingException =>
-                            keyErrors ++= pe.errors
-                            None
-                        }
-                      }
-
-                    argOpt
-                      .orElse(defaultOpt.map(_()))
-                      .orElse(rw.default)
-                      .foreach { arg =>
-                        arguments += arg
-                      }
-                  }
-                }
-
-                if keyErrors.nonEmpty then throw ParsingException(keyErrors.toSeq)
-
-                $m.fromProduct(Tuple.fromArray(arguments.toArray))
-              case JString(enumName) =>
-                if $labels.isEmpty then $m.fromProduct(EmptyTuple) // instantiate enum's singleton case
-                else typeMismatchError(path, "Object", jValue)
-              case _ => typeMismatchError(path, "Object", jValue)
-
-          }
-        }
-
-      case '{
-            type label <: Tuple;
-            $m: Mirror.SumOf[T] { type MirroredElemTypes = elementTypes; type MirroredElemLabels = `label` }
-          } =>
-        val labels = Expr(Type.valueOfTuple[label].map(_.toList.map(_.toString)).getOrElse(List.empty))
-
-        val rwInstancesExpr = summonInstances[T, elementTypes]
-        val rwInstances = Expr.ofList(rwInstancesExpr)
-
-        val annotations = Expr.ofList(TypeRepr.of[T].typeSymbol.annotations.filter(isAnnotation).map(_.asExpr))
-
-        val isSingleCasesEnum = isSingletonCasesEnum[T]
-
-        '{
-          val discrOpt = $annotations.find(_.isInstanceOf[discriminator]).map(_.asInstanceOf[discriminator])
-          val discrName = discrOpt.map(_.name).getOrElse("@type")
-          new JsonRW[T] {
-            override def write(value: T): JValue =
-              val index = $m.ordinal(value)
-              val typeName = $labels(index)
-              if $isSingleCasesEnum then {
-                val label = $labels(index)
-                JsonRW[String].write(label)
-              } else {
-                val rw = $rwInstances(index)
-                val obj = rw.asInstanceOf[JsonRW[Any]].write(value).asInstanceOf[JObject]
-                obj.set(discrName, JString(typeName))
-                obj
-              }
-
-            override def parse(path: String, jValue: JValue): T = jValue match
-              case JObject(jsonMap) if ! $isSingleCasesEnum =>
-                val typeName: String = jsonMap.get(discrName) match
-                  case None             => throw ParsingException(ParseError(discrName, "is missing"))
-                  case Some(JString(s)) => s
-                  case Some(other)      => typeMismatchError(path, s"$discrName: String", other)
-
-                val idx = $labels.indexWhere(_ == typeName)
-                if idx < 0 then
-                  throw TupsonException(
-                    s"Subtype not found: '$typeName'. Possible values: ${$labels.map(l => s"'$l'").mkString(", ")}"
-                  )
-                val rw = $rwInstances(idx)
-                rw.parse(path, jValue).asInstanceOf[T]
-
-              case JString(enumName) if $isSingleCasesEnum =>
-                val idx = $labels.indexWhere(_ == enumName)
-                if idx < 0 then
-                  throw TupsonException(
-                    s"Enum value not found: '$enumName'. Possible values: ${$labels.map(l => s"'$l'").mkString(", ")}"
-                  )
-                val rw = $rwInstances(idx)
-                rw.parse(path, jValue).asInstanceOf[T]
-              case other =>
-                if $isSingleCasesEnum then typeMismatchError(path, "String", other)
-                else typeMismatchError(path, "Object", other)
-          }
-        }
+    private[tupson] def encode(value: Option[A], out: JsonWriter, sort: Boolean): Unit =
+      value match {
+        case Some(item) => element.encode(item, out, sort)
+        case None       => out.writeNull()
+      }
   }
 
-  inline given autoderiveUnion[T: IsUnion]: JsonRW[T] = ${ deriveUnionTC[T] }
+  given [A](using element: JsonRW[A]): JsonRW[List[A]] with {
+    override private[tupson] def default: Option[List[A]] = Some(Nil)
 
-  def deriveUnionTC[T: Type](using Quotes): Expr[JsonRW[T]] = {
-    import quotes.reflect.*
-    TypeRepr.of[T] match {
-      case OrType(left, right) =>
-        left.asType match {
-          case '[l] =>
-            right.asType match {
-              case '[r] =>
-                '{
-                  new JsonRW[T] {
-                    override def write(value: T): JValue = value match {
-                      case a: l => summonInline[JsonRW[l]].write(a)
-                      case b: r => summonInline[JsonRW[r]].write(b)
-                    }
-                    override def parse(path: String, jValue: JValue): T = try {
-                      summonInline[JsonRW[l]].parse(path, jValue).asInstanceOf[T]
-                    } catch {
-                      case _: TupsonException =>
-                        summonInline[JsonRW[r]].parse(path, jValue).asInstanceOf[T]
-                    }
-                  }
-                }
-            }
-        }
-      case _ =>
-        report.errorAndAbort(s"Cannot automatically derive JsonRW for non-union type ${Type.show[T]}")
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): List[A] =
+      readArray(in, ctx, element, "List", List.empty[A])(List.newBuilder[A])
+
+    private[tupson] def encode(value: List[A], out: JsonWriter, sort: Boolean): Unit = {
+      out.writeArrayStart()
+      var remaining = value
+      while remaining.nonEmpty do {
+        element.encode(remaining.head, out, sort)
+        remaining = remaining.tail
+      }
+      out.writeArrayEnd()
     }
   }
 
-  private def summonInstances[T: Type, Elems: Type](using Quotes): List[Expr[JsonRW[?]]] =
-    Type.of[Elems] match
-      case '[elem *: elems] => deriveOrSummon[T, elem] :: summonInstances[T, elems]
-      case '[EmptyTuple]    => Nil
+  given [A](using element: JsonRW[A]): JsonRW[Seq[A]] with {
+    override private[tupson] def default: Option[Seq[A]] = Some(Seq.empty)
 
-  private def deriveOrSummon[T: Type, Elem: Type](using Quotes): Expr[JsonRW[Elem]] =
-    import quotes.reflect.*
-    val elemRepr = TypeRepr.of[Elem].dealias
-    elemRepr match
-      case ConstantType(_) => '{ summonInline[JsonRW[Elem]] }
-      case _               => Expr.summon[JsonRW[Elem]].getOrElse(deriveRec[T, Elem])
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Seq[A] =
+      readArray(in, ctx, element, "Seq", Seq.empty[A])(Seq.newBuilder[A])
 
-  private def deriveRec[T: Type, Elem: Type](using Quotes): Expr[JsonRW[Elem]] =
-    import quotes.reflect.*
-    val tRepr = TypeRepr.of[T].dealias
-    val elemRepr = TypeRepr.of[Elem].dealias
-    if tRepr =:= elemRepr then '{ error("infinite recursive derivation") }
-    else derivedMacro[Elem]() // recursive derivation (also handles parameterized self types)
+    private[tupson] def encode(value: Seq[A], out: JsonWriter, sort: Boolean): Unit =
+      TupsonWriter.writeArray(value.iterator, out, sort, element)
+  }
 
-  /* macro utils */
-  private def isSingletonCasesEnum[T: Type](using Quotes): Expr[Boolean] =
-    import quotes.reflect.*
-    val ts = TypeRepr.of[T].typeSymbol
-    Expr(ts.flags.is(Flags.Enum) && ts.companionClass.methodMember("values").nonEmpty)
+  given [A](using element: JsonRW[A]): JsonRW[Set[A]] with {
+    override private[tupson] def default: Option[Set[A]] = Some(Set.empty)
 
-  private def defaultValuesExpr[T: Type](using
-      Quotes
-  ): Expr[List[(String, Option[() => Any])]] =
-    import quotes.reflect._
-    def defaultGetterExpr(tpe: Symbol, defaultMethod: Symbol): Option[Expr[Any]] =
-      Option.when(defaultMethod.paramSymss.flatten.isEmpty) {
-        Select(Ref(tpe.companionModule), defaultMethod).asExprOf[Any]
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Set[A] =
+      readArray(in, ctx, element, "Set", Set.empty[A])(Set.newBuilder[A])
+
+    private[tupson] def encode(value: Set[A], out: JsonWriter, sort: Boolean): Unit =
+      TupsonWriter.writeArray(value.iterator, out, sort, element)
+  }
+
+  given [A: ClassTag](using element: JsonRW[A]): JsonRW[Array[A]] with {
+    override private[tupson] def default: Option[Array[A]] = Some(Array.empty)
+
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Array[A] =
+      readArray(in, ctx, element, "Array", Array.empty[A])(Array.newBuilder[A])
+
+    private[tupson] def encode(value: Array[A], out: JsonWriter, sort: Boolean): Unit = {
+      out.writeArrayStart()
+      var index = 0
+      while index < value.length do {
+        element.encode(value(index), out, sort)
+        index = index + 1
       }
-
-    def defaultValueExpr(tpe: Symbol, idx: Int): Option[Expr[Any]] =
-      val defaultMethodName = s"$$lessinit$$greater$$default$$${idx + 1}"
-      tpe.companionClass
-        .declaredMethod(defaultMethodName)
-        .headOption
-        .flatMap { defaultMethod =>
-          defaultMethod.tree match
-            case defDef: DefDef =>
-              defDef.rhs
-                .map(_.asExprOf[Any])
-                .orElse(defaultGetterExpr(tpe, defaultMethod))
-            case _ => defaultGetterExpr(tpe, defaultMethod)
-        }
-
-    def exprOfOption(
-        oet: (Expr[String], Option[Expr[Any]])
-    ): Expr[(String, Option[() => Any])] = oet match {
-      case (label, None)     => Expr(label.valueOrAbort -> None)
-      case (label, Some(et)) => '{ $label -> Some(() => $et) }
+      out.writeArrayEnd()
     }
-    val tpe = TypeRepr.of[T].typeSymbol
-    val terms = tpe.primaryConstructor.paramSymss.flatten
-      .filter(_.isValDef)
-      .zipWithIndex
-      .map { case (field, i) =>
-        exprOfOption {
-          Expr(field.name) -> defaultValueExpr(tpe, i)
+  }
+
+  given [A](using element: JsonRW[A]): JsonRW[Map[String, A]] with {
+    override private[tupson] def default: Option[Map[String, A]] = Some(Map.empty)
+
+    private[tupson] def decode(in: JsonReader, ctx: DecodeContext): Map[String, A] =
+      readToken(in, ctx, "Map", Map.empty[String, A])(_ == '{') {
+        in.nextToken()
+        if in.isNextToken('}') then Map.empty
+        else {
+          in.rollbackToken()
+          val entries = Map.newBuilder[String, A]
+          val keys = HashSet.empty[String]
+          val before = ctx.errorCount
+          var more = true
+          while more do {
+            val key = in.readKeyAsString()
+            if !keys.add(key) then ctx.duplicateKey(key)
+            if ctx.errorCount == before then {
+              val value = ctx.withField(key)(element.decode(in, ctx))
+              if ctx.errorCount == before then entries.addOne((key, value))
+            } else skipValue(in)
+            more = in.isNextToken(',')
+          }
+          if !in.isCurrentToken('}') then in.objectEndOrCommaError()
+          if ctx.errorCount == before then entries.result() else Map.empty
         }
       }
-    Expr.ofList(terms)
 
-  /* generaul utils */
-  private[tupson] def typeMismatchError(
-      path: String,
-      expectedType: String,
-      jsonValue: JValue
-  ): Nothing =
-    val badJsonSnippet = jsonValue.render().take(100)
-    throw ParsingException(
-      ParseError(
-        path,
-        s"should be ${expectedType} but it is ${jsonValue.valueType.capitalize}",
-        Some(badJsonSnippet)
-      )
-    )
+    private[tupson] def encode(value: Map[String, A], out: JsonWriter, sort: Boolean): Unit = {
+      out.writeObjectStart()
+      if sort then {
+        val keys = value.keysIterator.toArray.sorted
+        keys.foreach { key =>
+          out.writeKey(key)
+          element.encode(value(key), out, sort)
+        }
+      } else {
+        val entries = value.iterator
+        while entries.hasNext do {
+          val (key, entry) = entries.next()
+          out.writeKey(key)
+          element.encode(entry, out, sort)
+        }
+      }
+      out.writeObjectEnd()
+    }
+  }
 
-end JsonRW
+  private[tupson] def stringValue[A](expected: String)(parse: String => A): JsonRW[A] =
+    stringValue(expected, parse, _.toString)
+
+  private[tupson] def stringValue[A](expected: String, parse: String => A, render: A => String): JsonRW[A] =
+    new JsonRW[A] {
+      private[tupson] def decode(in: JsonReader, ctx: DecodeContext): A =
+        readToken(in, ctx, expected, null.asInstanceOf[A])(_ == '"')(parse(in.readString(null)))
+
+      private[tupson] def encode(value: A, out: JsonWriter, sort: Boolean): Unit =
+        out.writeVal(render(value))
+    }
+}
+
+private[tupson] trait LowPriorityJsonRWInstances {
+  inline given [A <: String | Char | Boolean | Int | Long | Float | Double](using ValueOf[A]): JsonRW[A] =
+    JsonRWLiteral.derived[A]
+
+  inline given [A <: AnyNamedTuple](using A <:< AnyNamedTuple): JsonRW[A] =
+    JsonRWNamedTuple.derived[A]
+}
