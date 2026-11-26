@@ -48,7 +48,7 @@ private[tupson] object JsonRW2Product {
     }
 
     val fields = accessors.zipWithIndex.map { (accessor, index) =>
-      val tpe = model.memberType(accessor).widen
+      val tpe = model.memberType(accessor).widenTermRefByName
       tpe.asType match {
         case '[field] =>
           val codec = Expr.summon[JsonRW2[field]].getOrElse {

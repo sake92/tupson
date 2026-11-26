@@ -7,6 +7,7 @@ import java.time.{OffsetDateTime, OffsetTime, ZoneId, ZoneOffset, ZonedDateTime}
 import java.util.UUID
 import scala.collection.mutable.HashSet
 import scala.deriving.Mirror
+import scala.NamedTuple.AnyNamedTuple
 import scala.reflect.ClassTag
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonWriter}
 import TupsonReader.*
@@ -63,6 +64,12 @@ object JsonRW2 {
     }
 
   inline given [A: IsUnion]: JsonRW2[A] = JsonRW2Union.derived[A]
+
+  inline given [A <: String | Char | Boolean | Int | Long | Float | Double](using ValueOf[A]): JsonRW2[A] =
+    JsonRW2Literal.derived[A]
+
+  inline given [A <: AnyNamedTuple](using A <:< AnyNamedTuple): JsonRW2[A] =
+    JsonRW2NamedTuple.derived[A]
 
   extension (json: String)
     def parseJson[A](using rw: JsonRW2[A]): A = rw.reader.read(json)
