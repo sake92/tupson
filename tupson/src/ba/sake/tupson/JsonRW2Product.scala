@@ -17,7 +17,15 @@ private[tupson] object JsonRW2Product {
     val constructor = modelSymbol.primaryConstructor
     val parameters = constructor.paramSymss.filterNot(_.exists(_.isType))
     val accessors = modelSymbol.caseFields
-    if !modelSymbol.flags.is(Flags.Case) || parameters.map(_.map(_.name)) != List(accessors.map(_.name)) then
+    val singleton = if tag.nonEmpty && model <:< TypeRepr.of[scala.Singleton] then {
+      val value = Expr.summon[ValueOf[A]].getOrElse {
+        report.errorAndAbort(s"Cannot resolve tagged singleton ${Type.show[A]}")
+      }
+      Some('{ $value.value })
+    } else None
+    if singleton.isEmpty &&
+      (!modelSymbol.flags.is(Flags.Case) || parameters.map(_.map(_.name)) != List(accessors.map(_.name)))
+    then
       report.errorAndAbort(s"JsonRW2 requires a case class with one parameter list: ${Type.show[A]}")
     tag.foreach { (key, _) =>
       if accessors.exists(_.name == key) then
@@ -114,7 +122,10 @@ private[tupson] object JsonRW2Product {
     }
 
     def readProduct(slots: List[Slot], in: Expr[JsonReader], ctx: Expr[TupsonReader.DecodeContext])(using Quotes): Expr[A] = {
-      val construct = Apply(applyTypeArguments(Select(New(TypeTree.of[A]), constructor)), slots.map(_.value))
+      val construct = singleton.getOrElse {
+        val method = applyTypeArguments(Select(New(TypeTree.of[A]), constructor))
+        Apply(method, slots.map(_.value)).asExprOf[A]
+      }
       val defaults = Expr.block(slots.map(fillMissing(_, ctx)), '{ () })
       val members = tag match {
         case Some((key, _)) =>
@@ -140,7 +151,7 @@ private[tupson] object JsonRW2Product {
         val before = $ctx.errorCount
         $members
         $defaults
-        if $ctx.errorCount == before then ${ construct.asExprOf[A] }
+        if $ctx.errorCount == before then $construct
         else null.asInstanceOf[A]
       }
     }

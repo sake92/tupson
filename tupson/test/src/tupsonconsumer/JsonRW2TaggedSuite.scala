@@ -24,6 +24,19 @@ class JsonRW2TaggedSuite extends munit.FunSuite {
     assertEquals(value.toJson(sort = true), """{"!id":42,"@type":"Created","name":"backup"}""")
   }
 
+  test("round-trip a case object as a tag-only object") {
+    val input = """{"@type":"Stopped"}"""
+    val value: Event = Stopped
+    assertEquals(value.toJson(), input)
+    assertEquals(value.toJson(sort = true), input)
+    assert(input.parseJson[Event] eq Stopped)
+    assert("""{"extra":[1,2],"@type":"Stopped"}""".parseJson[Event] eq Stopped)
+
+    interceptMessage[TupsonException]("Duplicate JSON key at '$.@type'") {
+      """{"@type":"Stopped","@type":"Stopped"}""".parseJson[Event]
+    }
+  }
+
   test("report subtype field errors at their original paths") {
     val error = intercept[ParsingException] {
       """{"event":{"name":false,"@type":"Created"}}""".parseJson[Envelope]
@@ -44,7 +57,7 @@ class JsonRW2TaggedSuite extends munit.FunSuite {
     val invalid = intercept[ParsingException]("""{"@type":null,"id":42}""".parseJson[Event])
     assertEquals(invalid.errors, Seq(ParseError("$.@type", "should be String but it is Null", Some("null"))))
 
-    interceptMessage[TupsonException]("Subtype not found: 'Other'. Possible values: 'Created', 'Deleted'") {
+    interceptMessage[TupsonException]("Subtype not found: 'Other'. Possible values: 'Created', 'Deleted', 'Stopped'") {
       """{"@type":"Other","id":42}""".parseJson[Event]
     }
     interceptMessage[TupsonException]("JSON parsing exception") {
@@ -95,6 +108,7 @@ object JsonRW2TaggedSuite {
   sealed trait Event derives JsonRW2
   case class Created(name: String, `!id`: Int) extends Event
   case class Deleted(id: Int) extends Event
+  case object Stopped extends Event
   case class Envelope(event: Event) derives JsonRW2
 
   @discriminator(name = "kind")
