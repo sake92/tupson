@@ -35,6 +35,8 @@ private[tupson] final class TupsonReader[A](codec: JsonRW2[A])
 }
 
 private[tupson] object TupsonReader {
+  private val maxErrors = 10
+
   inline def readObject[A](in: JsonReader, ctx: DecodeContext)(inline read: A): A =
     readToken(in, ctx, "Object", null.asInstanceOf[A])(_ == '{') {
       in.nextToken()
@@ -70,8 +72,11 @@ private[tupson] object TupsonReader {
         var index = 0
         var more = true
         while more do {
-          val value = ctx.withIndex(index)(element.decode(in, ctx))
-          if ctx.errorCount == before then values.addOne(value)
+          if ctx.errorLimitReached then skipValue(in)
+          else {
+            val value = ctx.withIndex(index)(element.decode(in, ctx))
+            if ctx.errorCount == before then values.addOne(value)
+          }
           index = index + 1
           more = in.isNextToken(',')
         }
@@ -151,17 +156,20 @@ private[tupson] object TupsonReader {
 
     def errorCount: Int = errors.size
 
+    def errorLimitReached: Boolean = errorCount >= maxErrors
+
     inline def withField[A](key: String)(inline read: A): A =
       withPathEntry(key, 0)(read)
 
     inline def withIndex[A](index: Int)(inline read: A): A =
       withPathEntry(null, index)(read)
 
-    def fail(message: String, value: Option[Any] = None): Unit = {
-      val path = renderPath()
-      val error = ParseError(path, message, value)
-      errors = errors.appended(error)
-    }
+    def fail(message: String, value: Option[Any] = None): Unit =
+      if !errorLimitReached then {
+        val path = renderPath()
+        val error = ParseError(path, message, value)
+        errors = errors.appended(error)
+      }
 
     def result[A](value: A): Either[ParsingException, A] =
       if errors.isEmpty then Right(value) else Left(ParsingException(errors))

@@ -110,7 +110,8 @@ private[tupson] object JsonRW2Product {
       '{
         val before = $ctx.errorCount
         TupsonReader.readObjectFields($in) { length =>
-          ${ readField(slots, in, ctx, 'length) }
+          if $ctx.errorLimitReached then TupsonReader.skipValue($in)
+          else ${ readField(slots, in, ctx, 'length) }
         }
         $defaults
         if $ctx.errorCount == before then ${ construct.asExprOf[A] }
@@ -158,7 +159,7 @@ private[tupson] object JsonRW2Product {
                 }
               }
           }
-          '{ if !$seen then $missing }
+          '{ if !$seen && !$ctx.errorLimitReached then $missing }
       }
 
     def writeFields(fields: List[Field], value: Expr[A], out: Expr[JsonWriter], sort: Expr[Boolean])(using Quotes): Expr[Unit] = {

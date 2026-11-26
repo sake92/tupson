@@ -5,7 +5,10 @@ import scala.reflect.ClassTag
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonWriter}
 import TupsonReader.*
 
-/** A JSON codec that reads and writes directly through the backend. */
+/** A JSON codec that reads and writes directly through the backend.
+  *
+  * Decoding reports up to ten validation errors per document. Syntax errors are fatal.
+  */
 abstract class JsonRW2[A] private[tupson] () {
   private val reader = new TupsonReader(this)
   private val sortedWriter = new TupsonWriter(this, sort = true)

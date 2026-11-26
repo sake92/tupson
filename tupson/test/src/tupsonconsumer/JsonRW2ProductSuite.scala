@@ -80,6 +80,13 @@ class JsonRW2ProductSuite extends munit.FunSuite {
     assertEquals(error.errors, Seq(ParseError("$.items", "should be List but it is Null", Some("null"))))
   }
 
+  test("skip product fields after reaching the document error limit") {
+    val invalid = List.fill(10)("false").mkString("[", ",", "]")
+    val input = s"""{"batch":{"items":$invalid},"name":42}"""
+    val error = intercept[ParsingException](input.parseJson[CappedProduct])
+    assertEquals(error.errors.map(_.path), (0 until 10).map(index => s"$$.batch.items[$index]"))
+  }
+
   test("default absent sequence, set, and array fields") {
     val collections = "{}".parseJson[Collections]
     assertEquals(collections.sequence, Seq.empty)
@@ -104,5 +111,6 @@ object JsonRW2ProductSuite {
   }
   case class Contact(email: Email) derives JsonRW2
   case class Batch(items: List[Int]) derives JsonRW2
+  case class CappedProduct(batch: Batch, name: String, required: Int) derives JsonRW2
   case class Collections(sequence: Seq[Int], set: Set[Int], array: Array[Int]) derives JsonRW2
 }

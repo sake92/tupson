@@ -100,6 +100,25 @@ class JsonRW2Suite extends munit.FunSuite {
     }
   }
 
+  test("stop decoding array elements after ten document errors") {
+    var decoded = 0
+    case class Positive(value: Int)
+    given JsonRW2[Positive] = JsonRW2[Int].emap { value =>
+      decoded = decoded + 1
+      if value > 0 then Right(Positive(value)) else Left("must be positive")
+    }(_.value)
+
+    val invalid = List.fill(5000)("-1").mkString("[", ",", "]")
+    val input = s"[$invalid,$invalid]"
+    val error = intercept[ParsingException](input.parseJson2[List[List[Positive]]])
+    assertEquals(decoded, 10)
+    assertEquals(error.errors.map(_.path), (0 until 10).map(index => s"$$[0][$index]"))
+
+    val malformed = List.fill(10)("-1").mkString("[", ",", ",[1,]]")
+    val syntax = intercept[TupsonException](malformed.parseJson2[List[Positive]])
+    assertEquals(syntax.getMessage, "JSON parsing exception")
+  }
+
   test("round-trip sequences, sets, and primitive and reference arrays") {
     def roundTrip[A: JsonRW: JsonRW2](input: String): Unit = {
       val value = input.parseJson2[A]
