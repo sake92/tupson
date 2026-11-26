@@ -1,5 +1,6 @@
 package ba.sake.tupson
 
+import java.io.InputStream
 import java.math.{BigDecimal, BigInteger}
 import java.net.URI
 import java.time.{Duration, Instant, LocalDate, LocalDateTime, LocalTime, Period}
@@ -44,6 +45,7 @@ abstract class JsonRW[A] private[tupson] () {
 
   private[tupson] def readJson(json: String): A = reader.read(json)
   private[tupson] def readJson(json: Array[Byte]): A = reader.read(json)
+  private[tupson] def readJson(in: InputStream): A = reader.read(in)
 
   private[tupson] def renderJson(value: A, spaces: Int, sort: Boolean): String = {
     val writer = if sort then sortedWriter else unsortedWriter

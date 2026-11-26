@@ -1,6 +1,6 @@
 package ba.sake.tupson
 
-import java.io.OutputStream
+import java.io.{InputStream, OutputStream}
 import scala.annotation.StaticAnnotation
 
 extension (json: String)
@@ -8,6 +8,10 @@ extension (json: String)
 
 extension (json: Array[Byte])
   def parseJson[A](using rw: JsonRW[A]): A = rw.readJson(json)
+
+extension (in: InputStream)
+  /** Parses one UTF-8 JSON document and leaves the stream open. */
+  def parseJson[A](using rw: JsonRW[A]): A = rw.readJson(in)
 
 extension [A](value: A)
   def toJson(spaces: Int = 0, sort: Boolean = false)(using rw: JsonRW[A]): String =

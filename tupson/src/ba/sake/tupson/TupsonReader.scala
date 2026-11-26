@@ -1,5 +1,6 @@
 package ba.sake.tupson
 
+import java.io.InputStream
 import java.math.{BigDecimal, BigInteger, MathContext}
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Builder
@@ -12,6 +13,9 @@ private[tupson] final class TupsonReader[A](codec: JsonRW[A])
 
   def read(json: Array[Byte]): A =
     parse(readFromArray(json)(using this))
+
+  def read(in: InputStream): A =
+    parse(readFromStream(in)(using this))
 
   def nullValue: Either[ParsingException, A] = null
 
