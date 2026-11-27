@@ -432,12 +432,17 @@ private[tupson] object JsonRWProduct {
     cacheCodecs(fields, Map.empty)
   }
 
+  // Keep the sort flag primitive across the generated writer call.
+  private[tupson] trait ProductWriter[A] {
+    def write(value: A, out: JsonWriter, sort: Boolean): Unit
+  }
+
   private[tupson] final class ProductCodec[A](
       read: (JsonReader, DecodeContext) => A,
-      write: (A, JsonWriter, Boolean) => Unit
+      writer: ProductWriter[A]
   ) extends JsonRW[A] {
     private[tupson] def decode(in: JsonReader, ctx: DecodeContext): A = read(in, ctx)
-    private[tupson] def encode(value: A, out: JsonWriter, sort: Boolean): Unit = write(value, out, sort)
+    private[tupson] def encode(value: A, out: JsonWriter, sort: Boolean): Unit = writer.write(value, out, sort)
   }
 
   final class ExtraFields {
