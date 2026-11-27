@@ -1,10 +1,10 @@
 # Tupson JMH benchmarks
 
-This standalone JVM project benchmarks the current Tupson sources.
-Run from `benchmarks-jmh`:
+This JVM module benchmarks the current Tupson sources. Run from the repository root with Deder early-access.
 
 ```sh
-sbt -batch "Jmh/run -f 2 -wi 5 -i 5 -w 1s -r 1s -jvmArgsAppend -Xmx512m -prof gc Tupson(Feature|Io)Benchmark"
+deder exec -m benchmarks-jmh -t jmhList
+deder exec -m benchmarks-jmh -t jmhRun -- -f 2 -wi 5 -i 5 -w 1s -r 1s -jvmArgsAppend -Xmx512m -prof gc 'Tupson(Feature|Io)Benchmark'
 ```
 
 `TupsonFeatureBenchmark` covers typed products, defaults, collections, escaped

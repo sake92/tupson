@@ -1,4 +1,23 @@
-amends "https://sake92.github.io/deder/config/v0.21.0/DederProject.pkl"
+amends "https://sake92.github.io/deder/config/early-access/DederProject.pkl"
+
+import "https://sake92.github.io/deder-plugins/config/deder-jmh/early-access/JmhPlugin.pkl" as Jmh
+
+repositories {
+  new MavenRepository {
+    url = "https://central.sonatype.com/repository/maven-snapshots"
+  }
+}
+
+plugins {
+  new Jmh.JmhPlugin {
+    version = "0.7.1-SNAPSHOT"
+    config {
+      modules {
+        ["benchmarks-jmh"] = new Jmh.ModuleOverride { enabled = true }
+      }
+    }
+  }
+}
 
 // Latest stable release; 0.5.12 has a known concurrent large-allocation bug upstream in #4935.
 local const nativeVersion = "0.5.12"
@@ -185,9 +204,23 @@ local const examples = (baseTemplate) {
   }
 }
 
+local const benchmarks = new CreateScalaModules {
+  root = "benchmarks-jmh"
+  layout = "sbt"
+  template = (baseTemplate) {
+    moduleDeps {
+      tupsonModules.jvm
+    }
+    deps {
+      "org.openjdk.jmh:jmh-core:1.37"
+    }
+  }
+}.get.main
+
 modules {
   ...tupsonModules.all
   ...tupsonConfigModules.all
   ...tupsonSttpModules.all
   examples
+  benchmarks
 }
